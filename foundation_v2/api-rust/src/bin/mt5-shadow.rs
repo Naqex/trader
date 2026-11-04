@@ -122,13 +122,25 @@ fn deadline(plan: &Value, clock: i64, starting: bool) -> Result<i64> {
         .as_i64()
         .ok_or("shadow_plan_invalid")?;
     let end = plan["deadline_msc"].as_i64().ok_or("shadow_plan_invalid")?;
+    // A predecessor completes only after settlement. Python init verifies the
+    // frozen completed predecessor before any successor capture is allowed.
+    let start_lag = if plan["continuation"].is_object() {
+        plan["settle_seconds"]
+            .as_i64()
+            .filter(|seconds| (30..=120).contains(seconds))
+            .ok_or("shadow_plan_invalid")?
+            * 1000
+            + 60000
+    } else {
+        60000
+    };
     if from < 0
         || to <= from
         || to - from > 86400000
         || end <= to
         || end - to > 180000
         || (starting
-            && (from < clock - 60000 || from > clock + 60000 || to <= clock || end <= clock))
+            && (from < clock - start_lag || from > clock + 60000 || to <= clock || end <= clock))
     {
         return Err("shadow_plan_time_invalid".into());
     }
@@ -488,6 +500,21 @@ mod tests {
             )
             .is_err()
         );
+    }
+    #[test]
+    fn continuation_start_allows_settlement_but_not_unbounded_backdating() {
+        let mut plan = json!({"capture":{"from_msc":100000,"to_msc":500000},
+            "deadline_msc":590000,"settle_seconds":120,"continuation":{"state_dir":"fixture"}});
+        assert_eq!(deadline(&plan, 280000, true).unwrap(), 590000);
+        assert!(deadline(&plan, 280001, true).is_err());
+        plan["settle_seconds"] = json!(30);
+        assert_eq!(deadline(&plan, 190000, true).unwrap(), 590000);
+        assert!(deadline(&plan, 190001, true).is_err());
+        plan["settle_seconds"] = json!(121);
+        assert!(deadline(&plan, 150000, true).is_err());
+        plan["continuation"] = Value::Null;
+        assert!(deadline(&plan, 160001, true).is_err());
+        assert_eq!(deadline(&plan, 160000, true).unwrap(), 590000);
     }
     #[test]
     fn lifecycle_is_atomic_checksummed_and_single_writer() {

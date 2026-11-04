@@ -16,7 +16,8 @@ sys.path.insert(0, str(V2))
 from pydantic import Field, model_validator
 from pydantic.version import VERSION as PYDANTIC_VERSION
 from scripts import mt5_observed_capture as capture
-from trading_workspace_v2.forex_h4 import Candle, FixedH4Candidate, H4Builder, HOUR, TICK
+from trading_workspace_v2.forex_h4 import (Candle, FixedH4Candidate, H4Builder,
+    H4BuilderState, H4CandidateState, HOUR, H4, TICK)
 
 HOUR_MS = HOUR * 1000
 SOURCES = {
@@ -48,12 +49,18 @@ class ShadowReader(capture.NativeReader):
             raise capture.CaptureError(f'shadow_native_http_{error.code}_{safe}') from None
 
 
+class Continuation(capture.Frozen):
+    state_dir: str = Field(min_length=1, max_length=1024, strict=True)
+    report_sha256: str = Field(pattern=r'^[0-9a-f]{64}$', strict=True)
+
+
 class Plan(capture.Frozen):
-    schema_version: Literal['mt5-shadow-session-v1']
+    schema_version: Literal['mt5-shadow-session-v2']
     capture: capture.Plan
     deadline_msc: int = Field(ge=0, strict=True)
     settle_seconds: int = Field(default=30, ge=30, le=120, strict=True)
     source_sha256: dict[str, str]
+    continuation: Continuation | None = None
 
     @model_validator(mode='after')
     def valid(self):
@@ -78,17 +85,93 @@ def audit(page, plan, fetch):
                                   page['from_msc'], page['to_msc'])
     if capture.economic(page) != capture.economic(reread):
         raise capture.CaptureError('shadow_observed_window_revised')
+    return reread['observed_at_msc']
 
 
-def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False):
+def warmup(plan, directory, *, verify_pages=False):
+    """Import a frozen predecessor, never arbitrary bars or an active session.
+
+    Whole-hour handoff keeps each H1 owned by exactly one session. Partial H1
+    recovery belongs to resume, not to a new session that drops its prefix.
+    """
+    if plan.continuation is None:
+        return None
+    predecessor = Path(plan.continuation.state_dir)
+    directory = Path(directory).absolute()
+    capture.require_local_tree(predecessor)
+    predecessor = predecessor.resolve() if predecessor.is_absolute() else predecessor
+    directory = directory.resolve()
+    if (not predecessor.is_absolute() or directory.is_relative_to(predecessor) or
+            predecessor.is_relative_to(directory)):
+        raise capture.CaptureError('shadow_predecessor_path_invalid')
+    report = capture.checked(predecessor/'shadow.json')
+    if (capture.checksum(report) != plan.continuation.report_sha256 or
+            report.get('schema_version') != 'mt5-shadow-report-v2'):
+        raise capture.CaptureError('shadow_predecessor_report_changed')
+    previous_plan = Plan.model_validate(report['plan'])
+    previous_capture = previous_plan.capture
+    capture.require_local_tree(predecessor/'lifecycle.json')
+    lifecycle = capture.read_json(predecessor/'lifecycle.json')
+    state = lifecycle.get('state', {})
+    raw = capture.json.dumps(state, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()
+    if (set(lifecycle) != {'state', 'sha256'} or
+            hashlib.sha256(raw).hexdigest() != lifecycle['sha256'] or
+            state.get('schema_version') != 'mt5-shadow-lifecycle-v1' or
+            state.get('status') != 'complete' or state.get('execution_capability') is not False or
+            state.get('manifest_sha256') != report['registration_sha256']):
+        raise capture.CaptureError('shadow_predecessor_not_complete')
+    if (plan.capture.binding != previous_capture.binding or plan.capture.symbol != previous_capture.symbol or
+            plan.capture.api_origin != previous_capture.api_origin or plan.settle_seconds != previous_plan.settle_seconds or
+            plan.capture.from_msc != previous_capture.to_msc or plan.capture.from_msc % HOUR_MS or
+            report['consumed_through_msc'] != plan.capture.from_msc or
+            report['python_version'] != sys.version or report['pydantic_version'] != PYDANTIC_VERSION or
+            report['source_sha256'] != plan.source_sha256 or report['execution_capability'] is not False):
+        raise capture.CaptureError('shadow_predecessor_continuity_invalid')
+    # Depth zero is the first session; admit at most 32 sessions in one chain.
+    for key, maximum in (('chain_depth', 30), ('cumulative_hours', 32*24), ('cumulative_h4_bars', 32*6)):
+        if type(report[key]) is not int or not 0 <= report[key] <= maximum:
+            raise capture.CaptureError('shadow_predecessor_bound_invalid')
+    candidate = H4CandidateState.model_validate(report['candidate_state'])
+    builder = H4BuilderState.model_validate(report['builder_state'])
+    if (any((bar.timestamp+H4)*1000 > plan.capture.from_msc for bar in candidate.history) or
+            any((bar.timestamp+HOUR)*1000 > plan.capture.from_msc for bar in builder.parts)):
+        raise capture.CaptureError('shadow_predecessor_future_bar')
+    capture_dir = predecessor/'capture'
+    captured = capture.checked(capture_dir/'state.json')
+    if (capture.checksum(captured) != report['capture_state_sha256'] or
+            captured['plan'] != previous_capture.model_dump(mode='json') or
+            captured['next_from_msc'] != previous_capture.to_msc or not captured['pages'] or
+            len(captured['pages']) > 10000 or
+            captured['client_sha256'] != plan.source_sha256['capture']):
+        raise capture.CaptureError('shadow_predecessor_capture_changed')
+    observation = state.get('observation', {})
+    expected = dict(status='complete', requested_through_msc=previous_capture.to_msc,
+        pages=len(captured['pages']), ticks=captured['tick_count'],
+        closed_hours=len(report['hours']), h4_bars=len(report['decisions']))
+    if any(observation.get(key) != value for key, value in expected.items()) or any(
+            report[key] != value for key, value in expected.items() if key in ('requested_through_msc', 'pages', 'ticks')):
+        raise capture.CaptureError('shadow_predecessor_receipt_mismatch')
+    if verify_pages:
+        capture.load(capture_dir, previous_capture)
+    last = page_at(capture_dir, captured, previous_capture, len(captured['pages'])-1)
+    return dict(candidate_state=candidate, builder_state=builder,
+        cumulative_hours=report['cumulative_hours'], cumulative_h4_bars=report['cumulative_h4_bars'],
+        chain_depth=report['chain_depth']+1, series_from_msc=report['series_from_msc'],
+        lineage={key:last[key] for key in ('clock', 'source_sha256', 'sdk_version')})
+
+
+def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, seed=None,
+                   registration_sha256=None):
     """Replay immutable observations; only stable, fully requested hours feed H4.
 
     Stability and the gap bound are sample-quality policies, not a complete-tick
     watermark. This adapter deliberately has no fill, sizing, P&L or send path.
     """
-    state, captured_plan, _ = capture.load(directory, plan.capture)
+    state, captured_plan, last = capture.load(directory, plan.capture)
     if captured_plan != plan.capture:
         raise capture.CaptureError('shadow_capture_changed')
+    if seed and last and any(last[key] != value for key, value in seed['lineage'].items()):
+        raise capture.CaptureError('shadow_predecessor_source_changed')
     previous = previous or {'audited_pages': {}, 'hours': [], 'decisions': []}
     audited = dict(previous['audited_pages'])
     if len(audited) > len(state['pages']):
@@ -104,7 +187,9 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False):
             if str(index) not in audited:
                 audit(page_at(directory, state, plan.capture, index), plan.capture, fetch)
 
-    builder, candidate = H4Builder(), FixedH4Candidate()
+    builder = H4Builder.from_state(seed['builder_state']) if seed else H4Builder()
+    candidate = FixedH4Candidate.from_state(seed['candidate_state']) if seed else FixedH4Candidate()
+    verified_at = now_msc
     hours, decisions = [], []
     first = (plan.capture.from_msc + HOUR_MS-1)//HOUR_MS*HOUR_MS
     through = state['next_from_msc']
@@ -120,7 +205,7 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False):
             page = page_at(directory, state, plan.capture, index)
             key = str(index)
             if key not in audited:
-                audit(page, plan.capture, fetch)
+                verified_at = max(verified_at, audit(page, plan.capture, fetch))
                 audited[key] = state['pages'][index]
             for tick in page['rows']:
                 if hour <= tick['time_msc'] < end:
@@ -142,7 +227,7 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False):
             signal, distance = candidate.observe(h4)
             ordinal = len(decisions)
             known_at = (previous['decisions'][ordinal]['observed_at_msc']
-                        if ordinal < len(previous['decisions']) else now_msc)
+                        if ordinal < len(previous['decisions']) else verified_at)
             decisions.append({'bar_start_msc': h4.timestamp*1000,
                 'known_not_before_msc': (h4.timestamp+4*HOUR)*1000+plan.settle_seconds*1000,
                 'observed_at_msc': known_at,
@@ -150,13 +235,19 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False):
                 'status': 'advisory_only' if signal else 'warmup_or_no_signal'})
     if hours[:len(previous['hours'])] != previous['hours'] or decisions[:len(previous['decisions'])] != previous['decisions']:
         raise capture.CaptureError('shadow_reducer_prefix_changed')
-    return dict(schema_version='mt5-shadow-report-v1', execution_capability=False,
+    return dict(schema_version='mt5-shadow-report-v2', execution_capability=False,
         strategy_qualified=False, qualification='observed_market_shadow',
         coverage='broker_history_unverified', bar_policy='stable_observed_sample_max_gap_60s',
         price_basis='bid_ask_mid', candidate='fixed-eurusd-h4-donchian20-10-atr14',
         pnl=None, cost_status='not_modeled', fill_status='not_modeled',
         requested_through_msc=through, ticks=state['tick_count'], pages=len(state['pages']),
         source_sha256=plan.source_sha256, binding=plan.capture.binding.model_dump(mode='json'),
+        plan=plan.model_dump(mode='json'), registration_sha256=registration_sha256 or capture.checksum(plan.model_dump(mode='json')),
+        capture_state_sha256=capture.checksum(state), consumed_through_msc=limit,
+        series_from_msc=seed['series_from_msc'] if seed else plan.capture.from_msc,
+        chain_depth=seed['chain_depth'] if seed else 0,
+        cumulative_hours=(seed['cumulative_hours'] if seed else 0)+len(hours),
+        cumulative_h4_bars=(seed['cumulative_h4_bars'] if seed else 0)+len(decisions),
         python_version=sys.version, pydantic_version=PYDANTIC_VERSION,
         audited_pages=audited, hours=hours, decisions=decisions,
         candidate_state=candidate.export_state().model_dump(mode='json'),
@@ -168,21 +259,30 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False):
         data_status='warming_up' if len(candidate.history) < 20 else 'advisory_ready')
 
 
-def step(plan, directory, fetch, now_msc, *, recover=False):
+def step(plan, directory, fetch, now_msc, *, recover=False, registration_sha256=None):
     if now_msc >= plan.deadline_msc:
         return {'status': 'expired', 'execution_capability': False}
     if (directory/'STOP').exists():
         return {'status': 'stopped', 'execution_capability': False}
+    seed = warmup(plan, directory, verify_pages=recover or not (directory/'shadow.json').exists())
+    original_fetch = fetch
+    def fetch(start, end):
+        page = original_fetch(start, end)
+        if seed and any(page.get(key) != value for key, value in seed['lineage'].items()):
+            raise capture.CaptureError('shadow_predecessor_source_changed')
+        return page
     capture_dir = directory/'capture'
     result = capture.record(plan.capture, capture_dir, resume=capture_dir.exists(),
                             fetch=fetch, max_batches=1, now_msc=now_msc)
     report_path = directory/'shadow.json'
     previous = capture.checked(report_path) if report_path.exists() else None
     if previous and (previous['source_sha256'] != plan.source_sha256 or
+                     previous.get('plan') != plan.model_dump(mode='json') or
                      previous['binding'] != plan.capture.binding.model_dump(mode='json') or
                      previous['python_version'] != sys.version or previous['pydantic_version'] != PYDANTIC_VERSION):
         raise capture.CaptureError('shadow_registration_or_source_invalid')
-    report = reduce_capture(capture_dir, plan, previous, fetch, now_msc, recover=recover)
+    report = reduce_capture(capture_dir, plan, previous, fetch, now_msc, recover=recover,
+                            seed=seed, registration_sha256=registration_sha256)
     capture.store(report_path, report)
     done = result['status'] == 'complete' and now_msc >= plan.capture.to_msc+plan.settle_seconds*1000
     next_poll = (min(report['requested_through_msc']+plan.capture.page_seconds*1000,
@@ -195,6 +295,7 @@ def step(plan, directory, fetch, now_msc, *, recover=False):
     return dict(status='complete' if done else 'waiting' if result['status'] == 'complete' else result['status'],
         execution_capability=False, strategy_qualified=False, ticks=report['ticks'], pages=report['pages'],
         closed_hours=len(report['hours']), h4_bars=len(report['decisions']),
+        cumulative_hours=report['cumulative_hours'], cumulative_h4_bars=report['cumulative_h4_bars'],
         data_status=report['data_status'], requested_through_msc=report['requested_through_msc'],
         next_poll_msc=next_poll)
 
@@ -216,6 +317,7 @@ def main():
                     raise capture.CaptureError('shadow_inputs_must_be_outside_output')
         plan = Plan.model_validate(capture.read_json(args.manifest))
         if args.action == 'init':
+            warmup(plan, directory, verify_pages=True)
             directory.mkdir()
             capture.private_directory(directory)
             print(capture.encoded({'status': 'initialized', 'execution_capability': False}).decode(), end='')
@@ -229,7 +331,8 @@ def main():
         # from overlapping a capture/reducer transaction.
         with capture._exclusive_file_lock(directory/'step.lock'):
             result = step(plan, directory, ShadowReader(plan.capture, token),
-                          int(time.time()*1000), recover=args.recover)
+                          int(time.time()*1000), recover=args.recover,
+                          registration_sha256=hashlib.sha256(args.manifest.read_bytes()).hexdigest())
         print(capture.encoded(result).decode(), end='')
         return 0
     except Exception as error:

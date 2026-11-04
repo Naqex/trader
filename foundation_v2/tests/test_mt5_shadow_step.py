@@ -20,7 +20,7 @@ class ShadowStepTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.directory = self.root/'session'
         self.directory.mkdir()
-        self.raw = dict(schema_version='mt5-shadow-session-v1',
+        self.raw = dict(schema_version='mt5-shadow-session-v2',
             capture=dict(schema_version='mt5-observed-capture-v1',
                 api_origin='http://127.0.0.1:8010', symbol='EURUSD', from_msc=0,
                 to_msc=4*HOUR, page_seconds=60,

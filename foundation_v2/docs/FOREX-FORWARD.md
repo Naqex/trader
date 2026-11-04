@@ -198,7 +198,7 @@ Prepare an immutable private registration outside the new session directory:
 
 ```json
 {
-  "schema_version": "mt5-shadow-session-v1",
+  "schema_version": "mt5-shadow-session-v2",
   "capture": {"schema_version": "mt5-observed-capture-v1", "...": "same capture fields above"},
   "settle_seconds": 30,
   "deadline_msc": 0,
@@ -209,8 +209,9 @@ Prepare an immutable private registration outside the new session directory:
 The example is structural and cannot run as written. The deadline must be at
 least `capture.to_msc + settle_seconds*1000 + 2000`, at most `to_msc + 180000`.
 Settlement is 30–120 seconds; capture retains its 24-hour/10000-page bounds.
-Start must be within 60 seconds of the registered beginning and before its
-future end. Thus a historical replay is never relabelled a fresh forward.
+An independent start must be within 60 seconds of the registered beginning and
+before its future end. A verified continuation has the bounded settlement
+allowance described below; arbitrary historical replay is not a fresh forward.
 Only exact EURUSD/EURUSDm is admitted for this fixed candidate adapter. Review
 and freeze the eight source/lockfile hashes before starting; a changed source,
 binary, interpreter or registration needs a new session, not edited pins.
@@ -268,8 +269,56 @@ the earliest allowed time and actual first observation time; a later replay
 cannot backdate that decision. Closed bars alone feed the unchanged fixed
 candidate. Short sessions correctly remain `warming_up`; with no imported
 warmup, one 24-hour session cannot produce the 20 prior H4 bars needed for an
-entry. Multi-session warmup continuity is not implemented in this bounded
-slice. Do not use stale historical candles to hide this limitation.
+entry. Use the optional frozen predecessor below to retain observed warmup
+across explicitly started sessions. Do not import stale historical candles.
+
+### Warmup between finite sessions
+
+A v2 registration may include:
+
+```json
+"continuation": {
+  "state_dir": "E:/private/previous-shadow-session",
+  "report_sha256": "<checksum of the previous shadow.json value>"
+}
+```
+
+Use `capture.checksum(capture.checked(previous_dir / 'shadow.json'))` with the
+existing `scripts.mt5_observed_capture` module to obtain the report
+checksum; this hashes the canonical report value, not the file envelope. The
+predecessor must have a checksummed Rust lifecycle with status `complete`, a
+matching registration hash and matching capture/report counters. `init` and a
+cold resume verify its capture pages. The successor pins the predecessor report,
+retains H4 builder parts, candidate history and ATR, and stores only its own new
+hours/decisions plus cumulative counts. It does not copy the predecessor's ticks
+into the new session or reissue prior decisions. Its first read must preserve
+the previous SDK, broker clock and capture source lineage.
+
+Handoffs must be contiguous at an exact UTC H1 boundary: the next `from_msc`
+equals the completed predecessor's `to_msc` and consumed-hour boundary. Account,
+generation, symbol, origin, settlement policy, source pins and Python/Pydantic
+versions must match. A gap, overlap, unfinished predecessor, changed report or
+capture prefix blocks the handoff. Canonical local directories must be separate,
+with no links/junctions or nesting. Up to 32 sessions form one bounded chain;
+the normal 24-hour limit and start-time/deadline checks still apply to each.
+
+Stop/crash recovery within a partial H1 uses `resume` on the same session, not
+a new registration that discards the unfinished hour. A completed session ending
+mid-hour remains inspectable but cannot seed another. An hour-aligned handoff
+requires explicit timely start after predecessor completion; no scheduler or
+automatic rollover is added. A continuation may start up to the registered
+settlement plus 60 seconds after its beginning (90–180 seconds total), still
+before its future end. Python init verifies the completed predecessor before
+capture; adding a `continuation` object alone cannot authorize late reads.
+The actual observation time is retained for decisions. A missed window requires
+review, not unbounded backdating or changed registration/deadline pins.
+
+Old v1 sessions remain historical evidence. They cannot seed a v2 session or be
+resumed with changed source pins; do not edit their registrations/checksums to
+upgrade them. There is no owner-data migration. New v2 chains must start with
+the reviewed source and registration. The retained seed is a frozen observation,
+not an assertion that a broker can never revise older history. Long live chains,
+weekend continuity and unattended rollover remain separate operational evidence.
 
 Signals are flat-state advisory evaluations only. There is no simulated
 position, EXIT lifecycle, quantity, fill, margin, financing or P&L. Unknown

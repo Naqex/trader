@@ -58,7 +58,7 @@ jobs:
           foundation_v2/.venv/Scripts/python.exe -B foundation_v2/api-rust/tests/export_prop_schemas.py --check
           foundation_v2/.venv/Scripts/python.exe -B -m pytest foundation_v2/tests/test_api_command_worker.py foundation_v2/tests/test_api_platform_launcher.py foundation_v2/tests/test_api_platform_backup.py foundation_v2/tests/test_artifact_storage_architecture.py foundation_v2/tests/test_trades_page.py foundation_v2/tests/test_trades_page_performance.py -q
       - name: Offline Demo recovery and broker admission contracts
-        run: foundation_v2/.venv/Scripts/python.exe -B -m pytest foundation_v2/tests/test_mt5_clock.py foundation_v2/tests/test_mt5_connector.py foundation_v2/tests/test_mt5_read_worker.py foundation_v2/tests/test_mt5_tick_capture.py foundation_v2/tests/test_mt5_observed_capture.py foundation_v2/tests/test_mt5_shadow_step.py foundation_v2/tests/test_mt5_demo_session.py foundation_v2/tests/test_mt5_demo_trading.py foundation_v2/tests/test_mt5_broker_worker.py foundation_v2/tests/test_forex_forward.py -q
+        run: foundation_v2/.venv/Scripts/python.exe -B -m pytest foundation_v2/tests/test_mt5_clock.py foundation_v2/tests/test_mt5_connector.py foundation_v2/tests/test_mt5_read_worker.py foundation_v2/tests/test_mt5_tick_capture.py foundation_v2/tests/test_mt5_observed_capture.py foundation_v2/tests/test_mt5_shadow_step.py foundation_v2/tests/test_mt5_shadow_continuation.py foundation_v2/tests/test_mt5_demo_session.py foundation_v2/tests/test_mt5_demo_trading.py foundation_v2/tests/test_mt5_broker_worker.py foundation_v2/tests/test_forex_forward.py -q
   web:
     name: Web build and browser smoke
     runs-on: ubuntu-latest
