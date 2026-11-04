@@ -1,6 +1,7 @@
 //! A worker owns the entire adapter process tree, including after worker crash.
 //! Windows 10's atomic job-list spawn avoids the create/assign race.
 #[cfg(windows)]
+#[path = "owned_process/windows.rs"]
 mod windows;
 #[cfg(windows)]
 pub use windows::{

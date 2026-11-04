@@ -184,3 +184,95 @@ an independent market truth. Do not pass this cursor as a verified source
 watermark to `forex_forward.py`, or claim it is continuous-market strategy
 qualification. The stored page list can be replayed with exact same-ms ordering
 for later coverage/consumer work; trade authority remains entirely separate.
+
+## Finite observed-market shadow
+
+The Rust `mt5-shadow` binary supervises `scripts/mt5_shadow_step.py`, reusing
+the recorder and existing owned-process Windows Job implementation. It is a
+trusted local operator CLI, not an API worker or an unattended service. The
+existing API/MT5 worker remains the only SDK owner; no terminal or send path is
+added. Paperclip still owns task/run/report management. An ephemeral lifecycle
+file is a technical checkpoint, not a second task or permission ledger.
+
+Prepare an immutable private registration outside the new session directory:
+
+```json
+{
+  "schema_version": "mt5-shadow-session-v1",
+  "capture": {"schema_version": "mt5-observed-capture-v1", "...": "same capture fields above"},
+  "settle_seconds": 30,
+  "deadline_msc": 0,
+  "source_sha256": {"...": "reviewed mt5_shadow_step.source_pins() values"}
+}
+```
+
+The example is structural and cannot run as written. The deadline must be at
+least `capture.to_msc + settle_seconds*1000 + 2000`, at most `to_msc + 180000`.
+Settlement is 30–120 seconds; capture retains its 24-hour/10000-page bounds.
+Start must be within 60 seconds of the registered beginning and before its
+future end. Thus a historical replay is never relabelled a fresh forward.
+Only exact EURUSD/EURUSDm is admitted for this fixed candidate adapter. Review
+and freeze the eight source/lockfile hashes before starting; a changed source,
+binary, interpreter or registration needs a new session, not edited pins.
+
+Build with `cargo build --locked --release --bin mt5-shadow` in `api-rust/`.
+The normal `cargo run` still defaults to the API binary. On Windows, using
+absolute paths and the existing locked Python environment:
+
+```powershell
+& C:\private\bin\mt5-shadow.exe start --manifest C:\private\shadow.json --state-dir E:\private\shadow-session --python C:\private\venv\Scripts\python.exe --owner-secret-file C:\private\owner-secrets.json
+& C:\private\bin\mt5-shadow.exe status --state-dir E:\private\shadow-session
+& C:\private\bin\mt5-shadow.exe stop --state-dir E:\private\shadow-session
+& C:\private\bin\mt5-shadow.exe resume --manifest C:\private\shadow.json --state-dir E:\private\shadow-session --python C:\private\venv\Scripts\python.exe --owner-secret-file C:\private\owner-secrets.json
+```
+
+`start` refuses an existing directory. The private DACL is applied before state
+is written. Rust holds an OS lock across the session, checks STOP/deadline while
+waiting or reading, and bounds each Python step to 90 seconds/384 MiB. It sleeps
+until the next due page/settlement, not a tight polling loop. A monotonic budget
+also limits the current process lifetime if wall time moves backwards. After a
+crash, status uses the lock to distinguish interrupted from running, not PID
+alone. Resume requires the same immutable deadline and pins and explicitly
+clears STOP; expired sessions cannot restart. The existing Job handle kills
+children when the supervisor exits or crashes. No persistent scheduler, auto
+retry, startup entry or API/terminal restart is installed.
+
+The checksummed `lifecycle.json` is atomically replaced after fsync. Capture
+pages remain durable before their cursor; `shadow.json` is a deterministic
+projection of those pages plus recorded decision observation times. A crash
+between these commits replays the prefix without duplicate bars/decisions.
+Resume rechecks captured pages against the broker. HTTP/timeout/generation,
+source, checksum or revision failures stop and retain evidence; operators must
+inspect the reason before explicitly resuming. Preserve each invocation's
+stdout/stderr externally when an incident history is needed; lifecycle stores
+the latest incarnation, not an append-only incident log. `complete` only means
+the finite observation finished, even if warmup/data evaluation is incomplete.
+
+### Shadow bar policy and limits
+
+The reducer uses Bid/Ask mid prices, the same basis as the existing historical
+H4 reducer. It excludes a leading partial hour and buffers the trailing partial
+hour. Before feeding any full hour it waits the registered settlement delay and
+re-reads every overlapping page; rows/order/clock/SDK/source must match. New or
+late/backfilled rows block rather than mutate a consumed bar. Empty/quiet hours
+or an adjacent/leading/trailing quote gap over 60 seconds block the session;
+this conservative policy can reject legitimate quiet trading periods. It does
+not infer a market calendar, synthesize missing candles or silently reset the
+candidate to skip a gap. A later change to an old page is checked on explicit
+resume; the broker is not continuously re-audited after session completion.
+
+These checks produce `stable_observed_sample_max_gap_60s` with
+`broker_history_unverified`, **not** a complete-tick watermark or independent
+market truth. H4 requires all four accepted hours. Its decision records both
+the earliest allowed time and actual first observation time; a later replay
+cannot backdate that decision. Closed bars alone feed the unchanged fixed
+candidate. Short sessions correctly remain `warming_up`; with no imported
+warmup, one 24-hour session cannot produce the 20 prior H4 bars needed for an
+entry. Multi-session warmup continuity is not implemented in this bounded
+slice. Do not use stale historical candles to hide this limitation.
+
+Signals are flat-state advisory evaluations only. There is no simulated
+position, EXIT lifecycle, quantity, fill, margin, financing or P&L. Unknown
+fees remain `not_modeled`; `execution_capability` and `strategy_qualified`
+remain false. This verifies the observed data/lifecycle/consumer path, not a
+complete strategy paper trader, continuous multi-day service or profitability.

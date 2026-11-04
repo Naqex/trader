@@ -545,4 +545,5 @@ impl Child {
 }
 
 #[cfg(test)]
+#[path = "windows/tests.rs"]
 mod tests;
