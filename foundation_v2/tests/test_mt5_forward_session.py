@@ -127,6 +127,23 @@ class ForwardTests(unittest.TestCase):
         self.assertEqual(self.run_step(resume=True)['reason'],'session_finished_flat_no_entry')
         self.assertEqual(self.api.sends(),[])
 
+    def test_sdk_float_tails_normalize_but_real_subtick_and_ohlc_errors_fail(self):
+        from decimal import Decimal
+        self.snapshot['bars'][0].update(open=1.123,high=1.12345,low=1.12271,close=1.1232199999999999)
+        plan=runner.Plan.model_validate(self.plan)
+        credential=durable.Credential.model_validate(self.secret)
+        bars=runner.verify_snapshot(plan,credential,self.snapshot,self.clock)
+        self.assertEqual(bars[0].close,Decimal('1.12322'))
+        self.assertEqual(self.snapshot['bars'][0]['close'],1.1232199999999999)
+        for price in (1.123225,1.1232200001,float('nan'),float('inf'),-1,True):
+            with self.subTest(price=price):
+                self.snapshot['bars'][0]['close']=price
+                with self.assertRaises(ValueError):
+                    runner.verify_snapshot(plan,credential,self.snapshot,self.clock)
+        self.snapshot['bars'][0]['close']=1.12346
+        with self.assertRaises(ValueError):
+            runner.verify_snapshot(plan,credential,self.snapshot,self.clock)
+
     def test_missing_warmup_or_a_missed_session_cannot_report_success(self):
         self.snapshot['bars']=self.snapshot['bars'][-16:]
         self.assertEqual(self.run_step()['reason'],'insufficient_closed_h4_warmup')

@@ -212,7 +212,9 @@ two submissions; the runner cannot authorize those limits by its manifest.
 The registered input basis is `mt5_native_bid_h1_utc_v1`: all warmup and new bars
 come from the same broker H1 Bid snapshot with normalized UTC times. It is
 distinct from QDM/shadow midpoint quotes and is not a claim of complete tick
-coverage. At least 20 closed H4 bars seed the unchanged candidate. Forming H1
+coverage. Native float tails within one ULP are decoded onto the tick grid;
+real sub-tick prices fail, and raw observations remain unchanged.
+At least 20 closed H4 bars seed the unchanged candidate. Forming H1
 and bars closed less than 30 seconds ago are excluded; historical bootstrap
 never trades. Only a newly closed H4 decision, no older than 60 seconds, can
 open. Changed closed OHLC, source/SDK/clock/identity, a missing cursor, stale

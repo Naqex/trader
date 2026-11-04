@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import math
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,6 +18,21 @@ from .replay_tick_execution import BrokerReplayTick
 HOUR = 3600
 H4 = 4 * HOUR
 TICK = Decimal('0.00001')
+
+
+def sdk_tick_price(value):
+    """Decode native SDK floats while rejecting genuine sub-tick prices."""
+    if type(value) not in (int, float) or not math.isfinite(value) or value <= 0:
+        raise ValueError('sdk_tick_grid_invalid')
+    price = Decimal(str(value))
+    if not price % TICK:
+        return price
+    nearest = price.quantize(TICK)
+    tolerance = Decimal(str(math.ulp(value)))
+    # At most one floating-point ULP, never an arbitrary price rounding policy.
+    if tolerance >= TICK/2 or nearest <= 0 or abs(price-nearest) > tolerance:
+        raise ValueError('sdk_tick_grid_invalid')
+    return nearest.normalize()
 
 
 @dataclass(frozen=True)

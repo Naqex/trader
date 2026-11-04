@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 from decimal import Decimal
 import hashlib
-import math
 from pathlib import Path
 import sys
 import time
@@ -18,7 +17,7 @@ from pydantic import Field, model_validator
 from pydantic.version import VERSION as PYDANTIC_VERSION
 from scripts import mt5_observed_capture as capture
 from trading_workspace_v2.forex_h4 import (Candle, FixedH4Candidate, H4Builder,
-    H4BuilderState, H4CandidateState, HOUR, H4, TICK)
+    H4BuilderState, H4CandidateState, HOUR, H4, TICK, sdk_tick_price)
 
 HOUR_MS = HOUR * 1000
 SOURCES = {
@@ -166,16 +165,10 @@ def warmup(plan, directory, *, verify_pages=False):
 
 
 def _tick_price(value):
-    price = Decimal(str(value))
-    if not price % TICK:
-        return price
-    nearest = price.quantize(TICK)
-    # SDK/JSON floats can carry a one-ULP representation tail on a valid quote.
-    # A real sub-tick price must still fail; raw capture and hashes stay intact.
-    tolerance = Decimal(str(math.ulp(value)))
-    if tolerance >= TICK/2 or nearest <= 0 or abs(price-nearest) > tolerance:
-        raise capture.CaptureError('shadow_tick_grid_invalid')
-    return nearest.normalize()
+    try:
+        return sdk_tick_price(value)
+    except ValueError:
+        raise capture.CaptureError('shadow_tick_grid_invalid') from None
 
 
 def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, seed=None,

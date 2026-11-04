@@ -20,7 +20,7 @@ V2 = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(V2))
 from pydantic import Field, model_validator
 from scripts import mt5_demo_session as durable
-from trading_workspace_v2.forex_h4 import CandleState, FixedH4Candidate, H4Builder, H4CandidateState, H4BuilderState, HOUR, H4, TICK
+from trading_workspace_v2.forex_h4 import CandleState, FixedH4Candidate, H4Builder, H4CandidateState, H4BuilderState, HOUR, H4, TICK, sdk_tick_price
 
 SCHEMA = 'mt5-forward-session-state-v1'
 BASIS = 'mt5_native_bid_h1_utc_v1'
@@ -111,9 +111,7 @@ def verify_snapshot(plan, credential, value, now):
         if dt.microsecond or t % HOUR or (previous is not None and t <= previous):
             raise ValueError('bar_order_or_alignment_invalid')
         previous = t
-        candle = CandleState(timestamp=t, **{k:raw[k] for k in ('open','high','low','close')})
-        if any(v % TICK for k,v in candle.model_dump().items() if k != 'timestamp'):
-            raise ValueError('bar_tick_grid_invalid')
+        candle = CandleState(timestamp=t, **{k:sdk_tick_price(raw[k]) for k in ('open','high','low','close')})
         # The currently forming native bar is never consumed or used as warmup.
         if (t+HOUR)*1000 <= min(stamp, observed)-30000:
             closed.append(candle)
