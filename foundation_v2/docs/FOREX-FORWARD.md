@@ -255,6 +255,29 @@ stdout/stderr externally when an incident history is needed; lifecycle stores
 the latest incarnation, not an append-only incident log. `complete` only means
 the finite observation finished, even if warmup/data evaluation is incomplete.
 
+### Choose resume or offline reprocessing
+
+For a process interruption with unchanged code/pins and an unexpired deadline,
+use `mt5-shadow resume` on the same session. If capture is durable but a reducer
+bug needs a code fix, first reuse those pages offline:
+
+```powershell
+& C:\private\venv\Scripts\python.exe .\scripts\mt5_shadow_reprocess.py --manifest C:\private\old-registration.json --state-dir E:\private\old-session --output-dir E:\private\new-offline-result
+```
+
+The output must be new and separate. The command verifies capture checksums,
+binding, cursor and source pins; only the reducer `step` pin may differ. A changed
+candidate/capture/dependency contract or an imported predecessor requires a
+separate compatibility review. No credentials, native reader or broker calls are
+used. Stored-page re-reading verifies local integrity only, not broker stability.
+Inputs stay unchanged and concurrent cursor changes fail without publishing.
+
+`reprocess.json` is an offline projection with `continuation_eligible=false`,
+not a live lifecycle or an eligible warmup seed. Failed/expired lifecycle history
+remains intact. Reprocessing reuses the recorded prefix; a new targeted live
+check is justified only for a remaining transport/lifecycle behavior. Do not
+repeat an entire market observation merely to verify a calculation fix.
+
 ### Shadow bar policy and limits
 
 The reducer uses Bid/Ask mid prices, the same basis as the existing historical

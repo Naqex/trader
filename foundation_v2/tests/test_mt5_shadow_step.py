@@ -9,6 +9,7 @@ from io import BytesIO
 
 from scripts import mt5_observed_capture as capture
 from scripts import mt5_shadow_step as shadow
+from scripts import mt5_shadow_reprocess as offline
 
 HOUR = shadow.HOUR_MS
 
@@ -173,6 +174,58 @@ class ShadowStepTests(unittest.TestCase):
             with self.assertRaisesRegex(capture.CaptureError,'shadow_native_http_503_demo_terminal_busy'):
                 shadow.ShadowReader(self.plan.capture,'private-fixture')(0,60000)
             self.assertEqual(native.call_count,1)
+
+    def test_reprocess_saved_capture_after_reducer_change_without_live_resume(self):
+        self.record(through=HOUR)
+        raw = {**self.raw, 'source_sha256': {**self.raw['source_sha256'], 'step': 'c'*64}}
+        manifest = self.root/'old-registration.json'
+        manifest.write_bytes(capture.encoded(raw))
+        paths = [manifest, *sorted((self.directory/'capture').glob('*.json'))]
+        before = {p:p.read_bytes() for p in paths}
+        with patch.object(capture.NativeReader, '__call__', side_effect=AssertionError('network forbidden')):
+            result = offline.reprocess(manifest, self.directory, self.root/'offline',
+                                       now_msc=self.plan.deadline_msc+1)
+        self.assertEqual(len(result['report']['hours']), 1)
+        self.assertFalse(result['execution_capability'])
+        self.assertFalse(result['continuation_eligible'])
+        self.assertEqual(result['network_reads'], 0)
+        self.assertEqual({p:p.read_bytes() for p in paths}, before)
+        self.assertFalse((self.root/'offline/lifecycle.json').exists())
+        with self.assertRaisesRegex(capture.CaptureError, 'output_must_be_new_and_separate'):
+            offline.reprocess(manifest, self.directory, self.root/'offline')
+
+    def test_reprocess_rejects_changed_contract_or_tampered_capture(self):
+        self.record(through=HOUR)
+        manifest = self.root/'old-registration.json'
+        raw = copy.deepcopy(self.raw)
+        raw['source_sha256']['candidate'] = 'c'*64
+        manifest.write_bytes(capture.encoded(raw))
+        with self.assertRaisesRegex(capture.CaptureError, 'compatibility_review_required'):
+            offline.reprocess(manifest, self.directory, self.root/'offline')
+        manifest.write_bytes(capture.encoded(self.raw))
+        page = self.directory/'capture/00000.json'
+        value = capture.checked(page)
+        value['rows'][0]['bid'] = 1.05
+        capture.store(page, value)
+        with self.assertRaises(capture.CaptureError):
+            offline.reprocess(manifest, self.directory, self.root/'offline')
+        self.assertFalse((self.root/'offline').exists())
+
+    def test_reprocess_refuses_input_alias_and_changed_manifest_without_publishing(self):
+        self.record(through=HOUR)
+        manifest = self.root/'old-registration.json'
+        manifest.write_bytes(capture.encoded(self.raw))
+        with self.assertRaisesRegex(capture.CaptureError, 'output_must_be_new_and_separate'):
+            offline.reprocess(manifest, self.directory, self.directory/'offline')
+        original = shadow.reduce_capture
+        def changed(*args, **kwargs):
+            report = original(*args, **kwargs)
+            manifest.write_bytes(manifest.read_bytes()+b' ')
+            return report
+        with patch.object(shadow, 'reduce_capture', side_effect=changed):
+            with self.assertRaisesRegex(capture.CaptureError, 'inputs_changed'):
+                offline.reprocess(manifest, self.directory, self.root/'offline')
+        self.assertFalse((self.root/'offline').exists())
 
 
 if __name__=='__main__':
