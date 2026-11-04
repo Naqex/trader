@@ -27,6 +27,29 @@ pause/resume and disconnect still revoke older generations; delayed cleanup must
 preserve a worker that already belongs to the new generation. Remove preserves
 the existing unresolved-submission gate. These operations grant no order authority.
 
+### Connection diagnostics
+
+The API emits JSON `mt5_connection_transition` events only when collector status
+or error code changes. Each record includes UTC timestamp, workspace/connection
+ID, generation, old/new status and old/new machine error codes. The connection ID
+identifies the account without logging its login, name, credentials or snapshot.
+The before/after pair comes from the same locked database update; stale-generation
+writes and unchanged healthy/error polling emit no transition. Terminal lock
+contention keeps the previously verified status, so it is not a disconnect event.
+
+Explicit connect, sync, pause/resume, disconnect and remove actions emit
+`mt5_connection_action` after persistence. These correlate a user-requested refresh
+with a temporary queued/syncing state instead of assuming every unavailable read
+means broker network failure. Logs are diagnostic history, not a state store or
+proof that the broker connection was continuously healthy.
+
+Enable this module when the runtime otherwise uses `RUST_LOG=warn`:
+`RUST_LOG=warn,trading_workspace_api::mt5_connector=info` in the owned launcher
+environment. Keep the launcher-sanitized `platform-<run_id>-api.out.log` with the
+matching owner manifest/receipt. No extra collector, database migration or logging
+service is required. Logs follow the existing runtime's retention/backup policy;
+they do not reconstruct incidents before instrumentation was enabled.
+
 ## Market subscriptions
 
 - One producer per workspace, subject, connection, symbol and timeframe; up to
