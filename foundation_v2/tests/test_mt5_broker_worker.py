@@ -64,6 +64,7 @@ class WorkerTests(unittest.TestCase):
             worker.fence(request,'collect')
             worker.fence(request,'health')
             worker.fence(request,'snapshot')
+            worker.fence(request,'ticks')
             for operation in ('preview','command','reconcile'):
                 with self.subTest(operation=operation),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
                     worker.fence(request,operation)
@@ -99,6 +100,23 @@ class WorkerTests(unittest.TestCase):
             sdk.order_send.assert_not_called()
             sdk.shutdown.assert_not_called()
             process.return_value.terminate.assert_not_called()
+
+    def test_tick_capture_is_fenced_read_only_and_rechecks_identity(self):
+        session = self.session()
+        session.context['requested_mode'] = 'read_only'
+        request = {**self.request,'requested_mode':'read_only','operation':'ticks',
+                   'symbol':'EURUSD','from_msc':100000,'to_msc':110000}
+        with patch.object(worker.mt5_tick_capture,'capture',return_value={'status':'ready'}) as capture:
+            self.assertEqual(session.handle(request),{'status':'ready'})
+            capture.assert_called_once_with(session.sdk,'Fixture','EURUSD',100000,110000)
+        self.assertEqual(session.guard.call_count,2)
+        self.assertEqual(session.check_identity.call_count,2)
+        session.sdk.symbols_get.assert_not_called()
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
+        session.context['generation'] = 4
+        with self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+            session.handle(request)
 
     def test_startup_wait_is_bounded_and_closes_its_handle_on_failure(self):
         import ctypes

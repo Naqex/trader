@@ -64,3 +64,32 @@ and `node run_live_market_acceptance.mjs` from `web/`; the latter uses a labeled
 synthetic SSE server and blocks non-read API methods. Real SDK performance and
 broker acceptance must be reported separately. No order submission is part of
 this workflow.
+
+## Restartable quote capture
+
+Use `GET /api/v2/live/trading/ticks` for bounded tick-history pages rather than
+turning SSE snapshots into an audit trail. It uses the existing authenticated
+connection/worker, terminal lock and generation/identity fences, including
+read-only connections. No second SDK attachment or terminal is created.
+The consumer explicitly supplies `connection_id`, current `generation`, exact
+`symbol`, `from_msc` and `to_msc`. Ranges are half-open UTC, second aligned,
+at most 60 seconds, and end at least two seconds before host UTC. A page over
+5000 returned SDK rows fails instead of truncating; use a smaller registered
+page size. Revoked/paused/reconnected bindings fail closed.
+
+The SDK uses `COPY_TICKS_ALL`; output retains Bid/Ask, flags, raw/UTC timestamps
+and original ordering, including identical events in the same millisecond. This
+is a quote capture contract, not a trade-volume or market-depth feed. FTMO queries
+use the verified broker-clock profile; ambiguous DST intervals fail closed.
+Response lineage includes connection/account/generation, clock, SDK version and
+executed decoder/capture source hashes. HTTP authentication is still required;
+this read route grants no execution capability.
+
+An empty/successful range is **not** proof of complete broker tick coverage.
+The SDK may backfill or revise history. Pages explicitly report
+`coverage=broker_history_unverified`; their requested end is not a verified
+event watermark for closing a strategy bar or authorizing an order. See
+[bounded capture/recovery](FOREX-FORWARD.md#bounded-observed-quote-capture).
+
+Primary SDK contract:
+[MetaQuotes copy_ticks_range](https://www.mql5.com/en/docs/python_metatrader5/mt5copyticksrange_py).

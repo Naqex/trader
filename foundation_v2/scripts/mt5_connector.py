@@ -25,7 +25,9 @@ ERRORS = {'mt5_login_failed', 'mt5_disconnected', 'mt5_identity_changed',
           'mt5_sync_timeout', 'mt5_terminal_unavailable', 'mt5_version_unsupported',
           'mt5_initialization_failed', 'mt5_auth_failed', 'mt5_trading_disabled',
           'mt5_account_mode_unsupported', 'mt5_connection_revoked', 'mt5_terminal_stopped',
-          'mt5_clock_unavailable'}
+          'mt5_clock_unavailable', 'mt5_tick_range_invalid', 'mt5_tick_symbol_invalid',
+          'mt5_tick_symbol_unavailable', 'mt5_tick_history_unavailable',
+          'mt5_tick_page_too_large', 'mt5_tick_data_invalid', 'mt5_tick_order_invalid'}
 
 TERMINAL_BINARIES = ('terminal64.exe', 'MetaEditor64.exe', 'metatester64.exe')
 

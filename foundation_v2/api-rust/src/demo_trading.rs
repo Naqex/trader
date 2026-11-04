@@ -24,6 +24,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 mod automation;
 pub(crate) mod market_stream;
+mod ticks;
 
 pub const ROUTES: &[(&str, &str)] = &[
     ("GET", "/api/v2/live/trading"),
@@ -36,6 +37,7 @@ pub const ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/v2/automation/trading/commands"),
     ("POST", "/api/v2/automation/trading/reconcile"),
     ("GET", "/api/v2/automation/trading/requests/{request_id}"),
+    ("GET", ticks::PATH),
 ];
 pub fn native(method: &str, path: &str) -> bool {
     ROUTES.contains(&(method, path))
@@ -47,6 +49,7 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route(ROUTES[2].1, post(command))
         .route(ROUTES[3].1, post(reconcile))
         .route(ROUTES[4].1, get(market_stream::events))
+        .route(ticks::PATH, get(ticks::read))
         .merge(automation::routes())
 }
 fn error(status: StatusCode, reason: &str) -> ApiError {
@@ -1006,7 +1009,10 @@ async fn adapter_for_inner(
                 .and_then(|row| {
                     managed_record(
                         row,
-                        matches!(input["operation"].as_str(), Some("snapshot" | "symbols")),
+                        matches!(
+                            input["operation"].as_str(),
+                            Some("snapshot" | "symbols" | "ticks")
+                        ),
                     )
                     .map_err(|_| "mt5_permissions_unverified".to_owned())
                 })?;

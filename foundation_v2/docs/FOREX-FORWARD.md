@@ -117,4 +117,70 @@ stays separately gated.
 
 Read-only native market SSE is a sampled latest-state chart feed, not a durable
 tick audit stream; see [its contract](LIVE-MARKET-STREAM.md). An actual observed
-forward service needs a separately specified durable source/cursor and lifecycle.
+forward service also needs qualified data coverage and lifecycle; the bounded
+capture below supplies a durable requested-range cursor, not those guarantees.
+
+## Bounded observed quote capture
+
+`scripts/mt5_observed_capture.py` records quote pages through the existing native
+HTTP/owned MT5 worker path. It does not import the SDK, run the H4 strategy,
+consume the offline QDM registration, create grants or send broker commands.
+Use a separate private directory per immutable capture registration:
+
+```json
+{
+  "schema_version": "mt5-observed-capture-v1",
+  "api_origin": "http://127.0.0.1:8010",
+  "binding": {
+    "workspace_id": "tenant-a",
+    "connection_id": "<current connection UUID>",
+    "generation": 19,
+    "login": "<verified demo login>",
+    "server": "<verified broker server>",
+    "environment": "demo"
+  },
+  "symbol": "<exact broker symbol>",
+  "from_msc": 1793766000000,
+  "to_msc": 1793766060000,
+  "page_seconds": 10
+}
+```
+
+These are structural examples, not current account parameters. Read the current
+binding before registering; reconnect requires a new capture, not editing an
+old generation. A session spans at most 24 hours/10000 pages, each 1–60 seconds
+and at most 5000 rows. One invocation commits at most `--max-batches` (default
+12, maximum 360). It exits `waiting` if the next interval is not yet closed;
+there is no sleep/retry daemon, installed timer or auto boot configuration.
+
+```powershell
+.\.venv\Scripts\python.exe scripts/mt5_observed_capture.py start --manifest C:\private\capture.json --owner-secret-file C:\private\owner-secrets.json --state-dir E:\private\capture-session --max-batches 3
+.\.venv\Scripts\python.exe scripts/mt5_observed_capture.py resume --manifest C:\private\capture.json --owner-secret-file C:\private\owner-secrets.json --state-dir E:\private\capture-session --max-batches 3
+.\.venv\Scripts\python.exe scripts/mt5_observed_capture.py status --state-dir E:\private\capture-session
+```
+
+Only a trusted local operator process supplies the existing private Owner secret
+file (`owner_bearer`), never its value in arguments/reports or a trading runner's
+environment. This client issues only the fixed native GET route, disables
+environment proxies/redirects and accepts an exact numeric loopback origin.
+The client is not a security sandbox for an agent with arbitrary filesystem/code
+access. Keep manifest/secret outside the output directory; pages contain account
+lineage and are private. Neither credentials nor secrets are copied into pages.
+
+Each page is fsynced and checksummed before an atomic checkpoint advances the
+requested interval. A file lock prevents concurrent writers. Resume validates
+every committed page/cursor and the client hash, then re-reads the final committed
+window from the broker. Different rows/order/clock/SDK/source/binding stop the
+capture with the original prefix retained. After a crash between page and cursor
+commit, the uncommitted page is re-read/compared before adoption exactly once.
+HTTP/SDK/invalid-data failures leave the last durable cursor intact. A `STOP`
+file blocks further reads; remove it only when the operator elects to resume.
+
+The cursor is named `requested_through_msc`. Every page/result retains
+`broker_history_unverified`, including empty ranges. Rechecking the final window
+detects revisions there; it does not prove older pages can never change or that
+the broker supplied all events. Immutable files preserve what was observed, not
+an independent market truth. Do not pass this cursor as a verified source
+watermark to `forex_forward.py`, or claim it is continuous-market strategy
+qualification. The stored page list can be replayed with exact same-ms ordering
+for later coverage/consumer work; trade authority remains entirely separate.
