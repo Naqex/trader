@@ -8,6 +8,7 @@ from runtime_paths import postgres_bin
 import socket
 import subprocess
 import tempfile
+import psycopg
 
 FOUNDATION = Path(__file__).resolve().parents[1]
 PG_BIN = postgres_bin("TW_COMMAND_TEST_PG_BIN")
@@ -35,7 +36,12 @@ def main():
             pg("pg_ctl.exe", "-D", str(data), "-l", str(root / "postgres.log"), "-o",
                f"-h 127.0.0.1 -p {port} -c max_connections=30 -c shared_buffers=32MB", "-w", "start")
             started = True
-            pg("createdb.exe", "-h", "127.0.0.1", "-p", str(port), "-U", "rust_runtime_fixture", "rust_runtime_fixture")
+            # Embedded distributions can ship the server/initdb without createdb.
+            # This connection is bound to the fresh owned cluster, never an app DSN.
+            with psycopg.connect(host="127.0.0.1", port=port, user="rust_runtime_fixture",
+                                 dbname="postgres", autocommit=True, connect_timeout=5) as conn:
+                assert conn.execute("SELECT current_user").fetchone()[0] == "rust_runtime_fixture"
+                conn.execute("CREATE DATABASE rust_runtime_fixture")
             env = dict(os.environ)
             env.update(TW_RUST_RUNTIME_TEST_DSN=f"host=127.0.0.1 port={port} user=rust_runtime_fixture dbname=rust_runtime_fixture",
                        TW_RUST_RUNTIME_DISPOSABLE="1", TW_RUST_RUNTIME_TEST_ARTIFACTS=str(artifacts))

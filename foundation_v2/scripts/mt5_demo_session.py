@@ -16,6 +16,7 @@ import tempfile
 import time
 from typing import Literal
 from urllib import error, request
+from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
 
 V2 = Path(__file__).resolve().parents[1]
@@ -101,7 +102,11 @@ class NativeClient:
         receipt = path.startswith('/api/v2/automation/trading/requests/')
         if receipt:
             UUID(path.rsplit('/', 1)[1])
-        if not ((receipt and body is None) or
+        snapshot = urlsplit(path)
+        is_snapshot = (snapshot.path == '/api/v2/automation/trading/snapshot' and body is None
+            and parse_qs(snapshot.query) == {'symbol': [getattr(self.plan, 'symbol', None)]}
+            and not snapshot.fragment)
+        if not ((receipt and body is None) or is_snapshot or
                 (path in ('/api/v2/automation/trading/commands', '/api/v2/automation/trading/reconcile') and body is not None)):
             raise ValueError('runner route denied')
         req = request.Request(self.plan.api_origin + path,
@@ -113,8 +118,9 @@ class NativeClient:
         except error.HTTPError as response_error:
             response = response_error
         with response:
-            raw = response.read(LIMIT + 1)
-            if len(raw) > LIMIT:
+            limit = 256 * 1024 if is_snapshot else LIMIT
+            raw = response.read(limit + 1)
+            if len(raw) > limit:
                 raise ValueError('native response exceeds limit')
             result = json.loads(raw)
             if not isinstance(result, dict):
@@ -140,11 +146,11 @@ def save(path, state):
             os.unlink(name)
 
 
-def load(path):
+def load(path, schema='mt5-demo-session-state-v1'):
     record = read_json(path)
     if (set(record) != {'state', 'sha256'} or
             digest(encoded(record['state'])) != record['sha256'] or
-            record['state'].get('schema_version') != 'mt5-demo-session-state-v1'):
+            record['state'].get('schema_version') != schema):
         raise ValueError('session checkpoint integrity failed')
     return record['state']
 
@@ -173,49 +179,54 @@ def settled(result, volume):
                                        result.get('requires_reconciliation') is not True)
 
 
+def submit_once(plan, credential, state, path, client, label, command, *, reconcile_only, now):
+    attempt = state[label]
+    if attempt is None:
+        if reconcile_only or (path.parent / 'STOP').exists() or now() >= plan.expires_at:
+            return None
+        # Crash before/after POST is deliberately ambiguous: resume reads and
+        # reconciles this same ID. A 404 is never permission to POST it again.
+        attempt = state[label] = {'command': command, 'intent_at_utc': now().isoformat()}
+        save(path, state)
+        started = time.monotonic()
+        try:
+            code, result = client.call('/api/v2/automation/trading/commands',
+                {'artifact_sha256': plan.artifact_sha256, 'command': command})
+            attempt['http_status'] = code
+            if code == 200 and matches(result, command, plan, credential):
+                attempt['result'] = result
+        except (OSError, ValueError):
+            attempt['transport_outcome'] = 'unknown'
+        attempt['request_elapsed_ms'] = round((time.monotonic() - started) * 1000)
+        save(path, state)
+    elif attempt['command'] != command:
+        raise ValueError('saved intent differs from registered command')
+    result = attempt.get('result', {})
+    if not settled(result, command['volume']):
+        for route, body in (
+            ('/api/v2/automation/trading/requests/' + command['request_id'], None),
+            ('/api/v2/automation/trading/reconcile',
+             {'request_id': command['request_id'], 'connection_id': command['connection_id']})):
+            try:
+                code, readback = client.call(route, body)
+                attempt['reconciliation_http_status'] = code
+                if code == 200 and matches(readback, command, plan, credential):
+                    result = attempt['result'] = readback
+            except (OSError, ValueError):
+                attempt['reconciliation_transport'] = 'unavailable'
+            save(path, state)
+            if settled(result, command['volume']):
+                break
+    return result
+
+
 def advance(plan, credential, state, path, client, *, reconcile_only, now):
     def store():
         save(path, state)
 
     def submit_or_read(label, command):
-        attempt = state[label]
-        if attempt is None:
-            if reconcile_only or (path.parent / 'STOP').exists() or now() >= plan.expires_at:
-                return None
-            # Crash before/after POST is deliberately ambiguous: resume reads and
-            # reconciles this same ID. A 404 is never permission to POST it again.
-            attempt = state[label] = {'command': command, 'intent_at_utc': now().isoformat()}
-            store()
-            started = time.monotonic()
-            try:
-                code, result = client.call('/api/v2/automation/trading/commands',
-                    {'artifact_sha256': plan.artifact_sha256, 'command': command})
-                attempt['http_status'] = code
-                if code == 200 and matches(result, command, plan, credential):
-                    attempt['result'] = result
-            except (OSError, ValueError):
-                attempt['transport_outcome'] = 'unknown'
-            attempt['request_elapsed_ms'] = round((time.monotonic() - started) * 1000)
-            store()
-        elif attempt['command'] != command:
-            raise ValueError('saved intent differs from registered command')
-        result = attempt.get('result', {})
-        if not settled(result, command['volume']):
-            for route, body in (
-                ('/api/v2/automation/trading/requests/' + command['request_id'], None),
-                ('/api/v2/automation/trading/reconcile',
-                 {'request_id': command['request_id'], 'connection_id': command['connection_id']})):
-                try:
-                    code, readback = client.call(route, body)
-                    attempt['reconciliation_http_status'] = code
-                    if code == 200 and matches(readback, command, plan, credential):
-                        result = attempt['result'] = readback
-                except (OSError, ValueError):
-                    attempt['reconciliation_transport'] = 'unavailable'
-                store()
-                if settled(result, command['volume']):
-                    break
-        return result
+        return submit_once(plan, credential, state, path, client, label, command,
+                           reconcile_only=reconcile_only, now=now)
 
     entry = plan.entry.model_dump(mode='json')
     opening = submit_or_read('opening', entry)

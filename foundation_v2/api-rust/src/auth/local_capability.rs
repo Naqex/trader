@@ -249,6 +249,7 @@ fn automation_route(method: &str, route: &str) -> bool {
     matches!(
         (method, route),
         ("POST", "/api/v2/automation/trading/commands")
+            | ("GET", "/api/v2/automation/trading/snapshot")
             | ("POST", "/api/v2/automation/trading/reconcile")
             | ("GET", "/api/v2/automation/trading/requests/{request_id}")
     )
@@ -632,6 +633,7 @@ mod tests {
             .is_err()
         );
         for (method, route) in [
+            ("GET", "/api/v2/automation/trading/snapshot"),
             ("POST", "/api/v2/automation/trading/commands"),
             ("POST", "/api/v2/automation/trading/reconcile"),
             ("GET", "/api/v2/automation/trading/requests/{request_id}"),

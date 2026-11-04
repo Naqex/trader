@@ -263,6 +263,30 @@ async fn check_connection(
     Ok(())
 }
 
+/// Read-only policy access, including after expiry/revocation. Not admission.
+pub async fn inspect(
+    tx: &Transaction<'_>,
+    identity: &AutomationIdentity,
+) -> Result<StoredGrant, ApiError> {
+    let row = tx
+        .query_opt(
+            "SELECT * FROM automation_grants WHERE workspace_id=$1 AND grant_id=$2",
+            &[&identity.workspace_id, &identity.grant_id],
+        )
+        .await
+        .map_err(|_| ApiError::database())?
+        .ok_or_else(|| denied("automation_grant_missing"))?;
+    if row.get::<_, Uuid>("credential_id") != identity.credential_id
+        || !same_digest(
+            &row.get::<_, String>("credential_sha256"),
+            &identity.token_sha256,
+        )
+    {
+        return Err(denied("automation_credential_invalid"));
+    }
+    stored(&row)
+}
+
 /// Caller must keep this transaction through the final adapter operation, or
 /// re-load under the same terminal lock immediately before submission.
 pub async fn load(
@@ -1110,6 +1134,7 @@ mod tests {
             load(&tx, &identity).await.unwrap_err().1["detail"],
             "automation_grant_revoked"
         );
+        assert_eq!(inspect(&tx, &identity).await.unwrap().status, "revoked");
         tx.rollback().await.unwrap();
         assert!(
             resolve_credential(&pool, &scope.workspace_id, &token_hash)
@@ -1143,6 +1168,14 @@ mod tests {
             load(&tx, &expiring_identity).await.unwrap_err().1["detail"],
             "automation_grant_expired"
         );
+        assert!(inspect(&tx, &expiring_identity).await.is_ok());
+        let wrong_identity = AutomationIdentity {
+            workspace_id: expiring_identity.workspace_id.clone(),
+            grant_id: expiring_identity.grant_id,
+            credential_id: Uuid::new_v4(),
+            token_sha256: expiring_identity.token_sha256.clone(),
+        };
+        assert!(inspect(&tx, &wrong_identity).await.is_err());
         tx.rollback().await.unwrap();
         drop(conn);
         pool.close();

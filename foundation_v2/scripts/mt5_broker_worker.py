@@ -19,6 +19,9 @@ import mt5_demo_trading as trading
 import mt5_symbol_catalog
 import mt5_tick_capture
 
+SNAPSHOT_SOURCES = {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                    for name in ('mt5_broker_worker.py', 'mt5_demo_trading.py', 'mt5_clock.py')}
+
 
 def fence(request, operation):
     """A saved password alone never grants authority after pause/reconnect/remove."""
@@ -250,7 +253,12 @@ class Session:
                             break
                     if not symbol:
                         trading.deny('demo_quote_unavailable')
+                if any(hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest() != sha
+                       for name, sha in SNAPSHOT_SOURCES.items()):
+                    trading.deny('demo_snapshot_source_changed')
                 result = trading.snapshot(self.sdk, policy, symbol, request.get('timeframe','M1'), request.get('bar_count',300))
+                result['source_sha256'] = SNAPSHOT_SOURCES
+                result['sdk_version'] = str(self.sdk.__version__)
                 result['account']['trade_mode'] = mode
                 result['account_environment'] = mode
                 result['verified_permissions'] = {'read':True,'trade':not read_only}

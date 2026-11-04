@@ -47,6 +47,7 @@ class WorkerTests(unittest.TestCase):
         session.guard=Mock()
         session.check_identity=Mock(return_value=NS(trade_mode=0))
         session.sdk=Mock()
+        session.sdk.__version__='fixture-sdk'
         session.sdk.symbols_get.return_value=(NS(name='EURUSD',trade_mode=4,visible=True),)
         session.sdk.symbol_info_tick.return_value=NS(bid=1.1,ask=1.1001)
         session.secret={'login':'123','server':'Fixture','password':'fixture-only'}
@@ -181,6 +182,8 @@ class WorkerTests(unittest.TestCase):
             result=session.handle(request)
         self.assertFalse(result['execution_enabled'])
         self.assertEqual(result['verified_permissions'],{'read':True,'trade':False})
+        self.assertEqual(result['sdk_version'],'fixture-sdk')
+        self.assertEqual(result['source_sha256'],worker.SNAPSHOT_SOURCES)
         session.sdk.order_check.assert_not_called()
         session.sdk.order_send.assert_not_called()
 
@@ -191,6 +194,16 @@ class WorkerTests(unittest.TestCase):
         with patch.object(worker.trading,'snapshot',return_value={'account':{}}) as snapshot:
             session.handle({**self.request,'operation':'snapshot'})
         self.assertEqual(snapshot.call_args.args[2],'EURUSDm')
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
+
+    def test_changed_snapshot_source_is_rejected_before_sdk_snapshot(self):
+        session=self.session()
+        with patch.dict(worker.SNAPSHOT_SOURCES,{'mt5_clock.py':'0'*64}), \
+                patch.object(worker.trading,'snapshot') as snapshot, \
+                self.assertRaisesRegex(worker.trading.Denied,'demo_snapshot_source_changed'):
+            session.handle({**self.request,'operation':'snapshot','symbol':'EURUSD'})
+        snapshot.assert_not_called()
         session.sdk.order_check.assert_not_called()
         session.sdk.order_send.assert_not_called()
 

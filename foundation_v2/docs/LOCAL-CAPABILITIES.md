@@ -64,6 +64,7 @@ The runner may only:
 | POST | `/api/v2/automation/trading/commands` | One bounded submission through the native receipt/adapter |
 | GET | `/api/v2/automation/trading/requests/{request_id}` | Read its own grant/credential receipt |
 | POST | `/api/v2/automation/trading/reconcile` | Read broker history to reconcile; never resend |
+| GET | `/api/v2/automation/trading/snapshot?symbol=...` | Read only the grant account/generation and an allowed symbol; fixed H1, at most 300 bars |
 
 The same UUID and fingerprint returns the existing receipt. Conflicting reuse
 is rejected. An unknown receipt and risk reservation commit together before the
@@ -190,6 +191,58 @@ drift exceeded policy, without exposing other positions.
 Exit codes: 0 = proven open/close completion, 3 = blocked/stopped/attention,
 2 = input/transport/checkpoint error. Paperclip continues to own tasks/reports;
 do not add a second workflow-management UI around the session client.
+
+### Decision-driven finite forward session
+
+`scripts/mt5_forward_session.py` reuses the same transport, durable command
+intents, receipt identity checks, file locking and native risk admission. The
+immediate-pair client above keeps its original behavior. The forward runner
+receives only its Automation credential; it cannot create/revoke grants, read
+Owner routes, renew expiry, reconnect a terminal or change budgets.
+
+Register `mt5-forward-session-v1` with an immutable session UUID, exact account /
+connection generation, artifact digest, local API origin, source pins, native
+adapter hashes, SDK version and clock metadata. `starts_at < finish_at <
+expires_at` bounds the session to at most 15 minutes, with 30–120 seconds left
+for a final close. Scope is USD EURUSD/EURUSDm, one cycle, 0.01 lot, at most $2
+modeled downside and an explicit cost buffer of at least $20 per lot. The
+controller must create a matching native grant with at most one position and
+two submissions; the runner cannot authorize those limits by its manifest.
+
+The registered input basis is `mt5_native_bid_h1_utc_v1`: all warmup and new bars
+come from the same broker H1 Bid snapshot with normalized UTC times. It is
+distinct from QDM/shadow midpoint quotes and is not a claim of complete tick
+coverage. At least 20 closed H4 bars seed the unchanged candidate. Forming H1
+and bars closed less than 30 seconds ago are excluded; historical bootstrap
+never trades. Only a newly closed H4 decision, no older than 60 seconds, can
+open. Changed closed OHLC, source/SDK/clock/identity, a missing cursor, stale
+quotes, foreign exposure or unresolved submissions block new work.
+
+Broker receipts and inventory determine positions, never the paper ledger.
+Candidate EXIT or the explicitly registered finite session end can close the
+proven owned full position. A full close receipt still needs a subsequent flat
+inventory read. External SL closure may also prove flat by inventory; its P&L
+is not inferred. STOP, pause, revoke, expiry and unknown outcomes preserve
+attention/exposure; none means flat. Saved observations, decisions and intents
+allow resume without replaying a POST, including a crash between decision and
+intent. Reads/reconciliation remain possible after revoke/expiry while the
+account/generation still matches. Source changes prevent new sends.
+
+```powershell
+python -X utf8 scripts/mt5_forward_session.py watch --manifest C:\private\forward.json --credential-file C:\private\grant.json --state-dir C:\private\forward
+python -X utf8 scripts/mt5_forward_session.py status --state-dir C:\private\forward
+python -X utf8 scripts/mt5_forward_session.py resume --manifest C:\private\forward.json --credential-file C:\private\grant.json --state-dir C:\private\forward
+python -X utf8 scripts/mt5_forward_session.py reconcile --manifest C:\private\forward.json --credential-file C:\private\grant.json --state-dir C:\private\forward
+```
+
+`watch` is a finite supervised process, not a daemon or automatic restart. It
+prints phase/cursor/observation time every step (about two seconds plus HTTP
+time); retain PID, stdout/stderr and checkpoint paths and project the result
+into the existing native Paperclip task. If no new signal occurs, completing
+flat without an order is valid; do not force a broker entry for a green test.
+This proves system behavior, not profitability, a qualified strategy, shadow
+H1 handoff or unattended uptime. Release requires the integrated offline gate
+and only the outstanding runtime/broker evidence, not repeated long captures.
 
 ## Migration and rollback
 

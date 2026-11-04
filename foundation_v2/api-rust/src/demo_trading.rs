@@ -38,6 +38,7 @@ pub const ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/v2/automation/trading/reconcile"),
     ("GET", "/api/v2/automation/trading/requests/{request_id}"),
     ("GET", ticks::PATH),
+    ("GET", "/api/v2/automation/trading/snapshot"),
 ];
 pub fn native(method: &str, path: &str) -> bool {
     ROUTES.contains(&(method, path))
