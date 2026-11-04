@@ -59,6 +59,16 @@ class MT5ReadWorkerTests(unittest.TestCase):
                     self.worker.collect(self.args)
                 read.return_value = saved
 
+    def test_legacy_export_does_not_label_ftmo_broker_wall_time_as_utc(self):
+        self.args.server = self.account.server = 'FTMO-Demo'
+        for command in ('history','ticks'):
+            self.args.command = command
+            with self.subTest(command=command),self.assertRaisesRegex(RuntimeError,'mt5_export_clock_not_supported'):
+                self.worker.collect(self.args)
+        self.sdk.copy_ticks_range.assert_not_called()
+        self.sdk.copy_rates_range.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
     def test_scope_and_identity_rechecked_after_read(self):
         self.account.trade_mode = 2
         with self.assertRaisesRegex(RuntimeError, 'scope_denied'):

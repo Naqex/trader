@@ -144,6 +144,29 @@ class DemoTradingTests(unittest.TestCase):
         self.sdk.order_check.assert_not_called()
         self.sdk.order_send.assert_not_called()
 
+    def test_ftmo_snapshot_and_admission_use_same_clock_without_refreshing_stale_ticks(self):
+        now = datetime(2026,11,4,1,0,tzinfo=timezone.utc).timestamp()
+        self.account.server = self.policy['server'] = 'FTMO-Demo'
+        self.account.leverage = 100
+        policy = demo.BrokerPolicy(self.policy)
+        raw = int(now*1000)+7200000-200
+        self.tick.time_msc = raw
+        self.sdk.copy_rates_from_pos.return_value = [dict(time=int(now)+7200,
+            open=1.1,high=1.2,low=1.,close=1.15,tick_volume=10)]
+        with patch.object(demo.time,'time',return_value=now):
+            result = demo.snapshot(self.sdk,policy,'EURUSD')
+            self.assertEqual(result['quote']['time_msc'],raw-7200000)
+            self.assertEqual(result['quote']['source_time_msc'],raw)
+            self.assertEqual(result['data_quality']['quote_status'],'fresh')
+            self.assertEqual(result['data_quality']['quote_age_ms'],200)
+            self.assertEqual(result['bars'][0]['timestamp'],'2026-11-04T01:00:00Z')
+            for drift in (-10000,60000):
+                self.tick.time_msc = raw + drift
+                with self.subTest(drift=drift),self.assertRaisesRegex(demo.Denied,'demo_quote_stale'):
+                    demo.prepare(self.sdk,policy,{**self.command,'server':'FTMO-Demo'})
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
     def test_invalid_instrument_values_identify_field_without_exposing_raw_data(self):
         fields = [(self.tick, key, 'quote.' + key) for key in ('bid', 'ask')]
         fields += [(self.info, key, 'instrument.' + key) for key in
@@ -367,6 +390,28 @@ class DemoTradingTests(unittest.TestCase):
         result=demo.reconcile(self.sdk,self.policy,self.command,submitted,{})
         self.assertTrue(result['resolved']); self.assertEqual(result['reason'],'demo_reconciled_partial_final')
         self.sdk.order_send.assert_not_called(); self.sdk.order_check.assert_not_called()
+
+    def test_ftmo_reconciliation_normalizes_evidence_and_rejects_future_matches(self):
+        now = datetime(2026,11,4,1,0,tzinfo=timezone.utc)
+        self.account.server = self.policy['server'] = 'FTMO-Demo'
+        command = {**self.command,'server':'FTMO-Demo'}
+        tag = demo.request_comment(command['request_id'])
+        stamp = int(now.timestamp()*1000)
+        deal = NS(ticket=91,order=92,position_id=93,comment=tag,magic=self.policy['magic'],
+                  symbol='EURUSD',entry=0,type=0,time_msc=stamp+7200000,volume=.1,price=1.10002)
+        order = NS(ticket=92,comment=tag,magic=self.policy['magic'],symbol='EURUSD',
+                   state=4,volume_initial=.1,volume_current=0)
+        self.sdk.history_deals_get.return_value = (deal,)
+        self.sdk.history_orders_get.return_value = (order,)
+        with patch.object(demo,'datetime',wraps=datetime) as dates:
+            dates.now.return_value = now
+            self.assertTrue(demo.reconcile(self.sdk,self.policy,command,now.isoformat(),{})['resolved'])
+            self.sdk.history_deals_get.assert_called_once_with(
+                now+timedelta(hours=2,seconds=-60),now+timedelta(hours=3,seconds=1))
+            deal.time_msc += 60000
+            self.assertFalse(demo.reconcile(self.sdk,self.policy,command,now.isoformat(),{})['resolved'])
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
 
     def test_reconcile_missing_tag_active_order_or_mismatched_account_preserves_unknown(self):
         submitted=datetime.now(timezone.utc).isoformat()

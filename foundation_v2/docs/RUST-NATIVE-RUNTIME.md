@@ -756,6 +756,11 @@ without raw SDK values. Native snapshot failures
 preserve that diagnostic instead of discarding it. A successful later read alone
 does not explain an earlier failure; capture the field before changing any guard.
 
+[Broker clock decoding](MT5-BROKER-CLOCK.md) defines the verified FTMO-Demo
+server-time exception, raw timestamp provenance and shared UTC decoding for
+quotes, bars, collection and reconciliation. It never infers an offset from the
+age of the latest tick. Grant expiry and Prop reset zones keep their own semantics.
+
 ### Demo reliability qualification before unattended operation
 
 Use the existing session, forward reducer, native grant ledger and backup helpers.

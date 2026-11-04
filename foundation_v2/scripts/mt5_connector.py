@@ -14,6 +14,9 @@ import sys
 import time
 from datetime import datetime, timedelta, timezone
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mt5_clock
+
 
 ERRORS = {'mt5_login_failed', 'mt5_disconnected', 'mt5_identity_changed',
           'mt5_investor_required', 'mt5_history_failed', 'mt5_snapshot_failed',
@@ -21,7 +24,8 @@ ERRORS = {'mt5_login_failed', 'mt5_disconnected', 'mt5_identity_changed',
           'mt5_secret_unavailable', 'mt5_terminal_isolation_failed',
           'mt5_sync_timeout', 'mt5_terminal_unavailable', 'mt5_version_unsupported',
           'mt5_initialization_failed', 'mt5_auth_failed', 'mt5_trading_disabled',
-          'mt5_account_mode_unsupported', 'mt5_connection_revoked', 'mt5_terminal_stopped'}
+          'mt5_account_mode_unsupported', 'mt5_connection_revoked', 'mt5_terminal_stopped',
+          'mt5_clock_unavailable'}
 
 TERMINAL_BINARIES = ('terminal64.exe', 'MetaEditor64.exe', 'metatester64.exe')
 
@@ -231,12 +235,13 @@ def snapshot(sdk, secret, start, history_from, requested_mode='read_only', gener
     deals, cursor = {}, start
     while cursor < now:
         end = min(cursor + timedelta(days=31), now)
-        chunk = sdk.history_deals_get(cursor, end)
+        chunk = sdk.history_deals_get(*mt5_clock.history_range(cursor, end, secret['server']))
         if chunk is None:
             raise RuntimeError('mt5_history_failed')
         for item in chunk:
-            if start.timestamp() * 1000 <= item.time_msc <= now.timestamp() * 1000:
-                deals[str(item.ticket)] = {key: getattr(item, key) for key in ('ticket','order','position_id','symbol','type','entry','volume','price','profit','commission','swap','fee','time_msc')}
+            stamp = mt5_clock.utc_msc(item.time_msc, secret['server'])
+            if start.timestamp() * 1000 <= stamp <= now.timestamp() * 1000:
+                deals[str(item.ticket)] = {key: getattr(item, key) for key in ('ticket','order','position_id','symbol','type','entry','volume','price','profit','commission','swap','fee')} | {'time_msc': stamp, 'source_time_msc': item.time_msc}
         if len(deals) > 200_000:
             raise RuntimeError('mt5_history_too_large')
         cursor = end
@@ -244,19 +249,19 @@ def snapshot(sdk, secret, start, history_from, requested_mode='read_only', gener
     for symbol in sorted({item.symbol for item in [*positions, *orders]})[:100]:
         tick = sdk.symbol_info_tick(symbol)
         if tick and tick.bid > 0 and tick.ask > 0:
-            quotes.append(dict(symbol=symbol,bid=tick.bid,ask=tick.ask,time_msc=tick.time_msc))
+            quotes.append(dict(symbol=symbol,bid=tick.bid,ask=tick.ask,time_msc=mt5_clock.utc_msc(tick.time_msc, secret['server']),source_time_msc=tick.time_msc))
     verify_identity(sdk, secret, requested_mode)
     rows = sorted(deals.values(), key=lambda item: (item['time_msc'], item['ticket']))
     environment = {0:'demo',1:'contest',2:'real'}.get(account.trade_mode,'unknown')
     permissions = dict(read=True, trade=requested_mode == 'trading')
     return dict(status='ready', source=f"{account.server} / MT5", mode=environment,
-        account_environment=environment, verified_permissions=permissions,
+        account_environment=environment, verified_permissions=permissions, clock=mt5_clock.metadata(secret['server']),
         account_binding=dict(login=str(account.login),server=account.server,account_environment=environment,generation=generation),
         execution_binding=dict(login=str(account.login),server=account.server,account_environment=environment,generation=generation,verified_permissions=permissions) if requested_mode == 'trading' else None,
         captured_at_utc=now.isoformat(), history_from_utc=history_from, history_read_from_utc=start.isoformat(), execution_capability=False,
         account={**{key:getattr(account,key) for key in ('currency','balance','equity','profit','margin','margin_free','leverage')},'name':getattr(account,'name',None),'account_ref':f"…{str(account.login)[-4:]}"},
-        positions=[{key:getattr(item,key) for key in ('ticket','symbol','type','volume','price_open','price_current','sl','tp','profit','swap','time')} for item in positions],
-        orders=[{key:getattr(item,key) for key in ('ticket','symbol','type','volume_current','price_open','sl','tp','time_setup')} for item in orders],
+        positions=[{key:getattr(item,key) for key in ('ticket','symbol','type','volume','price_open','price_current','sl','tp','profit','swap')} | {'time':mt5_clock.utc_seconds(item.time, secret['server']),'source_time':item.time} for item in positions],
+        orders=[{key:getattr(item,key) for key in ('ticket','symbol','type','volume_current','price_open','sl','tp')} | {'time_setup':mt5_clock.utc_seconds(item.time_setup, secret['server']),'source_time_setup':item.time_setup} for item in orders],
         deals=[item for item in rows if item['type'] in (0,1)], cashflows=[item for item in rows if item['type'] not in (0,1)], quotes=quotes)
 
 

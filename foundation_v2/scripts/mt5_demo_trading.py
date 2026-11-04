@@ -15,6 +15,10 @@ import time
 import uuid
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mt5_clock
 
 
 class Denied(Exception):
@@ -210,6 +214,15 @@ def instrument(sdk, policy, symbol, now=None, allow_stale=False, read=False):
     stamp = quote.time_msc
     if type(stamp) not in (int, float) or not math.isfinite(stamp) or not 0 < stamp <= 8640000000000000:
         deny('demo_quote_unavailable')
+    try:
+        normalized_stamp = mt5_clock.utc_msc(stamp, policy['server'])
+    except RuntimeError:
+        deny('demo_quote_unavailable', data_quality={'source': 'application',
+             'invalid_field': 'quote.time_msc', 'requirement': 'unambiguous_broker_clock'})
+    if normalized_stamp != stamp:
+        quote = SimpleNamespace(bid=quote.bid, ask=quote.ask, time_msc=normalized_stamp,
+                                source_time_msc=stamp)
+    stamp = normalized_stamp
     observed = int((time.time() if now is None else now) * 1000)
     age = observed - stamp
     if quote.ask < quote.bid or not allow_stale and (age < -1000 or age > policy['max_quote_age_ms']):
@@ -529,8 +542,12 @@ def snapshot(sdk, policy, symbol, timeframe='M1', bar_count=300):
     def row(item, pending=False):
         return {'ticket': item.ticket, 'symbol': item.symbol, 'side': 'BUY' if item.type in (0, 2, 4, 6) else 'SELL', 'volume': item.volume_current if pending else item.volume, 'price_open': item.price_open, 'sl': item.sl, 'tp': item.tp, 'profit': getattr(item, 'profit', None), 'type': item.type, 'managed': isinstance(policy, BrokerPolicy) or item.magic == policy['magic']}
     identity(sdk, policy, read=True)
-    result = {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': policy.get('read_only') is not True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'application', 'profile':'managed_account', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {'source':'application', 'profile':'bounded_demo', **{key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}}
+    result = {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': policy.get('read_only') is not True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(mt5_clock.utc_seconds(r['time'], policy['server'])))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'application', 'profile':'managed_account', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {'source':'application', 'profile':'bounded_demo', **{key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}}
     result['account']['name'] = getattr(account, 'name', None)
+    result['quote']['source_time_msc'] = getattr(quote, 'source_time_msc', quote.time_msc)
+    result['clock'] = mt5_clock.metadata(policy['server'])
+    for bar, raw in zip(result['bars'], rates):
+        bar['source_time'] = int(raw['time'])
     terminal = sdk.terminal_info()
     if terminal is None:
         deny('demo_disconnected')
@@ -570,7 +587,7 @@ def reconcile(sdk, policy, command, submitted_at, previous):
     ticket = command.get('ticket')
     if action == 'protect':
         position = next((p for p in positions if p.ticket == ticket and p.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or p.magic == policy['magic'])),None)
-        if position and position.time_update_msc >= int(started.timestamp()*1000) and position.sl == (command.get('stop_loss') or 0) and position.tp == (command.get('take_profit') or 0):
+        if position and int(started.timestamp()*1000) <= mt5_clock.utc_msc(position.time_update_msc, policy['server']) <= int(now.timestamp()*1000)+1000 and position.sl == (command.get('stop_loss') or 0) and position.tp == (command.get('take_profit') or 0):
             identity(sdk, policy)
             return {'resolved':True,'status':'accepted','reason':'demo_reconciled_protection_active','requires_reconciliation':False,'position':ticket,'evidence':{'sl':position.sl,'tp':position.tp,'time_update_msc':position.time_update_msc}}
         return {'resolved':False,'reason':'demo_reconciliation_unproven'}
@@ -580,7 +597,7 @@ def reconcile(sdk, policy, command, submitted_at, previous):
         history = sdk.history_orders_get(ticket=ticket)
         if history is None:
             deny('demo_history_unavailable')
-        matched = [o for o in history if o.ticket == ticket and o.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or o.magic == policy['magic']) and o.state == 2 and o.time_done_msc >= int(started.timestamp()*1000)]
+        matched = [o for o in history if o.ticket == ticket and o.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or o.magic == policy['magic']) and o.state == 2 and int(started.timestamp()*1000) <= mt5_clock.utc_msc(o.time_done_msc, policy['server']) <= int(now.timestamp()*1000)+1000]
         if len(matched) == 1:
             identity(sdk, policy)
             return {'resolved':True,'status':'accepted','reason':'demo_reconciled_cancelled','requires_reconciliation':False,'order':ticket}
@@ -591,11 +608,11 @@ def reconcile(sdk, policy, command, submitted_at, previous):
     if any(o.comment == tag and o.magic == policy['magic'] for o in active_orders):
         return {'resolved':False,'reason':'demo_reconciliation_still_active'}
     # Bounded seven-day window. Exact request tag is mandatory for deal attribution.
-    deals = sdk.history_deals_get(started-timedelta(seconds=60),now+timedelta(seconds=1))
+    deals = sdk.history_deals_get(*mt5_clock.history_range(started-timedelta(seconds=60),now+timedelta(seconds=1),policy['server']))
     if deals is None or len(deals) > 100000:
         deny('demo_history_unavailable')
     expected_side = 0 if command.get('side') == 'BUY' else 1
-    matches = [d for d in deals if d.comment == tag and d.magic == policy['magic'] and d.symbol == command['symbol'] and d.time_msc >= start_msc]
+    matches = [d for d in deals if d.comment == tag and d.magic == policy['magic'] and d.symbol == command['symbol'] and start_msc <= mt5_clock.utc_msc(d.time_msc, policy['server']) <= int(now.timestamp()*1000)+1000]
     if not matches:
         return {'resolved':False,'reason':'demo_reconciliation_unproven'}
     if action == 'place':
