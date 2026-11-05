@@ -20,6 +20,7 @@ from trading_workspace_v2.forex_h4 import (
 )
 from trading_workspace_v2.forex_financing import FinancingTerms, apply_forex_financing
 from trading_workspace_v2.forex_h4_candidates import CANDIDATES, STUDY_CANDIDATES, ResearchH4Candidate
+from trading_workspace_v2.forex_prop_candidates import PROP_CANDIDATES, PropH4Candidate
 from trading_workspace_v2.forex_pilot_risk import (
     ForexPilotSnapshot, _stop_at_fill, advance_forex_pilot, initialize_forex_pilot,
     queue_forex_pilot_exit, queue_forex_pilot_order,
@@ -34,6 +35,7 @@ START = int(datetime(2022, 1, 3, tzinfo=timezone.utc).timestamp()) * 1000
 END = int(datetime(2022, 1, 15, tzinfo=timezone.utc).timestamp()) * 1000
 SCENARIOS = [('reference', Decimal('0'), Decimal('10')),
              ('cost-stress', Decimal('0.00002'), Decimal('20'))]
+ALL_STUDY_CANDIDATES = (*STUDY_CANDIDATES, *PROP_CANDIDATES)
 
 
 def write_json(path, value):
@@ -51,7 +53,7 @@ def write_json(path, value):
 
 
 def input_contract(input_dir, manifest_path=None, *, research_candidate=None):
-    if research_candidate is not None and research_candidate not in STUDY_CANDIDATES:
+    if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     if research_candidate is not None and manifest_path is None:
         raise ValueError('research candidate requires its pinned input manifest')
@@ -187,14 +189,17 @@ def reconcile(state, slippage):
 
 def run_scenario(path, warmup, name, slippage, debit, output, progress, *, development=None, sell_debit=None,
                  research_candidate=None):
-    if research_candidate is not None and research_candidate not in STUDY_CANDIDATES:
+    if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     digest, first, last = EXPECTED['development'] if development is None else tuple(
         development[k] for k in ('sha256', 'first_day', 'last_day'))
     start = int(datetime.strptime(first, '%Y%m%d').replace(tzinfo=timezone.utc).timestamp()) * 1000
     end = int((datetime.strptime(last, '%Y%m%d').replace(tzinfo=timezone.utc) + timedelta(days=1)).timestamp()) * 1000
     state = initial_state(name, slippage, digest, start=start, dataset=f'qdm-eurusd-development-{first}-{last}')
-    strategy = ResearchH4Candidate(research_candidate) if research_candidate in CANDIDATES else FixedH4Candidate()
+    if research_candidate in PROP_CANDIDATES:
+        strategy = PropH4Candidate(research_candidate)
+    else:
+        strategy = ResearchH4Candidate(research_candidate) if research_candidate in CANDIDATES else FixedH4Candidate()
     builder = H4Builder()
     for candle in warmup:
         strategy.observe(candle)
@@ -216,7 +221,7 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
         if candle:
             position = state.execution.position
             position_args = dict(side=position.side if position else None)
-            if research_candidate in CANDIDATES:
+            if research_candidate in (*CANDIDATES, *PROP_CANDIDATES):
                 position_args['position_id'] = position.position_id if position else None
             signal, distance = strategy.observe(candle, **position_args)
             if signal and state.risk.exit_pending is None and state.execution.pending_market_order is None:
@@ -280,7 +285,7 @@ def main(argv=None, on_progress=None):
     parser.add_argument('--input-manifest', type=Path)
     parser.add_argument('--account-spec', type=Path)
     parser.add_argument('--account-spec-sha256')
-    parser.add_argument('--candidate', choices=STUDY_CANDIDATES,
+    parser.add_argument('--candidate', choices=ALL_STUDY_CANDIDATES,
                         help='Registered research comparator; omission preserves the fixed Donchian pilot')
     parser.add_argument('--research-protocol', type=Path)
     args = parser.parse_args(argv)
@@ -315,10 +320,12 @@ def main(argv=None, on_progress=None):
         source_files = [Path(__file__), *[V2 / 'trading_workspace_v2' / name for name in
             ('forex_h4.py', 'forex_pilot_risk.py', 'forex_financing.py', 'replay_execution.py',
              'replay_tick_execution.py', 'semantics/data_contracts.py', 'semantics/data_costs.py',
-             'forex_h4_candidates.py')]]
+             'forex_h4_candidates.py', 'forex_prop_candidates.py')]]
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
-            contract='PROP-STRATEGY-ROUND1-20261105.md sections 4-6' if args.candidate else 'FOREX-PROP-PILOT-20261102.md sections 9-10',
+            contract=('PROP-STRATEGY-ROUND2-20261105.md' if args.candidate in PROP_CANDIDATES else
+                      'PROP-STRATEGY-ROUND1-20261105.md sections 4-6' if args.candidate else
+                      'FOREX-PROP-PILOT-20261102.md sections 9-10'),
             created_at_utc=datetime.now(timezone.utc).isoformat(),
             source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=V2, text=True).strip(),
             source_files={str(p.relative_to(V2)): hashlib.sha256(p.read_bytes()).hexdigest() for p in source_files},
@@ -348,6 +355,23 @@ def main(argv=None, on_progress=None):
                 scenario['buy'], args.output_dir, progress,
                 development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate))
             write_json(args.output_dir / 'results.json', results)
+        if args.candidate in PROP_CANDIDATES:
+            review_entries = []
+            for scenario in scenarios:
+                decisions = json.loads((args.output_dir / (scenario['name'] + '-decisions.json')).read_text(encoding='utf-8'))
+                for decision in decisions:
+                    if decision['signal'] in ('BUY', 'SELL'):
+                        review_entries.append(dict(
+                            signal_id=f"{scenario['name']}:{decision['time_msc']}:{decision['signal']}",
+                            scenario=scenario['name'], signal_time_msc=decision['time_msc'],
+                            side=decision['signal'], execution_status=decision['status'],
+                            manual_decision=None, decided_at_time_msc=None, reason=None))
+            # Historical examples cannot establish prospective human discretion.
+            write_json(args.output_dir / 'manual-review-template.json', dict(
+                schema='forex-manual-review-template-v1', candidate=args.candidate,
+                manifest_sha256=hashlib.sha256((args.output_dir / 'manifest.json').read_bytes()).hexdigest(),
+                qualification='historical_schema_example_not_prospective_evidence',
+                manual_filter_measured=False, risk_override_allowed=False, entries=review_entries))
         progress('completed_declared_scenarios')
     except Exception as error:
         receipt.update(error_type=type(error).__name__, error=str(error))
