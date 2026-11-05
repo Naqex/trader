@@ -142,3 +142,37 @@ reuse; numeric equivalence across versions is a separate review, not inferred.
 
 Tests: `tests/test_forex_prop_candidates.py`, `tests/test_forex_h4_candidates.py`, `tests/test_forex_h4.py`; workspace
 fixture regression: `tooling/ai-engines/tests/test_forex_research.py`.
+
+## Shared quality and H4 warmup inspections
+
+For a new registered study with several candidates, prepare the same pinned
+inputs once, then let each worker load the immutable derived inspection:
+
+```powershell
+& .venv/Scripts/python.exe scripts/forex_prepare_inspections.py --input-manifest <pinned-inputs.json> --cache-dir <private-cache>
+```
+
+Add `--inspection-cache-dir <private-cache>` to the pilot command, or
+`inspection_cache_dir` to each job in the workspace batch config. Keep the
+preparation log with the new study; this command reads only the explicitly
+provided files and does not grant access to a different data window. The first
+preparation still performs full quality inspection; a hit rehashes the current
+raw file, checks reader/source/runtime/window bindings and the cache checksum,
+then restores exactly the quality report and Decimal H4 bars. Missing, corrupt
+or outdated entries fail clearly; workers never silently rebuild them. Cache
+identity/checksums are integrity evidence, not independent data certification.
+
+Manifests record the cache path, entry digests and helper source. Simulation
+still parses every original tick for each cost scenario and checks risk on each
+quote. This is not a decoded-tick cache, strategy-result reuse or permission to
+skip a scenario. The helper binds the reader/tick/cache source and numerical
+runtime conservatively; a source change can require preparing a new entry.
+One preparer owns each miss through an exclusive lock. After a crash, reconcile
+the PID/log before removing a leftover lock or partial temporary file; never
+overwrite an active writer or edit cache contents to pass validation.
+
+The workspace controller also accepts `--parallel-start` for a **new study whose
+protocol permits it**. It starts up to `--max-workers` without waiting for one
+whole candidate to finish; every worker keeps full preflight/result checks.
+The default retains the full-candidate probe, and existing batch bindings cannot
+be changed in place. Prepared inspections should exist before parallel dispatch.

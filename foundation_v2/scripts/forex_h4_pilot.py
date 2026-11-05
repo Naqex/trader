@@ -408,6 +408,8 @@ def main(argv=None, on_progress=None):
     parser.add_argument('--input-dir', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--input-manifest', type=Path)
+    parser.add_argument('--inspection-cache-dir', type=Path,
+                        help='Load prepared quality/H4 evidence; original input hashes are still checked')
     parser.add_argument('--account-spec', type=Path)
     parser.add_argument('--account-spec-sha256')
     parser.add_argument('--candidate', choices=ALL_STUDY_CANDIDATES,
@@ -477,6 +479,8 @@ def main(argv=None, on_progress=None):
             ('forex_h4.py', 'forex_pilot_risk.py', 'forex_financing.py', 'replay_execution.py',
              'replay_tick_execution.py', 'semantics/data_contracts.py', 'semantics/data_costs.py',
              'forex_h4_candidates.py', 'forex_prop_candidates.py', 'forex_study_registration.py')]]
+        if args.inspection_cache_dir:
+            source_files.append(V2/'trading_workspace_v2/forex_qdm_inspection.py')
         protocol_bytes = args.research_protocol.read_bytes() if args.candidate else None
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             run_id=receipt['run_id'],
@@ -494,6 +498,9 @@ def main(argv=None, on_progress=None):
                     sell_rate=s['sell'], start=start, end=end)]) for s in scenarios],
             validation_holdout_read=False, broker_connected=False, price_basis='midpoint',
             risk_usd=[25, 100, 500], broker_spec_verified=False)
+        if args.inspection_cache_dir:
+            manifest['inspection_cache'] = dict(directory=str(args.inspection_cache_dir.resolve()),
+                                                entries={}, raw_hash_rechecked=True)
         if args.preflight_only:
             manifest['execution_mode'] = 'preflight_only_no_simulation'
         if args.candidate:
@@ -524,10 +531,20 @@ def main(argv=None, on_progress=None):
         quality = {}
         for name, item in inputs.items():
             progress('validate_' + name)
-            quality[name], bars = inspect_qdm(paths[name], **{k: item[k] for k in ('sha256', 'first_day', 'last_day')})
+            terms = {k: item[k] for k in ('sha256', 'first_day', 'last_day')}
+            if args.inspection_cache_dir:
+                from trading_workspace_v2.forex_qdm_inspection import load_inspection, inspection_path
+                quality[name], bars = load_inspection(paths[name], cache_dir=args.inspection_cache_dir, **terms)
+                entry, _ = inspection_path(args.inspection_cache_dir, **terms)
+                manifest['inspection_cache']['entries'][name] = dict(path=str(entry.resolve()),
+                    sha256=hashlib.sha256(entry.read_bytes()).hexdigest())
+            else:
+                quality[name], bars = inspect_qdm(paths[name], **terms)
             if name == 'warmup':
                 warmup = bars
         write_json(args.output_dir / 'quality.json', quality)
+        if args.inspection_cache_dir:
+            write_json(args.output_dir / 'manifest.json', manifest)
         if len(warmup) < (81 if args.candidate else 21):
             raise ValueError('insufficient H4 warmup')
         if args.preflight_only:

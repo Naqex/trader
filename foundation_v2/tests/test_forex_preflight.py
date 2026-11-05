@@ -13,6 +13,29 @@ from test_forex_prop_candidates import candle
 
 
 class PreflightTests(unittest.TestCase):
+    def test_prepared_inspection_preflight_records_provenance_without_reparsing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root/'attempt'
+            entry = root/'cache.json'
+            entry.write_text('fixture cached inspection', encoding='utf-8')
+            quality = dict(ticks=100, complete_h4=81)
+            with patch('trading_workspace_v2.forex_qdm_inspection.load_inspection',
+                       return_value=(quality, [candle(i) for i in range(81)])) as load, \
+                 patch('trading_workspace_v2.forex_qdm_inspection.inspection_path', return_value=(entry, {})), \
+                 patch('forex_h4_pilot.inspect_qdm', side_effect=AssertionError('must use cache')), \
+                 patch('forex_h4_pilot.run_scenario') as simulate:
+                main(['--input-dir', str(root), '--output-dir', str(output), '--preflight-only',
+                      '--inspection-cache-dir', str(root/'prepared')])
+            self.assertEqual(load.call_count, 2)
+            simulate.assert_not_called()
+            manifest = json.loads((output/'manifest.json').read_text())
+            self.assertTrue(manifest['inspection_cache']['raw_hash_rechecked'])
+            self.assertEqual(set(manifest['inspection_cache']['entries']), {'warmup', 'development'})
+            self.assertIn('trading_workspace_v2/forex_qdm_inspection.py',
+                          {key.replace('\\', '/') for key in manifest['source_files']})
+            self.assertFalse((output/'results.json').exists())
+
     def test_preflight_validates_and_exits_without_trade_simulation(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
