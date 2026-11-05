@@ -33,6 +33,20 @@ class BrokerReplayTick(BaseModel):
     bid: Decimal = Field(gt=0)
     ask: Decimal = Field(gt=0)
 
+    @classmethod
+    def trusted(cls, *, time_msc, sequence, bid, ask):
+        """Construct a tick after the caller has performed its stream guards.
+
+        Prepared QDM readers validate type/range/order/grid and ask>=bid before
+        calling this path. Keeping the model shape preserves downstream event
+        serialization while avoiding duplicate Pydantic validation per quote.
+        """
+        if type(time_msc) is not int or time_msc < 0 or type(sequence) is not int or sequence < 0:
+            raise ValueError("trusted tick metadata must be nonnegative integers")
+        if not isinstance(bid, Decimal) or not isinstance(ask, Decimal) or bid <= 0 or ask < bid:
+            raise ValueError("trusted tick quotes must be positive and ordered")
+        return cls.model_construct(time_msc=time_msc, sequence=sequence, bid=bid, ask=ask)
+
     @model_validator(mode="after")
     def quotes_are_ordered(self):
         if self.ask < self.bid:

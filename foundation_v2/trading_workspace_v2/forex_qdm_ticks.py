@@ -115,13 +115,13 @@ def read_prepared_ticks(path, *, cache_dir, sha256, first_day, last_day):
             ask_values = [Decimal(value) for value in asks.dictionary.to_pylist()]
             for stamp, sequence, bid_index, ask_index in zip(batch.column(0).to_pylist(),
                     batch.column(1).to_pylist(), bids.indices.to_pylist(), asks.indices.to_pylist()):
-                tick = BrokerReplayTick(time_msc=stamp, sequence=sequence,
-                    bid=bid_values[bid_index], ask=ask_values[ask_index])
+                bid, ask = bid_values[bid_index], ask_values[ask_index]
                 count += 1
                 if (sequence != count or not start <= stamp < end
                         or previous is not None and stamp < previous
-                        or tick.bid % TICK or tick.ask % TICK):
+                        or bid <= 0 or ask < bid or bid % TICK or ask % TICK):
                     raise ValueError('prepared tick date, order or price grid invalid')
+                tick = BrokerReplayTick.trusted(time_msc=stamp, sequence=sequence, bid=bid, ask=ask)
                 first = stamp if first is None else first
                 previous = stamp
                 yield tick

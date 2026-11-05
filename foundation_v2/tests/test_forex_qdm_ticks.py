@@ -1,4 +1,5 @@
 import hashlib
+from decimal import Decimal
 import json
 from pathlib import Path
 import sys
@@ -16,6 +17,14 @@ from trading_workspace_v2.forex_input_preparation import prepare_input_set
 
 
 class PreparedTickTests(unittest.TestCase):
+    def test_trusted_tick_has_same_public_model_and_rejects_unvalidated_quotes(self):
+        tick = cache.BrokerReplayTick.trusted(time_msc=1, sequence=2,
+            bid=Decimal('1.10000'), ask=Decimal('1.10020'))
+        self.assertEqual(tick.model_dump(mode='json'),
+                         {'time_msc': 1, 'sequence': 2, 'bid': '1.10000', 'ask': '1.10020'})
+        with self.assertRaises(ValueError):
+            cache.BrokerReplayTick.trusted(time_msc=1, sequence=2,
+                bid=Decimal('1.10020'), ask=Decimal('1.10000'))
     def fixture(self, root):
         path = root/'quotes.csv'
         path.write_text('DateTime,Bid,Ask,Volume\n'
