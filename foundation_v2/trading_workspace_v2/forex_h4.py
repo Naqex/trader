@@ -245,7 +245,7 @@ def size_for_stop(distance: Decimal, *, slippage: Decimal, budget=Decimal('25'))
     return quantity if quantity >= Decimal('0.01') else None
 
 
-def inspect_qdm(path: Path, *, sha256: str, first_day: str, last_day: str):
+def inspect_qdm(path: Path, *, sha256: str, first_day: str, last_day: str, on_progress=None):
     count = 0
     first = previous = None
     maximum_gap = 0
@@ -262,6 +262,8 @@ def inspect_qdm(path: Path, *, sha256: str, first_day: str, last_day: str):
                 maximum_gap = max(maximum_gap, quote.time_msc - previous)
             previous = quote.time_msc
             count += 1
+            if on_progress and count % 65536 == 0:
+                on_progress(count)
             minutes.add(quote.time_msc // 60000)
         candle = builder.add(hour)
         if candle:
@@ -269,6 +271,8 @@ def inspect_qdm(path: Path, *, sha256: str, first_day: str, last_day: str):
     builder.finish()
     if not count:
         raise ValueError('registered QDM slice is empty')
+    if on_progress:
+        on_progress(count)
     return dict(ticks=count, first_time_msc=first, last_time_msc=previous,
         quoted_hours=hours, quoted_minutes=len(minutes), maximum_adjacent_gap_msc=maximum_gap,
         minutes_without_quote_between_first_and_last=previous // 60000 - first // 60000 + 1 - len(minutes),

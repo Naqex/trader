@@ -184,3 +184,40 @@ in the validated checkpoint, retaining risk checks on every quote. Failed window
 publish no counters. Snapshot format and recovery boundaries are unchanged.
 Reader-source changes invalidate prepared inspections by design: prepare entries
 for the new binding rather than editing or adopting old cache JSON.
+
+### Prepared tick cache and one-command batch preparation
+
+When several candidates and cost scenarios replay the same pinned development
+quotes, add `--include-ticks` to the preparation command. It writes a lossless,
+source-bound Parquet cache for the development role; the preparation step still
+parses and validates the original QDM CSV once:
+
+```powershell
+& .venv/Scripts/python.exe scripts/forex_prepare_inspections.py `
+  --input-manifest <pinned-inputs.json> --cache-dir <private-cache> --include-ticks
+```
+
+The cache stores timestamp milliseconds, source sequence, and Bid/Ask decimal
+text. Its metadata binds the raw CSV hash, date window, Python/Pydantic/runtime,
+PyArrow version and decoder source. Every worker rehashes both raw input and
+cache, checks schema/count/range/order/tick grid and reconstructs the same
+`BrokerReplayTick` values. It never trusts Parquet metadata as market evidence,
+does not deduplicate/downsample/fill quotes, and does not cache mutable strategy
+or risk state. A prepared cache is an optimization artifact; raw QDM remains the
+source of truth and must stay available for inspection/recovery.
+
+For the workspace batch, put the same `prepared_inputs_dir` in each job and run
+the newly registered study with `--prepare-inputs --parallel-start`. The
+controller prepares each distinct `(kind, cache, input, hash, window)` once,
+writes `input-preparation.json`, shows rate-limited phase progress, then dispatches
+workers. A CANCEL/deadline during preparation dispatches no numerical worker;
+an observation/projection write error is recorded and does not discard a valid
+cache. Completed jobs skip preparation and remain reusable. Do not combine
+`prepared_inputs_dir` with individual cache-directory fields, and never change
+these bindings inside an existing attempt.
+
+Each pilot receipt now records `phase_wall_seconds`, `phase_cpu_seconds` and
+`process_cpu_seconds`; the batch projection includes new-worker CPU coverage and
+does not add reused jobs to new computation. These values are diagnostic only:
+wall time, CPU time, cache preparation and worker time are separate, and missing
+coverage remains unknown rather than zero.

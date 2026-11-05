@@ -77,6 +77,26 @@ def carried(*, side="BUY", at=None):
 
 
 class ForexPilotRiskTests(unittest.TestCase):
+    def test_day_cache_respects_23_and_25_hour_prague_days_and_restart(self):
+        for start_text, end_text, day in (
+            ('2022-03-26T23:00:00+00:00', '2022-03-27T22:00:00+00:00', '2022-03-27'),
+            ('2022-10-29T22:00:00+00:00', '2022-10-30T23:00:00+00:00', '2022-10-30'),
+        ):
+            with self.subTest(day=day):
+                start, end = ms(start_text), ms(end_text)
+                state = carried(at=start-120000)
+                state = advance(state, [tick(when=start-1)])
+                self.assertNotEqual(state.risk.day.isoformat(), day)
+                state = advance(state, [tick(when=start)])
+                self.assertEqual(state.risk.day.isoformat(), day)
+                state = ForexPilotSnapshot.model_validate_json(state.model_dump_json())
+                state = advance(state, [tick(when=end-1)])
+                self.assertEqual(state.risk.day.isoformat(), day)
+                state = advance(state, [tick(when=end)])
+                self.assertNotEqual(state.risk.day.isoformat(), day)
+                self.assertEqual(state.risk.observed_ticks, 5)
+                self.assertEqual(state.risk.daily_anchor_balance, Decimal('10000'))
+
     def test_invalid_last_quote_does_not_publish_counters_and_valid_retry_can_restart(self):
         initial = initialize_forex_pilot(execution(), start_time_msc=ms())
         before = initial.model_dump_json()

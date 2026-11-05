@@ -52,7 +52,7 @@ def load_inspection(path, *, cache_dir, sha256, first_day, last_day):
     return _load(entry, binding)
 
 
-def prepare_inspection(path, *, cache_dir, sha256, first_day, last_day):
+def prepare_inspection(path, *, cache_dir, sha256, first_day, last_day, on_progress=None):
     path = Path(path)
     entry, binding = inspection_path(cache_dir, sha256=sha256, first_day=first_day, last_day=last_day)
     if entry.exists():
@@ -64,7 +64,10 @@ def prepare_inspection(path, *, cache_dir, sha256, first_day, last_day):
     with lock.open('x', encoding='utf-8') as stream:
         stream.write(str(os.getpid()))
     try:
-        quality, bars = inspect_qdm(path, sha256=sha256, first_day=first_day, last_day=last_day)
+        terms = dict(sha256=sha256, first_day=first_day, last_day=last_day)
+        if on_progress:
+            terms['on_progress'] = on_progress
+        quality, bars = inspect_qdm(path, **terms)
         if _digest(path) != sha256:
             raise ValueError('QDM CSV changed during inspection')
         payload = dict(binding=binding, quality=quality,

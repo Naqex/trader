@@ -55,6 +55,11 @@ class PreflightTests(unittest.TestCase):
             self.assertEqual(events[-1]['stage'],'preflight_passed_no_simulation')
             self.assertEqual(len({event['run_id'] for event in events}),1)
             self.assertEqual([event['event_sequence'] for event in events],list(range(1,len(events)+1)))
+            receipt = json.loads((output/'receipt.json').read_text())
+            self.assertIn('validate_warmup', receipt['phase_wall_seconds'])
+            self.assertIn('validate_development', receipt['phase_cpu_seconds'])
+            self.assertGreaterEqual(receipt['process_cpu_seconds'], 0)
+            self.assertAlmostEqual(sum(receipt['phase_wall_seconds'].values()), receipt['elapsed_seconds'], delta=0.001)
             # An existing attempt is never silently overwritten by preflight.
             with self.assertRaises(FileExistsError):
                 main(['--input-dir',str(root),'--output-dir',str(output),'--preflight-only'])

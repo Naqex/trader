@@ -313,7 +313,7 @@ def reuse_scenario(source, output, manifest, scenario):
 
 
 def run_scenario(path, warmup, name, slippage, debit, output, progress, *, development=None, sell_debit=None,
-                 research_candidate=None):
+                 research_candidate=None, tick_cache_dir=None):
     if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     digest, first, last = EXPECTED['development'] if development is None else tuple(
@@ -331,7 +331,12 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
     calendar = iter(financing_calendar(debit, sell_rate=sell_debit, start=start, end=end))
     upcoming = next(calendar, None)
     decisions = []
-    for hour, quotes in hourly_quotes(read_qdm_ticks(path, sha256=digest, first_day=first, last_day=last)):
+    if tick_cache_dir is None:
+        ticks = read_qdm_ticks(path, sha256=digest, first_day=first, last_day=last)
+    else:
+        from trading_workspace_v2.forex_qdm_ticks import read_prepared_ticks
+        ticks = read_prepared_ticks(path, cache_dir=tick_cache_dir, sha256=digest, first_day=first, last_day=last)
+    for hour, quotes in hourly_quotes(ticks):
         def post_due(boundary, state):
             nonlocal upcoming
             while upcoming is not None and upcoming.scheduled_time_msc <= boundary:
@@ -410,6 +415,8 @@ def main(argv=None, on_progress=None):
     parser.add_argument('--input-manifest', type=Path)
     parser.add_argument('--inspection-cache-dir', type=Path,
                         help='Load prepared quality/H4 evidence; original input hashes are still checked')
+    parser.add_argument('--tick-cache-dir', type=Path,
+                        help='Load lossless prepared development ticks; raw/cache hashes and tick validation remain enabled')
     parser.add_argument('--account-spec', type=Path)
     parser.add_argument('--account-spec-sha256')
     parser.add_argument('--candidate', choices=ALL_STUDY_CANDIDATES,
@@ -435,14 +442,24 @@ def main(argv=None, on_progress=None):
     args.output_dir.mkdir(parents=True, exist_ok=False)
     logger, handler = event_logger(args.output_dir)
     began = time.monotonic()
+    cpu_began = time.process_time()
+    last_observed, last_cpu = began, cpu_began
     receipt = dict(pid=os.getpid(), run_id=str(uuid4()), event_sequence=0,
         candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
         started_at_utc=datetime.now(timezone.utc).isoformat(), stage='manifest')
     def progress(stage, boundary=None, state=None):
+        nonlocal last_observed, last_cpu
         previous_stage = receipt['stage']
+        observed, cpu = time.monotonic(), time.process_time()
+        for key, amount in (('phase_wall_seconds', observed-last_observed),
+                            ('phase_cpu_seconds', cpu-last_cpu)):
+            phases = receipt.setdefault(key, {})
+            phases[previous_stage] = phases.get(previous_stage, 0)+amount
+        last_observed, last_cpu = observed, cpu
         receipt.update(stage=stage, boundary_utc=boundary,
             updated_at_utc=datetime.now(timezone.utc).isoformat(),
-            elapsed_seconds=round(time.monotonic()-began, 3),
+            elapsed_seconds=round(observed-began, 3),
+            process_cpu_seconds=round(cpu-cpu_began, 6),
             event_sequence=receipt['event_sequence']+1)
         if previous_stage != stage and stage in {name for name, _, _ in SCENARIOS}:
             receipt.pop('observed_ticks', None)
@@ -481,6 +498,10 @@ def main(argv=None, on_progress=None):
              'forex_h4_candidates.py', 'forex_prop_candidates.py', 'forex_study_registration.py')]]
         if args.inspection_cache_dir:
             source_files.append(V2/'trading_workspace_v2/forex_qdm_inspection.py')
+        if args.tick_cache_dir:
+            for module in ('forex_qdm_ticks.py', 'forex_qdm_inspection.py'):
+                if V2/'trading_workspace_v2'/module not in source_files:
+                    source_files.append(V2/'trading_workspace_v2'/module)
         protocol_bytes = args.research_protocol.read_bytes() if args.candidate else None
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             run_id=receipt['run_id'],
@@ -501,6 +522,13 @@ def main(argv=None, on_progress=None):
         if args.inspection_cache_dir:
             manifest['inspection_cache'] = dict(directory=str(args.inspection_cache_dir.resolve()),
                                                 entries={}, raw_hash_rechecked=True)
+        if args.tick_cache_dir:
+            from trading_workspace_v2.forex_qdm_ticks import tick_cache_metadata
+            data, metadata, payload = tick_cache_metadata(paths['development'], cache_dir=args.tick_cache_dir,
+                **{k: inputs['development'][k] for k in ('sha256', 'first_day', 'last_day')})
+            manifest['tick_cache'] = dict(directory=str(args.tick_cache_dir.resolve()),
+                data_path=str(data), data_sha256=payload['sha256'], ticks=payload['ticks'],
+                metadata_path=str(metadata), metadata_sha256=hashlib.sha256(metadata.read_bytes()).hexdigest())
         if args.preflight_only:
             manifest['execution_mode'] = 'preflight_only_no_simulation'
         if args.candidate:
@@ -563,7 +591,8 @@ def main(argv=None, on_progress=None):
             if result is None:
                 result = run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],
                     scenario['buy'], args.output_dir, progress,
-                    development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate)
+                    development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate,
+                    tick_cache_dir=args.tick_cache_dir)
             else:
                 receipt.setdefault('reused_scenarios', []).append(scenario['name'])
                 progress(scenario['name']+'_reused')

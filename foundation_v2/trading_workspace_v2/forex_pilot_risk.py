@@ -1,7 +1,7 @@
 """Offline EURUSD pilot limits; observed quotes do not certify Prop compliance."""
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING
 from typing import Literal
 from zoneinfo import ZoneInfo
@@ -163,6 +163,12 @@ def _day(time_msc: int) -> date:
         ZoneInfo("Europe/Prague")).date()
 
 
+def _day_bounds(day: date):
+    midnight = datetime(day.year, day.month, day.day, tzinfo=ZoneInfo("Europe/Prague"))
+    # Add a local calendar day: UTC elapsed time can be 23 or 25 hours at DST.
+    return int(midnight.timestamp()*1000), int((midnight+timedelta(days=1)).timestamp()*1000)
+
+
 def initialize_forex_pilot(execution: ReplayTickExecutionSnapshot, *, start_time_msc: int,
                              limits: PilotRiskLimits | None = None) -> ForexPilotSnapshot:
     if type(start_time_msc) is not int or start_time_msc < 0:
@@ -223,6 +229,7 @@ class _PilotGuard:
         self.starting_balance = snapshot.execution.starting_balance
         self.last_tick = snapshot.risk.last_tick
         self.observed_ticks = snapshot.risk.observed_ticks
+        self.day_start_msc, self.day_end_msc = _day_bounds(snapshot.risk.day)
 
     def _observe(self, tick, balance, floating, position, *, event_time_msc=None):
         equity = balance + floating
@@ -257,13 +264,14 @@ class _PilotGuard:
         if self.last_tick and (tick.time_msc, tick.sequence) <= (
                 self.last_tick.time_msc, self.last_tick.sequence):
             raise ReplayExecutionError("pilot quotes must increase across windows and restarts")
-        day = _day(tick.time_msc)
+        day = state.day if self.day_start_msc <= tick.time_msc < self.day_end_msc else _day(tick.time_msc)
         if day < state.day:
             raise ReplayExecutionError("pilot quote precedes its registered start day")
         if day != state.day:
             # No invented midnight quote: balance is carried from the last observed event.
             state = state.model_copy(update={"day": day, "daily_anchor_balance": balance,
                                              "daily_stopped": False})
+            self.day_start_msc, self.day_end_msc = _day_bounds(day)
         prior_close = state.close_pending
         self.state = state
         self._observe(tick, balance, floating, position)

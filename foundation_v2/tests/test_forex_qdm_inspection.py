@@ -49,8 +49,8 @@ class InspectionCacheTests(unittest.TestCase):
             with redirect_stdout(output):
                 prepare_main(['--input-manifest', str(manifest), '--cache-dir', str(terms['cache_dir'])])
             events = [json.loads(line) for line in output.getvalue().splitlines()]
-            self.assertEqual([e['stage'] for e in events], ['preparing', 'verified', 'checking', 'verified'])
-            self.assertEqual(events[1]['entry'], events[3]['entry'])
+            self.assertEqual([e['stage'] for e in events], ['preparing', 'verified', 'prepared'])
+            self.assertEqual(len(events[-1]['inputs']), 1)
             self.assertEqual(events[1]['ticks'], 16)
 
     def test_corrupted_entry_and_changed_raw_bytes_fail_without_rebuild(self):
