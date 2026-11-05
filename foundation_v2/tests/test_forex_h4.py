@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 from decimal import Decimal
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -73,6 +74,31 @@ class H4Tests(unittest.TestCase):
                 with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
                     read()
 
+    def test_qdm_timestamp_fast_path_preserves_legacy_validation_and_utc_milliseconds(self):
+        accepted = ('20220103 00:00:00.001', '20220103 23:59:59.999',
+                    '20200229 12:34:56.123', '20220103  1:02:03.004')
+        rejected = ('20220103T00:00:00.001', '20220103 00-00-00.001',
+                    '20220103 24:00:00.001', '20220103 00:60:00.001',
+                    '20220103 00:00:60.001', '20220229 00:00:00.001',
+                    '20221303 00:00:00.001', '20220103 00:00:00,001')
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'ticks.csv'
+            for stamp in (*accepted, *rejected):
+                with self.subTest(stamp=stamp):
+                    path.write_text(f'DateTime,Bid,Ask,Volume\n{stamp},1.10000,1.10020,1\n',
+                                    encoding='utf-8')
+                    parsed = read_qdm_ticks(path, sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                                            first_day='20200101', last_day='20221231')
+                    if stamp in rejected:
+                        with self.assertRaises(ValueError):
+                            list(parsed)
+                    else:
+                        expected = datetime.strptime(stamp, '%Y%m%d %H:%M:%S.%f').replace(tzinfo=timezone.utc)
+                        tick, = parsed
+                        self.assertEqual(tick.time_msc,
+                                         int(expected.timestamp()) * 1000 + expected.microsecond // 1000)
+                        self.assertEqual(tick.sequence, 1)
+
     def test_hourly_runner_roundtrip_and_declared_calendar(self):
         warmup = [candle(i - 20) for i in range(20)]
         ticks = []
@@ -110,7 +136,14 @@ class AccountScenarioTests(unittest.TestCase):
             inspect.assert_not_called()
             receipt = json.loads((output / 'receipt.json').read_text())
             self.assertEqual(receipt['stage'], 'failed')
-            self.assertEqual(receipt['error'], 'cancelled by native workflow')
+            self.assertEqual(receipt['failed_stage'], 'validate_warmup')
+            self.assertEqual(receipt['error_type'], 'RuntimeError')
+            failure = json.loads((output / 'failure.json').read_text())
+            self.assertEqual(failure['failed_stage'], 'validate_warmup')
+            self.assertTrue(failure['exception_text_omitted'])
+            self.assertTrue(failure['frames'])
+            for name in ('receipt.json', 'failure.json', 'events.jsonl'):
+                self.assertNotIn('cancelled by native workflow', (output / name).read_text())
             self.assertEqual(stages, ['manifest', 'validate_warmup'])
 
     def test_windows_sharing_lock_retries_but_persistent_failure_is_not_hidden(self):

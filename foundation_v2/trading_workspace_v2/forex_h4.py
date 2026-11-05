@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import math
+import re
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -18,6 +19,7 @@ from .replay_tick_execution import BrokerReplayTick
 HOUR = 3600
 H4 = 4 * HOUR
 TICK = Decimal('0.00001')
+QDM_TIMESTAMP = re.compile(r'[0-9]{8} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}\Z')
 
 
 def sdk_tick_price(value):
@@ -111,7 +113,12 @@ def read_qdm_ticks(path: Path, *, sha256: str, first_day: str, last_day: str):
             stamp = row['DateTime']
             if len(stamp) != 21 or stamp[-4] != '.' or not first_day <= stamp[:8] <= last_day:
                 raise ValueError('quote outside registered dates or missing milliseconds')
-            dt = datetime.strptime(stamp, '%Y%m%d %H:%M:%S.%f').replace(tzinfo=timezone.utc)
+            if QDM_TIMESTAMP.fullmatch(stamp):
+                # ISO's C parser avoids strptime's per-tick locale/regex work.
+                # Guard its broader grammar; retain legacy parsing off the fast path.
+                dt = datetime.fromisoformat(stamp[:8] + 'T' + stamp[9:] + '+00:00')
+            else:
+                dt = datetime.strptime(stamp, '%Y%m%d %H:%M:%S.%f').replace(tzinfo=timezone.utc)
             tick = BrokerReplayTick(time_msc=int(dt.timestamp()) * 1000 + dt.microsecond // 1000,
                                     sequence=ordinal, bid=row['Bid'], ask=row['Ask'])
             if previous is not None and tick.time_msc < previous:

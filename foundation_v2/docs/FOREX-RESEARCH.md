@@ -68,6 +68,10 @@ rotation (1MiB plus two backups). `failure.json` records error type/code, failed
 phase and source locations; exception text/locals are omitted to avoid payload
 leaks. Logs are diagnostics, not a second task state or tick archive. A phase's
 last-progress timestamp is not a separate process heartbeat.
+Canonical QDM timestamps use the guarded ISO parser; other inputs retain the
+legacy parser's acceptance/rejection behavior. Hash, date-window, millisecond,
+source-order, Bid/Ask and tick-grid checks still apply. A bounded consumed-data
+reader benchmark does not establish whole-scenario throughput or strategy edge.
 `<scenario>-checkpoint.json` contains execution/risk state; study mode also
 writes the final `<scenario>-candidate.json`, with indicator/position age and
 builder state and an explicit `cli_resume_supported=false`.
