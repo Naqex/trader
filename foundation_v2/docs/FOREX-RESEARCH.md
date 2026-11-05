@@ -16,6 +16,28 @@ absolute CSV paths, SHA256 and date bounds, using `forex-h4-inputs-v1`:
 - Other windows, including validation/holdout, are rejected by this runner.
 - The legacy default retains its original20–31December warmup contract/hash.
 
+### Registered historical robustness
+
+The explicit pair `--study-registration <frozen-registration.json>
+--study-registration-sha256 <registered-sha256>` enables the separately registered
+Q1/2023 study (warmup November–December2022). Supply the candidate, pinned input
+manifest, protocol and current account-spec/hash as well. The omission of this
+pair retains the 2022 guards. Only the registered content hash is accepted;
+editing a date or recomputing a hash does not register a new experiment.
+
+Before reading CSVs, the runner checks candidate/windows, protocol/spec,
+frozen numerical module hashes and declared costs/financing calendar. It writes
+an immutable registration/protocol copy and a separate historical-robustness
+manifest with `clean_oos=false` and prior exposure unverified. This is not an
+unseen-data attestation, economic qualification or broker permission. The raw
+data-role key `development` is retained in v1 input JSON for compatibility;
+the explicit manifest role describes how this new period is interpreted.
+
+The frozen registration's source files are the baseline. The CLI's registration
+plumbing changes separately; the numerical modules remain byte pinned. The new
+run manifest pins the actual CLI/registration reader too. Preserve the baseline
+and implementation review rather than editing the frozen protocol to match code.
+
 `--preflight-only` runs the same input/spec/coverage/warmup validation and
 writes manifest/quality/receipt without simulation or `results.json`. A successful
 receipt is `preflight_passed_no_simulation`, not study completion. Use a new output
@@ -58,6 +80,13 @@ financing, commission, server fills and full intrabar coverage are unverified.
 rules; a different target firm is not selected by changing an output label.
 
 ## Evidence and interruption
+
+New manifests record Python/Pydantic versions and Decimal precision/rounding.
+Scenario seals bind these values; the batch controller refuses completed-job
+reuse when the current numerical runtime differs or the older run omitted the
+runtime binding. Such old evidence remains readable with its original limits.
+This is deliberately conservative reuse, not automatic equivalence across engine
+or dependency changes. No previously unrecorded environment is reconstructed.
 
 The output directory must be new. `manifest.json` pins source revision/files,
 protocol, inputs and scenarios; `receipt.json` reports phase, data boundary and

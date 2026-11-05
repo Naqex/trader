@@ -30,6 +30,9 @@ from trading_workspace_v2.forex_pilot_risk import (
     queue_forex_pilot_exit, queue_forex_pilot_order,
 )
 from trading_workspace_v2.replay_tick_execution import initialize_tick_execution
+from trading_workspace_v2.forex_study_registration import (
+    HISTORICAL_SCHEMA, HISTORICAL_PURPOSE, load_registration, validate_registration, runtime_binding,
+)
 
 EXPECTED = {
     'warmup': ('807a05c1e777350f1151674a4c9a1a2288fd11d3f0b1f9fb939509b49d2d83e8', '20211220', '20211231'),
@@ -80,11 +83,13 @@ def write_json(path, value):
             time.sleep(0.05)
 
 
-def input_contract(input_dir, manifest_path=None, *, research_candidate=None):
+def input_contract(input_dir, manifest_path=None, *, research_candidate=None, registration=None):
     if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     if research_candidate is not None and manifest_path is None:
         raise ValueError('research candidate requires its pinned input manifest')
+    if registration is not None and (research_candidate is None or manifest_path is None):
+        raise ValueError('study registration requires a candidate and input manifest')
     if manifest_path is None:
         return {n: dict(path=str(input_dir / n / 'EURUSD_TICK_TW-TICK-No Session.csv'),
                        sha256=v[0], first_day=v[1], last_day=v[2]) for n, v in EXPECTED.items()}
@@ -101,7 +106,10 @@ def input_contract(input_dir, manifest_path=None, *, research_candidate=None):
             datetime.strptime(item[key], '%Y%m%d')
         if item['first_day'] > item['last_day'] or not Path(item['path']).is_absolute():
             raise ValueError('input manifest requires ordered dates and absolute paths')
-    # This runner implements the registered development contract, not arbitrary holdout access.
+    if registration is not None:
+        validate_registration(registration, inputs, research_candidate)
+        return inputs
+    # Omission retains the legacy guard, not arbitrary holdout access.
     if (inputs['warmup']['last_day'] >= inputs['development']['first_day']
             or inputs['development']['first_day'] != '20220103'
             or inputs['development']['last_day'] not in {'20220114', '20220331'}
@@ -224,7 +232,9 @@ def scenario_binding(manifest):
     # or source bytes. Retain full source pins; never infer numeric equivalence.
     keys = ('schema', 'purpose', 'candidate', 'contract', 'source_files', 'inputs',
             'observed_account_spec', 'scenarios', 'validation_holdout_read',
-            'broker_connected', 'price_basis', 'risk_usd', 'research_protocol', 'execution_mode')
+            'broker_connected', 'price_basis', 'risk_usd', 'research_protocol', 'execution_mode',
+            'study_registration', 'data_role', 'prior_exposure', 'clean_oos')
+    keys = (*keys, 'runtime')
     return content_hash({key: manifest.get(key) for key in keys})
 
 
@@ -403,6 +413,8 @@ def main(argv=None, on_progress=None):
     parser.add_argument('--candidate', choices=ALL_STUDY_CANDIDATES,
                         help='Registered research comparator; omission preserves the fixed Donchian pilot')
     parser.add_argument('--research-protocol', type=Path)
+    parser.add_argument('--study-registration', type=Path)
+    parser.add_argument('--study-registration-sha256')
     parser.add_argument('--preflight-only', action='store_true',
                         help='Validate registered inputs/spec/warmup without simulating trades')
     parser.add_argument('--reuse-scenarios-from', type=Path,
@@ -412,6 +424,10 @@ def main(argv=None, on_progress=None):
         parser.error('--account-spec and --account-spec-sha256 must be supplied together')
     if bool(args.candidate) != bool(args.research_protocol):
         parser.error('--candidate and --research-protocol must be supplied together')
+    if bool(args.study_registration) != bool(args.study_registration_sha256):
+        parser.error('--study-registration and --study-registration-sha256 must be supplied together')
+    if args.study_registration and not (args.candidate and args.account_spec and args.input_manifest):
+        parser.error('study registration requires candidate, protocol, account spec and input manifest')
     if args.preflight_only and args.reuse_scenarios_from:
         parser.error('preflight-only does not resume scenarios')
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -441,7 +457,13 @@ def main(argv=None, on_progress=None):
             on_progress(stage)
     try:
         progress('manifest')
-        inputs = input_contract(args.input_dir, args.input_manifest, research_candidate=args.candidate)
+        registration = None
+        if args.study_registration:
+            frozen_registration = args.output_dir/'study-registration.json'
+            frozen_registration.write_bytes(args.study_registration.read_bytes())
+            registration = load_registration(frozen_registration, args.study_registration_sha256)
+        inputs = input_contract(args.input_dir, args.input_manifest, research_candidate=args.candidate,
+                                registration=registration)
         account = observed_account_spec(args.account_spec, args.account_spec_sha256) if args.account_spec else None
         paths = {name: Path(item['path']) for name, item in inputs.items()}
         scenarios = [dict(name=n, slippage=s,
@@ -454,7 +476,8 @@ def main(argv=None, on_progress=None):
         source_files = [Path(__file__), *[V2 / 'trading_workspace_v2' / name for name in
             ('forex_h4.py', 'forex_pilot_risk.py', 'forex_financing.py', 'replay_execution.py',
              'replay_tick_execution.py', 'semantics/data_contracts.py', 'semantics/data_costs.py',
-             'forex_h4_candidates.py', 'forex_prop_candidates.py')]]
+             'forex_h4_candidates.py', 'forex_prop_candidates.py', 'forex_study_registration.py')]]
+        protocol_bytes = args.research_protocol.read_bytes() if args.candidate else None
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             run_id=receipt['run_id'],
             candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
@@ -464,6 +487,7 @@ def main(argv=None, on_progress=None):
             created_at_utc=datetime.now(timezone.utc).isoformat(),
             source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=V2, text=True).strip(),
             source_files={str(p.relative_to(V2)): hashlib.sha256(p.read_bytes()).hexdigest() for p in source_files},
+            runtime=runtime_binding(),
             inputs=inputs, observed_account_spec=account,
             scenarios=[dict(name=s['name'], commission_usd_per_lot_per_side='2.50', slippage=str(s['slippage']),
                 financing_calendar=[t.model_dump(mode='json') for t in financing_calendar(s['buy'],
@@ -475,7 +499,17 @@ def main(argv=None, on_progress=None):
         if args.candidate:
             manifest.update(purpose='registered_development_not_qualification',
                 research_protocol=dict(path=str(args.research_protocol.resolve()),
-                    sha256=hashlib.sha256(args.research_protocol.read_bytes()).hexdigest()))
+                    sha256=hashlib.sha256(protocol_bytes).hexdigest()))
+        if registration:
+            validate_registration(registration, inputs, args.candidate,
+                protocol_sha256=manifest['research_protocol']['sha256'], source_files=manifest['source_files'],
+                account_spec_sha256=account['sha256'], scenarios=manifest['scenarios'])
+            manifest.update(schema=HISTORICAL_SCHEMA, purpose=HISTORICAL_PURPOSE,
+                contract=registration['study_id'], data_role=registration['data_role'],
+                prior_exposure=registration['prior_exposure'], clean_oos=False,
+                study_registration=dict(study_id=registration['study_id'],
+                    sha256=args.study_registration_sha256))
+            (args.output_dir/'protocol.md').write_bytes(protocol_bytes)
         if args.reuse_scenarios_from:
             source_bytes = (args.reuse_scenarios_from/'manifest.json').read_bytes()
             manifest['scenario_reuse_source'] = dict(path=str(args.reuse_scenarios_from.resolve()),
