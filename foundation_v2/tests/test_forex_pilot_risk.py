@@ -77,6 +77,32 @@ def carried(*, side="BUY", at=None):
 
 
 class ForexPilotRiskTests(unittest.TestCase):
+    def test_repeated_prices_keep_tick_count_and_same_ms_risk_trigger_then_close(self):
+        for side, normal, breach, recovery in (
+            ("BUY", ("1.10000", "1.10020"), ("1.09920", "1.09940"), ("1.09930", "1.09950")),
+            ("SELL", ("1.10000", "1.10020"), ("1.10080", "1.10100"), ("1.10070", "1.10090")),
+        ):
+            with self.subTest(side=side):
+                state = carried(side=side)
+                when = ms() + 60000
+                quotes = [tick(*normal, when=when, sequence=0),
+                          tick(*normal, when=when, sequence=1),
+                          tick(*breach, when=when, sequence=2),
+                          tick(*recovery, when=when, sequence=3),
+                          tick(*recovery, when=when + 1, sequence=0)]
+                result = advance(state, quotes)
+                self.assertEqual(result.risk.observed_ticks, 6)
+                self.assertEqual(result.risk.minimum_observed_equity, Decimal("9900"))
+                self.assertEqual(result.risk.stops[0].tick.sequence, 2)
+                self.assertTrue(result.risk.daily_stopped)
+                closes = [e for e in result.execution.ledger if e["kind"] == "protective_fill"]
+                self.assertEqual(len(closes), 1)
+                self.assertEqual(closes[0]["details"]["reason"], "pilot_risk_stop")
+                self.assertEqual(closes[0]["details"]["sequence"], 3)
+                self.assertEqual(result.execution.balance, Decimal("9910"))
+                self.assertEqual(result.execution.floating_pl, Decimal("0"))
+                self.assertIsNone(result.execution.position)
+
     def test_strategy_exit_uses_first_quote_strictly_after_decision_for_both_sides(self):
         for side, stop, bid, ask in (("BUY", "1.09", "1.09900", "1.09920"),
                                     ("SELL", "1.11", "1.10100", "1.10120")):

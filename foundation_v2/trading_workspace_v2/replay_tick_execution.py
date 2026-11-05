@@ -224,13 +224,22 @@ def advance_tick_execution(
     sequence = snapshot.event_sequence
     last_tick = None
     exposure = position is not None
+    floating_key = None
+    floating_value = Decimal("0")
 
     def floating(tick):
+        nonlocal floating_key, floating_value
         if position is None:
             return Decimal("0")
-        value, _ = _liquidation_pnl(position, exit_bid=tick.bid, exit_ask=tick.ask,
-                                  instrument=instrument, cost_model=costs)
-        return value
+        # Reuse only the valuation inputs, never a risk decision. Costs and
+        # instrument are fixed for this window; partial quantities change the key.
+        key = (tick.bid, tick.ask, position.side, position.quantity,
+               position.original_quantity, position.entry_bid, position.entry_ask)
+        if key != floating_key:
+            floating_value, _ = _liquidation_pnl(position, exit_bid=tick.bid, exit_ask=tick.ask,
+                                                instrument=instrument, cost_model=costs)
+            floating_key = key
+        return floating_value
 
     def record(kind, tick, detail, *, mark=False):
         nonlocal sequence
