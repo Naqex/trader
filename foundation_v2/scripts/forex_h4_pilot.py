@@ -215,6 +215,93 @@ def reconcile(state, slippage):
                 balance_delta_usd=str(realized - financing), independent_accounting='passed')
 
 
+def content_hash(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def scenario_binding(manifest):
+    # Run IDs/timestamps/Git commits may change without changing these inputs
+    # or source bytes. Retain full source pins; never infer numeric equivalence.
+    keys = ('schema', 'purpose', 'candidate', 'contract', 'source_files', 'inputs',
+            'observed_account_spec', 'scenarios', 'validation_holdout_read',
+            'broker_connected', 'price_basis', 'risk_usd', 'research_protocol', 'execution_mode')
+    return content_hash({key: manifest.get(key) for key in keys})
+
+
+def scenario_files(manifest, name):
+    files = [name+'-checkpoint.json', name+'-decisions.json']
+    if manifest.get('research_protocol'):
+        files.append(name+'-candidate.json')
+    return files
+
+
+def seal_scenario(output, manifest, result, *, reused=False):
+    name = result['scenario']
+    if name not in {s['name'] for s in manifest['scenarios']}:
+        raise ValueError('cannot seal an undeclared scenario')
+    write_json(output/(name+'-completed.json'), dict(schema='forex-completed-scenario-v1',
+        run_id=manifest['run_id'], scenario=name, binding_sha256=scenario_binding(manifest),
+        result_sha256=content_hash(result),
+        reused_from=manifest.get('scenario_reuse_source') if reused else None,
+        quality_sha256=hashlib.sha256((output/'quality.json').read_bytes()).hexdigest(),
+        artifact_sha256={f: hashlib.sha256((output/f).read_bytes()).hexdigest()
+                         for f in scenario_files(manifest, name)}))
+
+
+def reuse_scenario(source, output, manifest, scenario):
+    name = scenario['name']
+    seal_path = source/(name+'-completed.json')
+    if not seal_path.exists():
+        return None
+    prior = json.loads((source/'manifest.json').read_text(encoding='utf-8'))
+    receipt = json.loads((source/'receipt.json').read_text(encoding='utf-8'))
+    supervisor_path = source.parent/'terminal.json'
+    supervisor = json.loads(supervisor_path.read_text(encoding='utf-8')) if supervisor_path.is_file() else {}
+    if receipt.get('run_id') != prior.get('run_id'):
+        raise ValueError('prior attempt receipt identity differs')
+    if (receipt.get('stage') not in {'failed', 'completed_declared_scenarios'}
+            and supervisor.get('status') not in {'failed', 'cancelled', 'timed_out'}):
+        raise ValueError('reconcile and stop the prior attempt before scenario reuse')
+    seal = json.loads(seal_path.read_text(encoding='utf-8'))
+    if (seal.get('schema') != 'forex-completed-scenario-v1'
+            or seal.get('run_id') != prior.get('run_id') or seal.get('scenario') != name
+            or seal.get('binding_sha256') != scenario_binding(prior)
+            or scenario_binding(prior) != scenario_binding(manifest)
+            or set(seal.get('artifact_sha256', {})) != set(scenario_files(manifest, name))):
+        raise ValueError('completed scenario bindings differ')
+    payloads = {f: (source/f).read_bytes() for f in scenario_files(manifest, name)}
+    for filename, data in payloads.items():
+        if hashlib.sha256(data).hexdigest() != seal['artifact_sha256'][filename]:
+            raise ValueError('completed scenario artifact hash differs')
+    if any(hashlib.sha256((directory/'quality.json').read_bytes()).hexdigest() != seal['quality_sha256']
+           for directory in (source, output)):
+        raise ValueError('completed scenario quality differs')
+    matches = [r for r in json.loads((source/'results.json').read_text(encoding='utf-8'))
+               if r.get('scenario') == name]
+    if len(matches) != 1 or content_hash(matches[0]) != seal['result_sha256']:
+        raise ValueError('completed scenario result differs')
+    result = matches[0]
+    state = ForexPilotSnapshot.model_validate_json(payloads[name+'-checkpoint.json'])
+    expected = dict(**reconcile(state, scenario['slippage']),
+        balance_usd=str(state.execution.balance), equity_usd=str(state.execution.equity),
+        observed_ticks=state.risk.observed_ticks,
+        open_position=state.execution.position.model_dump(mode='json') if state.execution.position else None,
+        pending_entry=state.execution.pending_market_order is not None,
+        entry_fills=sum(e['kind'] == 'market_fill' for e in state.execution.ledger),
+        closed_trades=sum(e['kind'] == 'protective_fill' for e in state.execution.ledger))
+    quality = json.loads((output/'quality.json').read_text(encoding='utf-8'))
+    if (any(result.get(k) != v for k, v in expected.items())
+            or state.risk.observed_ticks != quality['development']['ticks']
+            or (manifest.get('research_protocol') and
+                (result.get('candidate') != manifest['candidate'] or result.get('candidate_state_roundtrip') != 'passed'))
+            or result.get('strategy_pass') is not False or result.get('prop_pass') is not False
+            or result.get('broker_spec_verified') is not False):
+        raise ValueError('completed scenario accounting or scope differs')
+    for filename, data in payloads.items():
+        write_json(output/filename, json.loads(data))
+    return result
+
+
 def run_scenario(path, warmup, name, slippage, debit, output, progress, *, development=None, sell_debit=None,
                  research_candidate=None):
     if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
@@ -318,11 +405,15 @@ def main(argv=None, on_progress=None):
     parser.add_argument('--research-protocol', type=Path)
     parser.add_argument('--preflight-only', action='store_true',
                         help='Validate registered inputs/spec/warmup without simulating trades')
+    parser.add_argument('--reuse-scenarios-from', type=Path,
+                        help='Read sealed completed scenarios from a stopped attempt; output must still be new')
     args = parser.parse_args(argv)
     if bool(args.account_spec) != bool(args.account_spec_sha256):
         parser.error('--account-spec and --account-spec-sha256 must be supplied together')
     if bool(args.candidate) != bool(args.research_protocol):
         parser.error('--candidate and --research-protocol must be supplied together')
+    if args.preflight_only and args.reuse_scenarios_from:
+        parser.error('preflight-only does not resume scenarios')
     args.output_dir.mkdir(parents=True, exist_ok=False)
     logger, handler = event_logger(args.output_dir)
     began = time.monotonic()
@@ -385,7 +476,17 @@ def main(argv=None, on_progress=None):
             manifest.update(purpose='registered_development_not_qualification',
                 research_protocol=dict(path=str(args.research_protocol.resolve()),
                     sha256=hashlib.sha256(args.research_protocol.read_bytes()).hexdigest()))
+        if args.reuse_scenarios_from:
+            source_bytes = (args.reuse_scenarios_from/'manifest.json').read_bytes()
+            manifest['scenario_reuse_source'] = dict(path=str(args.reuse_scenarios_from.resolve()),
+                manifest_sha256=hashlib.sha256(source_bytes).hexdigest(), run_id=json.loads(source_bytes)['run_id'])
         write_json(args.output_dir / 'manifest.json', manifest)
+        if args.reuse_scenarios_from:
+            prior = json.loads(source_bytes)
+            if scenario_binding(prior) != scenario_binding(manifest):
+                raise ValueError('completed scenario bindings differ')
+            if not any((args.reuse_scenarios_from/(s['name']+'-completed.json')).is_file() for s in scenarios):
+                raise ValueError('no sealed completed scenario to reuse')
         quality = {}
         for name, item in inputs.items():
             progress('validate_' + name)
@@ -398,12 +499,26 @@ def main(argv=None, on_progress=None):
         if args.preflight_only:
             progress('preflight_passed_no_simulation')
             return
+        reused = {}
+        if args.reuse_scenarios_from:
+            progress('verify_completed_scenarios')
+            reused = {s['name']: reuse_scenario(args.reuse_scenarios_from, args.output_dir, manifest, s)
+                      for s in scenarios}
+            if not any(value is not None for value in reused.values()):
+                raise ValueError('no sealed completed scenario to reuse')
         results = []
         for scenario in scenarios:
-            results.append(run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],
-                scenario['buy'], args.output_dir, progress,
-                development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate))
+            result = reused.get(scenario['name'])
+            if result is None:
+                result = run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],
+                    scenario['buy'], args.output_dir, progress,
+                    development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate)
+            else:
+                receipt.setdefault('reused_scenarios', []).append(scenario['name'])
+                progress(scenario['name']+'_reused')
+            results.append(result)
             write_json(args.output_dir / 'results.json', results)
+            seal_scenario(args.output_dir, manifest, result, reused=scenario['name'] in receipt.get('reused_scenarios', []))
         if args.candidate in PROP_CANDIDATES:
             review_entries = []
             for scenario in scenarios:

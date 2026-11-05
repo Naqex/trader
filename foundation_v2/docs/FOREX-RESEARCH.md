@@ -90,5 +90,26 @@ reconcile PID/identity, receipt and existing artifacts first; retain the failed
 attempt and do not overwrite it or duplicate a worker. These offline results
 cannot grant execution, qualify a prop account or certify an OOS edge.
 
+### Reuse a completed scenario after interruption
+
+For new runs, `<scenario>-completed.json` seals a completed result, quality and
+checkpoint/decisions/candidate hashes. It is written after final accounting and
+the results update, never from an intermediate checkpoint. A subsequent attempt
+may use `--reuse-scenarios-from <stopped-attempt>` with a **new output directory**.
+For example, a completed reference scenario can be kept when cost-stress fails.
+
+The prior receipt must be failed/completed, or its owning batch terminal must
+report failed/cancelled/timed_out after process reconciliation. Inputs, complete
+source hashes, candidate, costs/spec/risk, protocol and quality must still match.
+Hashes and final snapshot/accounting are verified before copying artifacts.
+Changed bindings or a request with no seals fails; it never silently reruns the
+whole study. The new manifest/seal records the source attempt and run identity.
+
+This is reuse at a scenario boundary. `cli_resume_supported=false` still refers
+to restoring an in-progress simulation; candidate/builder/financing/cursor state
+is not restored midway. Legacy outputs without seals remain historical evidence
+and are not automatically adopted. Source changes conservatively invalidate
+reuse; numeric equivalence across versions is a separate review, not inferred.
+
 Tests: `tests/test_forex_prop_candidates.py`, `tests/test_forex_h4_candidates.py`, `tests/test_forex_h4.py`; workspace
 fixture regression: `tooling/ai-engines/tests/test_forex_research.py`.
