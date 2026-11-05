@@ -36,6 +36,12 @@ def source_pins():
     return {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in SOURCES.items()}
 
 
+class DataQualityError(capture.CaptureError):
+    def __init__(self, reason, **details):
+        super().__init__(reason)
+        self.details = details
+
+
 class ShadowReader(capture.NativeReader):
     def __call__(self, start, end):
         try:
@@ -61,6 +67,7 @@ class Plan(capture.Frozen):
     settle_seconds: int = Field(default=30, ge=30, le=120, strict=True)
     source_sha256: dict[str, str]
     stability_policy: capture.ComparisonPolicy = 'raw_ticks_v1'
+    projection_policy: Literal['strict_v1', 'quarantine_v1'] = 'strict_v1'
     continuation: Continuation | None = None
 
     @model_validator(mode='after')
@@ -85,7 +92,12 @@ def audit(page, plan, fetch, evidence_directory, policy='raw_ticks_v1'):
     reread = capture.validate_page(fetch(page['from_msc'], page['to_msc']), plan,
                                   page['from_msc'], page['to_msc'])
     if not capture.compare_pages(page, reread, policy, evidence_directory):
-        raise capture.CaptureError('shadow_observed_window_revised')
+        if any(page[k] != reread[k] for k in ('clock', 'source_sha256', 'sdk_version')):
+            raise capture.CaptureError('shadow_observed_window_revised')
+        raise DataQualityError('shadow_observed_window_revised',
+            from_msc=page['from_msc'], to_msc=page['to_msc'],
+            observed_at_msc=reread['observed_at_msc'],
+            original_sha256=capture.checksum(page), reread_sha256=capture.checksum(reread))
     return reread['observed_at_msc']
 
 
@@ -105,6 +117,8 @@ def warmup(plan, directory, *, verify_pages=False):
     if (not predecessor.is_absolute() or directory.is_relative_to(predecessor) or
             predecessor.is_relative_to(directory)):
         raise capture.CaptureError('shadow_predecessor_path_invalid')
+    if (predecessor/'quality-hold.json').exists():
+        raise capture.CaptureError('shadow_predecessor_quality_hold')
     report = capture.checked(predecessor/'shadow.json')
     if (capture.checksum(report) != plan.continuation.report_sha256 or
             report.get('schema_version') != 'mt5-shadow-report-v2'):
@@ -124,6 +138,7 @@ def warmup(plan, directory, *, verify_pages=False):
     if (plan.capture.binding != previous_capture.binding or plan.capture.symbol != previous_capture.symbol or
             plan.capture.api_origin != previous_capture.api_origin or plan.settle_seconds != previous_plan.settle_seconds or
             plan.stability_policy != previous_plan.stability_policy or
+            plan.projection_policy != previous_plan.projection_policy or
             plan.capture.from_msc != previous_capture.to_msc or plan.capture.from_msc % HOUR_MS or
             report['consumed_through_msc'] != plan.capture.from_msc or
             report['python_version'] != sys.version or report['pydantic_version'] != PYDANTIC_VERSION or
@@ -230,7 +245,8 @@ def reduce_capture(directory, plan, previous, fetch, now_msc, *, recover=False, 
         # no synthetic bars, skipping hours or implicit candidate resets.
         gaps = [b-a for a, b in zip([hour]+stamps, stamps+[end])]
         if not stamps or max(gaps) > 60000:
-            raise capture.CaptureError('shadow_hour_gap_requires_review')
+            raise DataQualityError('shadow_hour_gap_requires_review', from_msc=hour,
+                to_msc=end, ticks=len(stamps), maximum_gap_msc=max(gaps), observed_at_msc=verified_at)
         bar = Candle(hour//1000, mids[0], max(mids), min(mids), mids[-1])
         hours.append({'time_msc': hour, 'ticks': len(stamps), 'maximum_gap_msc': max(gaps),
                       'ohlc_mid': [str(bar.open), str(bar.high), str(bar.low), str(bar.close)]})
@@ -286,9 +302,6 @@ def step(plan, directory, fetch, now_msc, *, recover=False, registration_sha256=
             raise capture.CaptureError('shadow_predecessor_source_changed')
         return page
     capture_dir = directory/'capture'
-    result = capture.record(plan.capture, capture_dir, resume=capture_dir.exists(),
-                            fetch=fetch, max_batches=1, now_msc=now_msc,
-                            comparison_policy=plan.stability_policy)
     report_path = directory/'shadow.json'
     previous = capture.checked(report_path) if report_path.exists() else None
     if previous and (previous['source_sha256'] != plan.source_sha256 or
@@ -296,22 +309,51 @@ def step(plan, directory, fetch, now_msc, *, recover=False, registration_sha256=
                      previous['binding'] != plan.capture.binding.model_dump(mode='json') or
                      previous['python_version'] != sys.version or previous['pydantic_version'] != PYDANTIC_VERSION):
         raise capture.CaptureError('shadow_registration_or_source_invalid')
-    report = reduce_capture(capture_dir, plan, previous, fetch, now_msc, recover=recover,
-                            seed=seed, registration_sha256=registration_sha256)
-    capture.store(report_path, report)
+    hold_path = directory/'quality-hold.json'
+    hold = capture.checked(hold_path) if hold_path.exists() else None
+    plan_hash = capture.checksum(plan.model_dump(mode='json'))
+    previous_hash = capture.checksum(previous) if previous else None
+    if hold and (plan.projection_policy != 'quarantine_v1' or
+                 hold.get('plan_sha256') != plan_hash or
+                 hold.get('last_valid_report_sha256') != previous_hash):
+        raise capture.CaptureError('shadow_quality_hold_changed')
+    result = capture.record(plan.capture, capture_dir, resume=capture_dir.exists(),
+                            fetch=fetch, max_batches=1, now_msc=now_msc,
+                            comparison_policy=plan.stability_policy)
+    report = previous
+    if hold is None:
+        try:
+            report = reduce_capture(capture_dir, plan, previous, fetch, now_msc, recover=recover,
+                                    seed=seed, registration_sha256=registration_sha256)
+        except DataQualityError as error:
+            if plan.projection_policy != 'quarantine_v1':
+                raise
+            hold = dict(schema_version='mt5-shadow-quality-hold-v1', execution_capability=False,
+                plan_sha256=plan_hash, observed_at_msc=max(now_msc,error.details.get('observed_at_msc',now_msc)), reason=str(error),
+                details=error.details, last_valid_report_sha256=previous_hash)
+            capture.store(hold_path, hold)
+        else:
+            capture.store(report_path, report)
+    # A quality hold freezes projection, not raw collection. Never retry the
+    # same suspect hour on every poll or publish its decisions as current.
+    report = report or dict(hours=[], decisions=[], cumulative_hours=seed['cumulative_hours'] if seed else 0,
+        cumulative_h4_bars=seed['cumulative_h4_bars'] if seed else 0, data_status='quality_hold')
     done = result['status'] == 'complete' and now_msc >= plan.capture.to_msc+plan.settle_seconds*1000
-    next_poll = (min(report['requested_through_msc']+plan.capture.page_seconds*1000,
+    next_poll = (min(result['requested_through_msc']+plan.capture.page_seconds*1000,
                      plan.capture.to_msc)+2000 if result['status'] != 'complete'
                  else plan.capture.to_msc+plan.settle_seconds*1000)
     first_hour = (plan.capture.from_msc+HOUR_MS-1)//HOUR_MS*HOUR_MS
     next_close = first_hour+(len(report['hours'])+1)*HOUR_MS
-    if next_close <= report['requested_through_msc']:
+    if hold is None and next_close <= result['requested_through_msc']:
         next_poll = min(next_poll, next_close+plan.settle_seconds*1000)
     return dict(status='complete' if done else 'waiting' if result['status'] == 'complete' else result['status'],
-        execution_capability=False, strategy_qualified=False, ticks=report['ticks'], pages=report['pages'],
+        execution_capability=False, strategy_qualified=False, ticks=result['ticks'], pages=result['pages'],
         closed_hours=len(report['hours']), h4_bars=len(report['decisions']),
         cumulative_hours=report['cumulative_hours'], cumulative_h4_bars=report['cumulative_h4_bars'],
-        data_status=report['data_status'], requested_through_msc=report['requested_through_msc'],
+        data_status='quality_hold' if hold else report['data_status'],
+        projection_status='held' if hold else 'ready', quality_reason=hold['reason'] if hold else None,
+        quality_details=hold['details'] if hold else None,
+        requested_through_msc=result['requested_through_msc'],
         next_poll_msc=next_poll)
 
 

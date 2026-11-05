@@ -422,3 +422,33 @@ position, EXIT lifecycle, quantity, fill, margin, financing or P&L. Unknown
 fees remain `not_modeled`; `execution_capability` and `strategy_qualified`
 remain false. This verifies the observed data/lifecycle/consumer path, not a
 complete strategy paper trader, continuous multi-day service or profitability.
+
+## Keep raw collection independent of bar quality
+
+New v2 observation registrations may explicitly set
+`"projection_policy": "quarantine_v1"`. The default `strict_v1` still stops on
+a failed bar-quality check. Do not edit a failed session's original registration
+or source pins to switch policies; use reviewed new registrations.
+
+In quarantine mode, a historical reread with changed quotes or a closed-hour
+gap over 60 seconds persists a checksummed `quality-hold.json`. Raw capture
+continues from its existing cursor. The last valid `shadow.json` stays frozen;
+suspect hours do not emit new bars/signals and are not repeatedly recomputed
+on every poll. Resume validates the hold's plan and last valid report before
+advancing raw capture. The hold records when the changed data was actually
+observed, never an earlier retrospective knowledge time.
+
+Lifecycle observations expose `projection_status`, `quality_reason` and
+`quality_details` alongside current raw page/tick counters. `complete` with
+`projection_status=held` means collection finished, not data acceptance. The
+workspace controller keeps that task blocked and cannot hand off its warmup.
+A held predecessor is explicitly rejected even if its last valid report exists.
+Human inspection/reconciliation is required before a reviewed new projection;
+there is no automatic release of a hold or execution of historical signals.
+
+Account/source/SDK/clock changes, corrupt files and revisions to the raw
+recorder's most recently committed page remain hard failures. This policy does
+not weaken raw capture identity or atomic-commit recovery. Empty/quiet intervals
+are not filled, the 60-second bar threshold is unchanged, and no unverified
+broker calendar is used to exempt gaps. Test with saved competing observations
+and a synthetic clock before requesting another wall-clock hour.

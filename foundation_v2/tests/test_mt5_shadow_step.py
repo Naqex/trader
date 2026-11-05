@@ -219,6 +219,84 @@ class ShadowStepTests(unittest.TestCase):
                     shadow.audit(original, self.plan.capture, lambda *_: revised,
                         self.directory/name, 'ordered_quotes_v1')
 
+    def test_quality_hold_keeps_collecting_after_saved_gap_without_retrying_projection(self):
+        self.raw.update(projection_policy='quarantine_v1')
+        self.plan=shadow.Plan.model_validate(self.raw)
+        def quiet(start,end):
+            page=self.page(start,end)
+            if 10*60000<=start<13*60000:page['rows']=[]
+            return page
+        capture.record(self.plan.capture,self.directory/'capture',resume=False,fetch=quiet,
+            max_batches=60,now_msc=4*HOUR+5000)
+        first=shadow.step(self.plan,self.directory,quiet,HOUR+30000)
+        self.assertEqual(first['projection_status'],'held')
+        self.assertEqual(first['quality_reason'],'shadow_hour_gap_requires_review')
+        self.assertGreater(first['quality_details']['maximum_gap_msc'],60000)
+        before=(self.directory/'quality-hold.json').read_bytes()
+        with patch.object(shadow,'reduce_capture',side_effect=AssertionError('held reducer retried')):
+            second=shadow.step(self.plan,self.directory,quiet,HOUR+62000,recover=True)
+        self.assertEqual(second['pages'],61)
+        self.assertEqual(second['closed_hours'],0)
+        self.assertGreater(second['requested_through_msc'],first['requested_through_msc'])
+        self.assertGreater(second['next_poll_msc'],HOUR+62000)
+        self.assertEqual((self.directory/'quality-hold.json').read_bytes(),before)
+        self.assertFalse((self.directory/'shadow.json').exists())
+        self.assertFalse(second['execution_capability'])
+        # Freeze the hold through raw completion; it never becomes an accepted H1.
+        capture.record(self.plan.capture,self.directory/'capture',resume=True,fetch=quiet,
+            max_batches=180,now_msc=4*HOUR+5000)
+        done=shadow.step(self.plan,self.directory,quiet,4*HOUR+30000)
+        self.assertEqual((done['status'],done['projection_status'],done['pages']),('complete','held',240))
+        self.assertEqual(done['closed_hours'],0)
+
+    def test_revised_old_page_holds_projection_and_preserves_last_valid_report(self):
+        self.raw.update(projection_policy='quarantine_v1',stability_policy='ordered_quotes_v1')
+        self.plan=shadow.Plan.model_validate(self.raw)
+        capture.record(self.plan.capture,self.directory/'capture',resume=False,fetch=self.page,
+            max_batches=60,now_msc=4*HOUR+5000,comparison_policy=self.plan.stability_policy)
+        baseline=self.reduce(now=HOUR+30000)
+        capture.store(self.directory/'shadow.json',baseline)
+        original=(self.directory/'shadow.json').read_bytes()
+        def revised(start,end):
+            page=self.page(start,end)
+            if start==60000:page['rows'].append(copy.deepcopy(page['rows'][-1]))
+            return page
+        result=shadow.step(self.plan,self.directory,revised,HOUR+62000,recover=True)
+        self.assertEqual(result['quality_reason'],'shadow_observed_window_revised')
+        self.assertGreaterEqual(capture.checked(self.directory/'quality-hold.json')['observed_at_msc'],
+            self.page(60000,120000)['observed_at_msc'])
+        self.assertEqual(result['closed_hours'],1)
+        self.assertEqual(result['pages'],61)
+        self.assertEqual((self.directory/'shadow.json').read_bytes(),original)
+        self.assertTrue(list((self.directory/'audit-observations').glob('revision-*.json')))
+        next_result=shadow.step(self.plan,self.directory,revised,HOUR+122000,recover=True)
+        self.assertEqual(next_result['pages'],62)
+        hold=capture.checked(self.directory/'quality-hold.json')
+        hold['last_valid_report_sha256']='0'*64
+        capture.store(self.directory/'quality-hold.json',hold)
+        count=capture.checked(self.directory/'capture/state.json')['pages']
+        with self.assertRaisesRegex(capture.CaptureError,'quality_hold_changed'):
+            shadow.step(self.plan,self.directory,revised,HOUR+182000)
+        self.assertEqual(capture.checked(self.directory/'capture/state.json')['pages'],count)
+
+    def test_quarantine_still_stops_on_lineage_change_and_held_predecessor(self):
+        self.raw.update(projection_policy='quarantine_v1')
+        self.plan=shadow.Plan.model_validate(self.raw)
+        self.record(through=HOUR)
+        def changed(start,end):
+            page=self.page(start,end)
+            if start==60000:page['clock']={'profile':'changed'}
+            return page
+        with self.assertRaisesRegex(capture.CaptureError,'shadow_observed_window_revised'):
+            shadow.step(self.plan,self.directory,changed,HOUR+30000)
+        self.assertFalse((self.directory/'quality-hold.json').exists())
+        predecessor=self.root/'predecessor';predecessor.mkdir()
+        capture.store(predecessor/'quality-hold.json',{'execution_capability':False})
+        next_plan=self.plan.model_copy(update={'continuation':shadow.Continuation(
+            state_dir=str(predecessor),report_sha256='a'*64)})
+        with self.assertRaisesRegex(capture.CaptureError,'shadow_predecessor_quality_hold'):
+            shadow.warmup(next_plan,self.directory)
+
     def test_stop_or_expiry_prevents_network_and_failed_read_keeps_report(self):
         fetch=Mock(side_effect=OSError('offline fixture'))
         (self.directory/'STOP').touch()
