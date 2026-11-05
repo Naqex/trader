@@ -14,6 +14,7 @@ from .execution_semantics import (
     validate_ohlc_bar,
 )
 from .retained import CostModel, InstrumentSpec, calculate_round_trip_cost
+from .semantics.data_costs import _money
 
 
 class ReplayExecutionError(ValueError):
@@ -714,6 +715,42 @@ def _liquidation_pnl(
         exit_ask,
     )
     return Decimal(str(cost["net_account"])), cost
+
+
+def _liquidation_net_account(
+    position: ReplayOpenPosition,
+    *,
+    exit_bid: Decimal,
+    exit_ask: Decimal,
+    instrument: InstrumentSpec,
+    cost_model: CostModel,
+) -> Decimal:
+    """Fast validated valuation path for floating checks.
+
+    It deliberately returns only rounded net account P/L. Event closes still
+    use ``_liquidation_pnl`` so cost breakdown/provenance remains unchanged.
+    Callers must pass the already validated InstrumentSpec/CostModel from the
+    current execution window.
+    """
+    commission = cost_model.commission_per_side_account
+    minimum_fee = cost_model.minimum_fee_account
+    financing = cost_model.financing_account
+    if position.original_quantity is not None:
+        ratio = position.quantity / position.original_quantity
+        commission *= ratio
+        minimum_fee *= ratio
+        financing *= ratio
+    units = position.quantity * instrument.contract_size
+    if position.side == "BUY":
+        gross_quote = (exit_bid - position.entry_ask) * units
+    else:
+        gross_quote = (position.entry_bid - exit_ask) * units
+    gross_account = gross_quote * cost_model.quote_to_account_rate
+    slippage = cost_model.slippage_price_per_side * Decimal(2) * units * cost_model.quote_to_account_rate
+    commission_account = max((commission + cost_model.commission_per_side_per_quantity_account
+                              * position.quantity) * Decimal(2), minimum_fee)
+    return _money(gross_account - commission_account - slippage - financing,
+                  cost_model.rounding_decimals)
 
 
 def _validate_manual_close(snapshot, event):

@@ -19,6 +19,7 @@ from .replay_execution import (
     ReplayResearchMargin,
     _decimal,
     _liquidation_pnl,
+    _liquidation_net_account,
     initialize_replay_execution,
     reconstruct_replay_execution_checkpoint,
 )
@@ -236,8 +237,8 @@ def advance_tick_execution(
         key = (tick.bid, tick.ask, position.side, position.quantity,
                position.original_quantity, position.entry_bid, position.entry_ask)
         if key != floating_key:
-            floating_value, _ = _liquidation_pnl(position, exit_bid=tick.bid, exit_ask=tick.ask,
-                                                instrument=instrument, cost_model=costs)
+            floating_value = _liquidation_net_account(position, exit_bid=tick.bid, exit_ask=tick.ask,
+                                                      instrument=instrument, cost_model=costs)
             floating_key = key
         return floating_value
 

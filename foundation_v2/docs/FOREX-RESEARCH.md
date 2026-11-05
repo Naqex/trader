@@ -221,3 +221,12 @@ Each pilot receipt now records `phase_wall_seconds`, `phase_cpu_seconds` and
 does not add reused jobs to new computation. These values are diagnostic only:
 wall time, CPU time, cache preparation and worker time are separate, and missing
 coverage remains unknown rather than zero.
+
+### Core valuation fast path
+
+Floating P/L checks now use a validated Decimal-only net valuation helper that
+reuses the already parsed instrument and cost models. It avoids allocating the
+full cost-breakdown dictionary on every quote. Protective closes still use the
+full accounting path, so event cost breakdowns, rounding, financing and ledger
+provenance remain unchanged. Parity covers BUY/SELL, partial positions and
+alternate rounding; a source or cost-model change must rerun those parity tests.
