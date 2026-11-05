@@ -23,6 +23,15 @@ Registered choices:
 | `eurusd-h4-donchian20-10-atr14-r025-v1` | The existing Donchian20/10 baseline, with the study's common warmup |
 | `eurusd-h4-sma20-80-atr14-r025-v1` | SMA20/80 crossing; needs a preceding full-window difference; exits on loss of direction |
 | `eurusd-h4-z20-2-atr14-time6-r025-v1` | Prior20-close population z-score, entry at ±2, exit at zero or the sixth observed H4 close of that position |
+| `eurusd-h4-pullback20-80-atr14-r025-v1` | SMA20/80 trend filter; prior close on the other side of SMA20, then recross; exits when the averages lose trend direction |
+| `eurusd-h4-utc-range00-08-atr14-r025-v1` | Both complete 00:00/04:00 UTC bars define today's range; a close beyond it at 12:00/16:00 UTC emits at most one entry per day; scheduled exit at 20:00 UTC |
+
+The two round-two hypotheses are defined in workspace protocol
+`planning/research/PROP-STRATEGY-ROUND2-20261105.md`, using the same CLI with
+their own candidate/protocol pins. The range is deliberately fixed in UTC,
+not a London-local opening range. Missing range bars skip entries; missing
+scheduled exit data defers exit to the next valid candle. An emitted range
+entry consumes the day even if risk admission or execution later rejects it.
 
 All use WilderATR14 and initial2ATR stops, the same lot/cost/risk admission and
 next-quote fill semantics. There is no same-event reversal, parameter sweep or
@@ -49,10 +58,19 @@ observed tick count. Existing numeric accounting reconciliation is retained.
 writes the final `<scenario>-candidate.json`, with indicator/position age and
 builder state and an explicit `cli_resume_supported=false`.
 
+Round two also writes `manual-review-template.json` with a manifest hash,
+stable per-scenario signal IDs, signal times, execution status and empty human
+decision/reason/time fields. It is explicitly a historical schema example,
+not prospective human evidence. `manual_filter_measured=false` and
+`risk_override_allowed=false` remain explicit. A real comparison needs human
+decisions recorded before outcomes and a separate replay, because skipped
+entries change subsequent position and risk state; summing selected original
+trade P&Ls is not that replay.
+
 State roundtrip validation is not a CLI resume implementation. On interruption,
 reconcile PID/identity, receipt and existing artifacts first; retain the failed
 attempt and do not overwrite it or duplicate a worker. These offline results
 cannot grant execution, qualify a prop account or certify an OOS edge.
 
-Tests: `tests/test_forex_h4_candidates.py`, `tests/test_forex_h4.py`; workspace
+Tests: `tests/test_forex_prop_candidates.py`, `tests/test_forex_h4_candidates.py`, `tests/test_forex_h4.py`; workspace
 fixture regression: `tooling/ai-engines/tests/test_forex_research.py`.
