@@ -288,6 +288,8 @@ def main(argv=None, on_progress=None):
     parser.add_argument('--candidate', choices=ALL_STUDY_CANDIDATES,
                         help='Registered research comparator; omission preserves the fixed Donchian pilot')
     parser.add_argument('--research-protocol', type=Path)
+    parser.add_argument('--preflight-only', action='store_true',
+                        help='Validate registered inputs/spec/warmup without simulating trades')
     args = parser.parse_args(argv)
     if bool(args.account_spec) != bool(args.account_spec_sha256):
         parser.error('--account-spec and --account-spec-sha256 must be supplied together')
@@ -335,6 +337,8 @@ def main(argv=None, on_progress=None):
                     sell_rate=s['sell'], start=start, end=end)]) for s in scenarios],
             validation_holdout_read=False, broker_connected=False, price_basis='midpoint',
             risk_usd=[25, 100, 500], broker_spec_verified=False)
+        if args.preflight_only:
+            manifest['execution_mode'] = 'preflight_only_no_simulation'
         if args.candidate:
             manifest.update(purpose='registered_development_not_qualification',
                 research_protocol=dict(path=str(args.research_protocol.resolve()),
@@ -349,6 +353,9 @@ def main(argv=None, on_progress=None):
         write_json(args.output_dir / 'quality.json', quality)
         if len(warmup) < (81 if args.candidate else 21):
             raise ValueError('insufficient H4 warmup')
+        if args.preflight_only:
+            progress('preflight_passed_no_simulation')
+            return
         results = []
         for scenario in scenarios:
             results.append(run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],

@@ -16,6 +16,14 @@ absolute CSV paths, SHA256 and date bounds, using `forex-h4-inputs-v1`:
 - Other windows, including validation/holdout, are rejected by this runner.
 - The legacy default retains its original20–31December warmup contract/hash.
 
+`--preflight-only` runs the same input/spec/coverage/warmup validation and
+writes manifest/quality/receipt without simulation or `results.json`. A successful
+receipt is `preflight_passed_no_simulation`, not study completion. Use a new output
+directory and preserve account-spec/hash arguments when applicable. The full run
+already performs these checks; no separate preflight is required on unchanged
+inputs simply to repeat them. Data inspection consumes the registered development
+prices, so this is not a way to keep a future holdout unseen.
+
 Registered choices:
 
 | Candidate | Fixed definition |
