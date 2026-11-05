@@ -167,6 +167,16 @@ class H4Builder:
             self.parts = []
 
 
+def advance_atr14(candle, previous_close, seed, atr):
+    tr = candle.high - candle.low
+    if previous_close is not None:
+        tr = max(tr, abs(candle.high - previous_close), abs(candle.low - previous_close))
+    if atr is None:
+        seed.append(tr)
+        return sum(seed, Decimal(0)) / 14 if len(seed) == 14 else None
+    return (13 * atr + tr) / 14
+
+
 class FixedH4Candidate:
     def __init__(self):
         self.history = deque(maxlen=20)
@@ -190,15 +200,7 @@ class FixedH4Candidate:
     def observe(self, candle: Candle, *, side=None):
         if self.history and candle.timestamp <= self.history[-1].timestamp:
             raise ValueError('candidate candles must increase')
-        tr = candle.high - candle.low
-        if self.previous_close is not None:
-            tr = max(tr, abs(candle.high - self.previous_close), abs(candle.low - self.previous_close))
-        if self.atr is None:
-            self.tr_seed.append(tr)
-            if len(self.tr_seed) == 14:
-                self.atr = sum(self.tr_seed, Decimal(0)) / 14
-        else:
-            self.atr = (13 * self.atr + tr) / 14
+        self.atr = advance_atr14(candle, self.previous_close, self.tr_seed, self.atr)
         signal = None
         previous = list(self.history)
         if len(previous) == 20 and self.atr is not None and self.atr > 0:
