@@ -42,7 +42,8 @@ def load_registration(path: Path, expected_sha256: str):
 
 
 def validate_registration(registration, inputs, candidate, *, protocol_sha256=None,
-                          source_files=None, account_spec_sha256=None, scenarios=None):
+                          source_files=None, account_spec_sha256=None, scenarios=None,
+                          allow_source_drift=False):
     if candidate not in registration['candidates']:
         raise ValueError('candidate differs from study registration')
     if set(inputs) != {'warmup', 'development'}:
@@ -64,7 +65,8 @@ def validate_registration(registration, inputs, candidate, *, protocol_sha256=No
         # Only the CLI's contract plumbing changes in this implementation.
         # Numerical modules and candidate definitions keep their frozen bytes.
         for name, digest in registration['source_files'].items():
-            if name != 'scripts/forex_h4_pilot.py' and normalized.get(name) != digest:
+            if (not allow_source_drift and name != 'scripts/forex_h4_pilot.py'
+                    and normalized.get(name) != digest):
                 raise ValueError('numerical source differs from study registration')
     if scenarios is not None:
         start = datetime.strptime(inputs['development']['first_day'], '%Y%m%d').replace(tzinfo=timezone.utc)
@@ -106,5 +108,6 @@ def inspect_registered_manifest(manifest, run_dir):
         raise ValueError('historical evidence scope differs from registration')
     validate_registration(registration, manifest['inputs'], manifest['candidate'],
         protocol_sha256=manifest['research_protocol']['sha256'], source_files=manifest['source_files'],
-        account_spec_sha256=manifest['observed_account_spec']['sha256'], scenarios=manifest['scenarios'])
+        account_spec_sha256=manifest['observed_account_spec']['sha256'], scenarios=manifest['scenarios'],
+        allow_source_drift=manifest.get('benchmark_only') is True)
     return registration

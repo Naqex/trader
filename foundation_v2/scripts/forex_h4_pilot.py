@@ -417,6 +417,8 @@ def main(argv=None, on_progress=None):
                         help='Load prepared quality/H4 evidence; original input hashes are still checked')
     parser.add_argument('--tick-cache-dir', type=Path,
                         help='Load lossless prepared development ticks; raw/cache hashes and tick validation remain enabled')
+    parser.add_argument('--benchmark-only', action='store_true',
+                        help='Run registered current-source parity/performance benchmark; never qualify or promote')
     parser.add_argument('--account-spec', type=Path)
     parser.add_argument('--account-spec-sha256')
     parser.add_argument('--candidate', choices=ALL_STUDY_CANDIDATES,
@@ -437,6 +439,8 @@ def main(argv=None, on_progress=None):
         parser.error('--study-registration and --study-registration-sha256 must be supplied together')
     if args.study_registration and not (args.candidate and args.account_spec and args.input_manifest):
         parser.error('study registration requires candidate, protocol, account spec and input manifest')
+    if args.benchmark_only and not args.study_registration:
+        parser.error('benchmark-only requires a registered study')
     if args.preflight_only and args.reuse_scenarios_from:
         parser.error('preflight-only does not resume scenarios')
     args.output_dir.mkdir(parents=True, exist_ok=False)
@@ -538,12 +542,16 @@ def main(argv=None, on_progress=None):
         if registration:
             validate_registration(registration, inputs, args.candidate,
                 protocol_sha256=manifest['research_protocol']['sha256'], source_files=manifest['source_files'],
-                account_spec_sha256=account['sha256'], scenarios=manifest['scenarios'])
+                account_spec_sha256=account['sha256'], scenarios=manifest['scenarios'],
+                allow_source_drift=args.benchmark_only)
             manifest.update(schema=HISTORICAL_SCHEMA, purpose=HISTORICAL_PURPOSE,
                 contract=registration['study_id'], data_role=registration['data_role'],
                 prior_exposure=registration['prior_exposure'], clean_oos=False,
                 study_registration=dict(study_id=registration['study_id'],
                     sha256=args.study_registration_sha256))
+            if args.benchmark_only:
+                manifest['benchmark_only'] = True
+                manifest['benchmark_basis'] = 'current_source_against_frozen_registration_and_golden_artifacts'
             (args.output_dir/'protocol.md').write_bytes(protocol_bytes)
         if args.reuse_scenarios_from:
             source_bytes = (args.reuse_scenarios_from/'manifest.json').read_bytes()
