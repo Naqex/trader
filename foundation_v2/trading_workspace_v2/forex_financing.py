@@ -81,12 +81,40 @@ def apply_forex_financing(snapshot: ForexPilotSnapshot, terms: FinancingTerms) -
     return ForexPilotSnapshot(execution=execution, limits=snapshot.limits, risk=guard.state)
 
 
-def validate_financing_event(snapshot, event):
+class _FinancingLedgerIndex:
+    """Lookups for one full validation pass, never retained across ledger updates."""
+
+    def __init__(self, ledger):
+        self.ledger = ledger
+        self.by_sequence = {}
+        self.first_event_sequence = {}
+        for raw in ledger:
+            sequence = raw.get("sequence")
+            if type(sequence) is not int:
+                continue  # The event/lineage validators reject malformed sequences.
+            self.by_sequence.setdefault(sequence, raw)
+            details = raw.get("details")
+            terms = details.get("financing_terms") if isinstance(details, dict) else None
+            event_id = terms.get("event_id") if isinstance(terms, dict) else None
+            if isinstance(event_id, str):
+                self.first_event_sequence[event_id] = min(
+                    sequence, self.first_event_sequence.get(event_id, sequence))
+
+
+def validate_financing_event(snapshot, event, *, _financing_index=None):
     if snapshot.schema_version != "replay-execution-tick-v1":
         raise ReplayExecutionError("timed Forex financing requires a tick snapshot")
     d = event.details
     terms = FinancingTerms.model_validate(d.get("financing_terms"))
-    prior = next((raw for raw in snapshot.ledger if raw["sequence"] == event.sequence - 1), None)
+    if _financing_index is None:
+        prior = next((raw for raw in snapshot.ledger if raw["sequence"] == event.sequence - 1), None)
+        duplicate = any(raw["sequence"] < event.sequence and raw.get("details", {}).get("financing_terms", {}).get("event_id")
+                        == terms.event_id for raw in snapshot.ledger)
+    else:
+        if _financing_index.ledger is not snapshot.ledger:
+            raise ReplayExecutionError("financing index belongs to a different ledger")
+        prior = _financing_index.by_sequence.get(event.sequence - 1)
+        duplicate = _financing_index.first_event_sequence.get(terms.event_id, event.sequence) < event.sequence
     if (prior is None or prior["kind"] not in {"price_mark", "financing"} or prior["cursor_index"] != event.cursor_index
             or prior["virtual_time_utc"] > event.virtual_time_utc
             or event.virtual_time_utc * 1000 != terms.scheduled_time_msc
@@ -113,6 +141,5 @@ def validate_financing_event(snapshot, event):
             or event.pending_orders != int(d.get("pending_market_order") is not None)
             or d.get("valuation_quality") != "last_observed_quote_not_current_market"):
         raise ReplayExecutionError("financing account movement differs from its position, rate or known quote")
-    if any(raw["sequence"] < event.sequence and raw.get("details", {}).get("financing_terms", {}).get("event_id")
-           == terms.event_id for raw in snapshot.ledger):
+    if duplicate:
         raise ReplayExecutionError("duplicate financing event evidence")

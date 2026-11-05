@@ -73,8 +73,10 @@ class ReplayTickExecutionSnapshot(ReplayExecutionSnapshotV2):
         last_quote_key = None
         last_cursor = -1
         last_time = -1
+        from .forex_financing import _FinancingLedgerIndex
+        financing_index = _FinancingLedgerIndex(self.ledger)
         for sequence, raw in enumerate(self.ledger, start=1):
-            event = validate_tick_execution_event(self, raw)
+            event = validate_tick_execution_event(self, raw, _financing_index=financing_index)
             if (event.sequence != sequence or event.replay_session_id != self.replay_session_id
                     or event.branch_id != self.branch_id or event.dataset_id != self.dataset_id
                     or event.dataset_sha256 != self.dataset_sha256
@@ -112,7 +114,7 @@ def initialize_tick_execution(
 
 
 def validate_tick_execution_event(
-    snapshot: ReplayTickExecutionSnapshot, raw: dict,
+    snapshot: ReplayTickExecutionSnapshot, raw: dict, *, _financing_index=None,
 ) -> ReplayExecutionEventV2:
     """Supplement the existing V2 money/margin validation with tick provenance."""
     event = ReplayExecutionEventV2.model_validate(raw)
@@ -121,7 +123,7 @@ def validate_tick_execution_event(
         return event
     if event.kind == "financing":
         from .forex_financing import validate_financing_event
-        validate_financing_event(snapshot, event)
+        validate_financing_event(snapshot, event, _financing_index=_financing_index)
         return event
     d = event.details
     if (d.get("tick_snapshot_id") != snapshot.tick_snapshot_id

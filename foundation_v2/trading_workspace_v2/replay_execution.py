@@ -236,8 +236,12 @@ class ReplayExecutionSnapshotV2(ReplayExecutionSnapshot):
 
     @model_validator(mode="after")
     def margin_ledger_is_consistent(self):
+        financing_index = None
+        if self.schema_version == "replay-execution-tick-v1":
+            from .forex_financing import _FinancingLedgerIndex
+            financing_index = _FinancingLedgerIndex(self.ledger)
         for raw in self.ledger:
-            replay_event_for_snapshot(self, raw)
+            replay_event_for_snapshot(self, raw, _financing_index=financing_index)
         return self
 
 
@@ -258,7 +262,7 @@ def parse_replay_execution_snapshot(raw: dict) -> ReplayExecutionSnapshot | Repl
     raise ReplayExecutionError("unsupported replay execution snapshot version")
 
 
-def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> ReplayExecutionEvent:
+def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict, *, _financing_index=None) -> ReplayExecutionEvent:
     if raw.get('details', {}).get('execution_timing') == 'current_quote':
         from .replay_immediate_execution import validate_current_quote_fill
         validate_current_quote_fill(snapshot, _event_type(snapshot).model_validate(raw))
@@ -286,7 +290,7 @@ def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> R
                 raise ReplayExecutionError("margin outcome differs from frozen assumption/calculation")
         if snapshot.schema_version == 'replay-execution-tick-v1':
             from .replay_tick_execution import validate_tick_execution_event
-            validate_tick_execution_event(snapshot, raw)
+            validate_tick_execution_event(snapshot, raw, _financing_index=_financing_index)
         return event
     event = ReplayExecutionEvent.model_validate(raw)
     if event.kind == "manual_close":

@@ -8,9 +8,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from test_forex_pilot_risk import advance, carried, execution, ms, queue, tick
-from trading_workspace_v2.forex_financing import FinancingTerms, apply_forex_financing
+from trading_workspace_v2.forex_financing import (
+    FinancingTerms, _FinancingLedgerIndex, apply_forex_financing, validate_financing_event,
+)
 from trading_workspace_v2.forex_pilot_risk import ForexPilotSnapshot, initialize_forex_pilot, queue_forex_pilot_exit
 from trading_workspace_v2.replay_tick_execution import reconstruct_tick_execution_checkpoint
+from trading_workspace_v2.replay_execution import ReplayExecutionEventV2
 
 
 def terms(when, *, event='synthetic-rollover', buy='-10', sell='5', multiplier=1):
@@ -119,6 +122,64 @@ class ForexFinancingTests(unittest.TestCase):
         self.assertEqual(rewound.balance, charged.execution.balance)
         self.assertEqual(rewound.ledger[-1]['kind'], 'financing')
         self.assertEqual(rewound.event_sequence, len(rewound.ledger))
+
+    def test_indexed_full_history_retains_fee_validation_and_duplicate_rejection(self):
+        first = apply_forex_financing(opened(), terms(ms() + 60000, event='fee-1'))
+        second = apply_forex_financing(first, terms(ms() + 120000, event='fee-2'))
+        ledger = second.execution.ledger
+        changes = [None, ('debit_account', '200'), ('previous_balance', '9999'),
+                   ('valuation_quality', 'invented'), ('event_id', 'fee-1'),
+                   ('known_at_msc', ms() + 120001)]
+        for change in changes:
+            raw = copy.deepcopy(ledger[-1])
+            if change:
+                key, value = change
+                target = raw['details']['financing_terms'] if key in {'event_id', 'known_at_msc'} else raw['details']
+                target[key] = value
+            for indexed in (False, True):
+                with self.subTest(change=change, indexed=indexed):
+                    def validate():
+                        event = ReplayExecutionEventV2.model_validate(raw)
+                        validate_financing_event(second.execution, event,
+                            _financing_index=_FinancingLedgerIndex(ledger) if indexed else None)
+                    if change:
+                        with self.assertRaises(ValueError):
+                            validate()
+                    else:
+                        validate()
+            if change:
+                packet = second.model_dump(mode='json')
+                packet['execution']['ledger'][-1] = raw
+                with self.subTest(full_restore=change), self.assertRaises(ValueError):
+                    ForexPilotSnapshot.model_validate(packet)
+
+    def test_financing_index_is_pass_local_and_does_not_rescan_history_per_fee(self):
+        state = opened()
+        for number in range(1, 13):
+            state = apply_forex_financing(state, terms(ms() + number * 60000,
+                event=f'fee-{number}', buy='0'))
+
+        class CountedLedger(list):
+            iterations = 0
+
+            def __iter__(self):
+                self.iterations += 1
+                return super().__iter__()
+
+        ledger = CountedLedger(state.execution.ledger)
+        execution = state.execution.model_copy(update={'ledger': ledger})
+        index = _FinancingLedgerIndex(ledger)
+        self.assertEqual(ledger.iterations, 1)
+        for raw in state.execution.ledger:
+            if raw['kind'] == 'financing':
+                validate_financing_event(execution, ReplayExecutionEventV2.model_validate(raw),
+                    _financing_index=index)
+        self.assertEqual(ledger.iterations, 1)
+        other = execution.model_copy(update={'ledger': list(ledger)})
+        with self.assertRaisesRegex(ValueError, 'different ledger'):
+            validate_financing_event(other, ReplayExecutionEventV2.model_validate(ledger[-1]),
+                _financing_index=index)
+        ForexPilotSnapshot.model_validate_json(state.model_dump_json())
 
 
 if __name__ == '__main__':
