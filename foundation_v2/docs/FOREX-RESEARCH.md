@@ -62,6 +62,12 @@ rules; a different target firm is not selected by changing an output label.
 The output directory must be new. `manifest.json` pins source revision/files,
 protocol, inputs and scenarios; `receipt.json` reports phase, data boundary and
 observed tick count. Existing numeric accounting reconciliation is retained.
+New attempts also record a run UUID, event sequence and elapsed time in the
+receipt. `events.jsonl` keeps structured phase/progress events with stdlib
+rotation (1MiB plus two backups). `failure.json` records error type/code, failed
+phase and source locations; exception text/locals are omitted to avoid payload
+leaks. Logs are diagnostics, not a second task state or tick archive. A phase's
+last-progress timestamp is not a separate process heartbeat.
 `<scenario>-checkpoint.json` contains execution/risk state; study mode also
 writes the final `<scenario>-candidate.json`, with indicator/position age and
 builder state and an explicit `cli_resume_supported=false`.

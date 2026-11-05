@@ -4,11 +4,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
+from logging.handlers import RotatingFileHandler
 import os
 import re
 import subprocess
 import sys
 import time
+import traceback
+from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
@@ -36,6 +40,30 @@ END = int(datetime(2022, 1, 15, tzinfo=timezone.utc).timestamp()) * 1000
 SCENARIOS = [('reference', Decimal('0'), Decimal('10')),
              ('cost-stress', Decimal('0.00002'), Decimal('20'))]
 ALL_STUDY_CANDIDATES = (*STUDY_CANDIDATES, *PROP_CANDIDATES)
+
+
+def event_logger(output):
+    # One handler per attempt, no root/global logging configuration. Rotation
+    # applies only to diagnostic events, never raw ticks/checkpoints/results.
+    logger = logging.Logger('forex-study', level=logging.INFO)
+    handler = RotatingFileHandler(output / 'events.jsonl', maxBytes=1024*1024,
+                                 backupCount=2, encoding='utf-8')
+    handler.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(handler)
+    return logger, handler
+
+
+def failure_details(error, stage):
+    # Exception text/locals can contain credentials or provider payloads.
+    # Source locations plus the pinned code are sufficient to reproduce here.
+    frames = []
+    for frame in traceback.extract_tb(error.__traceback__):
+        path = Path(frame.filename).resolve()
+        frames.append(dict(file=str(path.relative_to(V2)) if path.is_relative_to(V2) else path.name,
+                           line=frame.lineno, function=frame.name))
+    return dict(error_type=type(error).__name__, failed_stage=stage,
+                error_code='forex_study_failed', frames=frames,
+                exception_text_omitted=True, locals_recorded=False)
 
 
 def write_json(path, value):
@@ -295,22 +323,35 @@ def main(argv=None, on_progress=None):
         parser.error('--account-spec and --account-spec-sha256 must be supplied together')
     if bool(args.candidate) != bool(args.research_protocol):
         parser.error('--candidate and --research-protocol must be supplied together')
-    inputs = input_contract(args.input_dir, args.input_manifest, research_candidate=args.candidate)
-    account = observed_account_spec(args.account_spec, args.account_spec_sha256) if args.account_spec else None
     args.output_dir.mkdir(parents=True, exist_ok=False)
-    receipt = dict(pid=os.getpid(), stage='manifest', updated_at_utc=datetime.now(timezone.utc).isoformat())
+    logger, handler = event_logger(args.output_dir)
+    began = time.monotonic()
+    receipt = dict(pid=os.getpid(), run_id=str(uuid4()), event_sequence=0,
+        candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
+        started_at_utc=datetime.now(timezone.utc).isoformat(), stage='manifest')
     def progress(stage, boundary=None, state=None):
+        previous_stage = receipt['stage']
         receipt.update(stage=stage, boundary_utc=boundary,
-            updated_at_utc=datetime.now(timezone.utc).isoformat())
+            updated_at_utc=datetime.now(timezone.utc).isoformat(),
+            elapsed_seconds=round(time.monotonic()-began, 3),
+            event_sequence=receipt['event_sequence']+1)
+        if previous_stage != stage and stage in {name for name, _, _ in SCENARIOS}:
+            receipt.pop('observed_ticks', None)
+            receipt.pop('cursor_index', None)
         if state:
             receipt.update(observed_ticks=state.risk.observed_ticks,
                            cursor_index=state.execution.cursor_index)
+        logger.log(logging.ERROR if stage == 'failed' else logging.INFO,
+                   json.dumps(dict(schema='forex-study-event-v1', level='ERROR' if stage == 'failed' else 'INFO',
+                                   **receipt)))
         write_json(args.output_dir / 'receipt.json', receipt)
         print(json.dumps(receipt), flush=True)
         if on_progress is not None and stage != 'failed':
             on_progress(stage)
-    progress('manifest')
     try:
+        progress('manifest')
+        inputs = input_contract(args.input_dir, args.input_manifest, research_candidate=args.candidate)
+        account = observed_account_spec(args.account_spec, args.account_spec_sha256) if args.account_spec else None
         paths = {name: Path(item['path']) for name, item in inputs.items()}
         scenarios = [dict(name=n, slippage=s,
             buy=Decimal(account['debit_buy_usd_per_lot']) if account and n == 'reference' else f,
@@ -324,6 +365,7 @@ def main(argv=None, on_progress=None):
              'replay_tick_execution.py', 'semantics/data_contracts.py', 'semantics/data_costs.py',
              'forex_h4_candidates.py', 'forex_prop_candidates.py')]]
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
+            run_id=receipt['run_id'],
             candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
             contract=('PROP-STRATEGY-ROUND2-20261105.md' if args.candidate in PROP_CANDIDATES else
                       'PROP-STRATEGY-ROUND1-20261105.md sections 4-6' if args.candidate else
@@ -381,10 +423,20 @@ def main(argv=None, on_progress=None):
                 manual_filter_measured=False, risk_override_allowed=False, entries=review_entries))
         progress('completed_declared_scenarios')
     except Exception as error:
-        receipt.update(error_type=type(error).__name__, error=str(error))
+        failure = failure_details(error, receipt['stage'])
+        write_json(args.output_dir / 'failure.json', dict(run_id=receipt['run_id'], **failure))
+        receipt.update(error_type=type(error).__name__, error_code=failure['error_code'],
+                       failed_stage=failure['failed_stage'], error='See failure.json source locations; exception text omitted')
         progress('failed')
         raise
+    finally:
+        handler.close()
+        logger.removeHandler(handler)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as error:
+        print(f'Forex study failed ({type(error).__name__}); inspect the attempt receipt/failure.json.', file=sys.stderr)
+        raise SystemExit(1) from None
