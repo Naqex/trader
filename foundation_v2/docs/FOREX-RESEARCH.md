@@ -176,3 +176,11 @@ protocol permits it**. It starts up to `--max-workers` without waiting for one
 whole candidate to finish; every worker keeps full preflight/result checks.
 The default retains the full-candidate probe, and existing batch bindings cannot
 be changed in place. Prepared inspections should exist before parallel dispatch.
+
+The QDM reader reuses only UTC conversion for repeated seconds; milliseconds,
+sequence, header/date/order/grid and quote validation remain per record. The
+pilot keeps tick counters privately within one atomic window and publishes them
+in the validated checkpoint, retaining risk checks on every quote. Failed windows
+publish no counters. Snapshot format and recovery boundaries are unchanged.
+Reader-source changes invalidate prepared inspections by design: prepare entries
+for the new binding rather than editing or adopting old cache JSON.

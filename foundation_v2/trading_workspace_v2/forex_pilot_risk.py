@@ -221,6 +221,8 @@ class _PilotGuard:
         self.state = snapshot.risk
         self.limits = snapshot.limits
         self.starting_balance = snapshot.execution.starting_balance
+        self.last_tick = snapshot.risk.last_tick
+        self.observed_ticks = snapshot.risk.observed_ticks
 
     def _observe(self, tick, balance, floating, position, *, event_time_msc=None):
         equity = balance + floating
@@ -252,8 +254,8 @@ class _PilotGuard:
         state = self.state
         if tick.time_msc < state.start_time_msc:
             raise ReplayExecutionError("pilot quote precedes its registered start time")
-        if state.last_tick and (tick.time_msc, tick.sequence) <= (
-                state.last_tick.time_msc, state.last_tick.sequence):
+        if self.last_tick and (tick.time_msc, tick.sequence) <= (
+                self.last_tick.time_msc, self.last_tick.sequence):
             raise ReplayExecutionError("pilot quotes must increase across windows and restarts")
         day = _day(tick.time_msc)
         if day < state.day:
@@ -316,10 +318,15 @@ class _PilotGuard:
 
     def finish_quote(self, tick, balance, floating, position):
         self._observe(tick, balance, floating, position)
-        self.state = self.state.model_copy(update={"last_tick": tick,
-            "observed_ticks": self.state.observed_ticks + 1,
-            "close_pending": self.state.close_pending if position else None,
-            "exit_pending": self.state.exit_pending if position else None})
+        # These counters are private to this atomic window, not risk decisions.
+        # Publish them once after all quotes validate instead of copying per tick.
+        self.last_tick = tick
+        self.observed_ticks += 1
+        if position is None and (self.state.close_pending is not None or self.state.exit_pending is not None):
+            self.state = self.state.model_copy(update={"close_pending": None, "exit_pending": None})
+
+    def checkpoint(self):
+        return self.state.model_copy(update={"last_tick": self.last_tick, "observed_ticks": self.observed_ticks})
 
     def strategy_exit(self, tick, position):
         request = self.state.exit_pending
@@ -334,10 +341,10 @@ def advance_forex_pilot(snapshot: ForexPilotSnapshot, *, ticks, bar: dict,
     guard = _PilotGuard(snapshot)
     result = advance_tick_execution(snapshot.execution, ticks=ticks, bar=bar,
                                     cursor_index=cursor_index, _pilot_guard=guard)
+    risk = guard.checkpoint()
     if result.snapshot.pending_market_order is None:
-        guard.state = guard.state.model_copy(update={"entry_stop_distance": None,
-                                                     "entry_decision_time_msc": None})
-    return ForexPilotSnapshot(execution=result.snapshot, limits=snapshot.limits, risk=guard.state)
+        risk = risk.model_copy(update={"entry_stop_distance": None, "entry_decision_time_msc": None})
+    return ForexPilotSnapshot(execution=result.snapshot, limits=snapshot.limits, risk=risk)
 
 
 def validate_pilot_close(snapshot, tick, closed, raw_trigger):

@@ -77,6 +77,22 @@ def carried(*, side="BUY", at=None):
 
 
 class ForexPilotRiskTests(unittest.TestCase):
+    def test_invalid_last_quote_does_not_publish_counters_and_valid_retry_can_restart(self):
+        initial = initialize_forex_pilot(execution(), start_time_msc=ms())
+        before = initial.model_dump_json()
+        quotes = [tick(), tick(when=ms()+1, sequence=1)]
+        with self.assertRaises(ValueError):
+            advance(initial, [*quotes, tick('1.10030', '1.10020', when=ms()+2)])
+        self.assertEqual(initial.model_dump_json(), before)
+        accepted = advance(initial, quotes)
+        self.assertEqual(accepted.risk.observed_ticks, 2)
+        self.assertEqual(accepted.risk.last_tick.time_msc, ms()+1)
+        restored = ForexPilotSnapshot.model_validate_json(accepted.model_dump_json())
+        following = advance(restored, [tick(when=ms()+60000), tick(when=ms()+60000, sequence=1)])
+        self.assertEqual(following.risk.observed_ticks, 4)
+        self.assertEqual(following.risk.last_tick.sequence, 1)
+        self.assertEqual(restored.risk.observed_ticks, 2)
+
     def test_repeated_prices_keep_tick_count_and_same_ms_risk_trigger_then_close(self):
         for side, normal, breach, recovery in (
             ("BUY", ("1.10000", "1.10020"), ("1.09920", "1.09940"), ("1.09930", "1.09950")),

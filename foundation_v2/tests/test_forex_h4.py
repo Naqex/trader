@@ -99,6 +99,40 @@ class H4Tests(unittest.TestCase):
                                          int(expected.timestamp()) * 1000 + expected.microsecond // 1000)
                         self.assertEqual(tick.sequence, 1)
 
+    def test_parser_repeated_seconds_midnight_and_csv_rows_preserve_exact_quotes(self):
+        stamps = ['20220103 23:59:59.001', '20220103 23:59:59.001',
+                  '20220103 23:59:59.999', '20220104 00:00:00.000',
+                  '20220104 00:00:00.005', '20220104  1:02:03.004',
+                  '20220104 01:02:03.005']
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'ticks.csv'
+            # Blank lines, quoted fields, unused/missing Volume and surplus fields
+            # are accepted by the original DictReader; preserve that input contract.
+            rows = ['DateTime,Bid,Ask,Volume', '',
+                    *[f'"{stamp}",1.10000,1.10020' + (',1,extra' if i % 2 else '')
+                      for i, stamp in enumerate(stamps)]]
+            path.write_text('\n'.join(rows)+'\n', encoding='utf-8-sig', newline='\r\n')
+            actual = list(read_qdm_ticks(path, sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                                        first_day='20220103', last_day='20220104'))
+            self.assertEqual([t.sequence for t in actual], list(range(1, 8)))
+            for stamp, quote in zip(stamps, actual):
+                dt = datetime.strptime(stamp, '%Y%m%d %H:%M:%S.%f').replace(tzinfo=timezone.utc)
+                self.assertEqual(quote.time_msc, int(dt.timestamp())*1000+dt.microsecond//1000)
+                self.assertEqual(str(quote.bid), '1.10000')
+                self.assertEqual(str(quote.ask), '1.10020')
+
+    def test_parser_does_not_reuse_seconds_to_hide_bad_timestamps_or_reversed_millis(self):
+        for changed in ('20220103 00:00:00.001', '20220103 00:00:00.xyz',
+                        '20220103 00:00:60.003', '20220103 00:00:00.00x'):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory)/'ticks.csv'
+                path.write_text('DateTime,Bid,Ask,Volume\n'
+                    '20220103 00:00:00.002,1.10000,1.10020,1\n'
+                    f'{changed},1.10000,1.10020,1\n', encoding='utf-8')
+                with self.assertRaises(ValueError):
+                    list(read_qdm_ticks(path, sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
+                                        first_day='20220103', last_day='20220103'))
+
     def test_hourly_runner_roundtrip_and_declared_calendar(self):
         warmup = [candle(i - 20) for i in range(20)]
         ticks = []

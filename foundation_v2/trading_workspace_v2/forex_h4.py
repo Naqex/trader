@@ -105,22 +105,33 @@ def read_qdm_ticks(path: Path, *, sha256: str, first_day: str, last_day: str):
         if hashlib.file_digest(stream, 'sha256').hexdigest() != sha256:
             raise ValueError('QDM CSV hash mismatch')
     previous = None
+    previous_second = None
+    second_msc = None
     with path.open(encoding='utf-8-sig', newline='') as stream:
-        reader = csv.DictReader(stream)
-        if reader.fieldnames != ['DateTime', 'Bid', 'Ask', 'Volume']:
+        reader = csv.reader(stream)
+        if next(reader, None) != ['DateTime', 'Bid', 'Ask', 'Volume']:
             raise ValueError('unexpected QDM tick header')
-        for ordinal, row in enumerate(reader, 1):
-            stamp = row['DateTime']
+        # Match DictReader's empty-line handling and ordinal, without allocating
+        # a dictionary for each quote. Volume and extra columns remain unused.
+        for ordinal, row in enumerate((row for row in reader if row), 1):
+            if len(row) < 3:
+                raise ValueError('incomplete QDM tick row')
+            stamp, bid, ask = row[:3]
             if len(stamp) != 21 or stamp[-4] != '.' or not first_day <= stamp[:8] <= last_day:
                 raise ValueError('quote outside registered dates or missing milliseconds')
             if QDM_TIMESTAMP.fullmatch(stamp):
-                # ISO's C parser avoids strptime's per-tick locale/regex work.
-                # Guard its broader grammar; retain legacy parsing off the fast path.
-                dt = datetime.fromisoformat(stamp[:8] + 'T' + stamp[9:] + '+00:00')
+                # Full grammar is still checked on every tick. Repeated seconds
+                # share only their UTC conversion; milliseconds and order do not.
+                second = stamp[:17]
+                if second != previous_second:
+                    dt = datetime.fromisoformat(stamp[:8] + 'T' + stamp[9:17] + '+00:00')
+                    second_msc = int(dt.timestamp()) * 1000
+                    previous_second = second
+                time_msc = second_msc + int(stamp[18:])
             else:
                 dt = datetime.strptime(stamp, '%Y%m%d %H:%M:%S.%f').replace(tzinfo=timezone.utc)
-            tick = BrokerReplayTick(time_msc=int(dt.timestamp()) * 1000 + dt.microsecond // 1000,
-                                    sequence=ordinal, bid=row['Bid'], ask=row['Ask'])
+                time_msc = int(dt.timestamp()) * 1000 + dt.microsecond // 1000
+            tick = BrokerReplayTick(time_msc=time_msc, sequence=ordinal, bid=bid, ask=ask)
             if previous is not None and tick.time_msc < previous:
                 raise ValueError('QDM source timestamp order reversed')
             if tick.bid % TICK or tick.ask % TICK:
