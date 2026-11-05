@@ -225,7 +225,8 @@ class _PilotGuard:
     def _observe(self, tick, balance, floating, position, *, event_time_msc=None):
         equity = balance + floating
         state = self.state
-        updates = {"minimum_observed_equity": min(state.minimum_observed_equity, equity)}
+        minimum = min(state.minimum_observed_equity, equity)
+        updates = {"minimum_observed_equity": minimum} if minimum != state.minimum_observed_equity else {}
         stops = []
         for reason, anchor, allowance, stopped in (
             ("overall_loss", self.starting_balance, self.limits.overall_loss, state.overall_stopped),
@@ -240,8 +241,12 @@ class _PilotGuard:
                 updates["overall_stopped" if reason == "overall_loss" else "daily_stopped"] = True
                 if position and state.close_pending is None and "close_pending" not in updates:
                     updates["close_pending"] = trigger
-        updates["stops"] = (*state.stops, *stops)
-        self.state = state.model_copy(update=updates)
+        if stops:
+            updates["stops"] = (*state.stops, *stops)
+        # Keep every loss check, but avoid allocating the same frozen state
+        # twice per tick when neither its minimum nor stop history changed.
+        if updates:
+            self.state = state.model_copy(update=updates)
 
     def begin_quote(self, tick, balance, floating, position):
         state = self.state
