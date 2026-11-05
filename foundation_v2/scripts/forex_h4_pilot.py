@@ -235,6 +235,8 @@ def scenario_binding(manifest):
             'broker_connected', 'price_basis', 'risk_usd', 'research_protocol', 'execution_mode',
             'study_registration', 'data_role', 'prior_exposure', 'clean_oos')
     keys = (*keys, 'runtime')
+    if 'horizon_cutoffs' in manifest:
+        keys = (*keys, 'horizon_cutoffs')
     return content_hash({key: manifest.get(key) for key in keys})
 
 
@@ -242,6 +244,8 @@ def scenario_files(manifest, name):
     files = [name+'-checkpoint.json', name+'-decisions.json']
     if manifest.get('research_protocol'):
         files.append(name+'-candidate.json')
+    if manifest.get('horizon_cutoffs'):
+        files.append(name+'-horizons.json')
     return files
 
 
@@ -313,13 +317,17 @@ def reuse_scenario(source, output, manifest, scenario):
 
 
 def run_scenario(path, warmup, name, slippage, debit, output, progress, *, development=None, sell_debit=None,
-                 research_candidate=None, tick_cache_dir=None):
+                 research_candidate=None, tick_cache_dir=None, horizon_cutoffs=None):
     if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     digest, first, last = EXPECTED['development'] if development is None else tuple(
         development[k] for k in ('sha256', 'first_day', 'last_day'))
     start = int(datetime.strptime(first, '%Y%m%d').replace(tzinfo=timezone.utc).timestamp()) * 1000
     end = int((datetime.strptime(last, '%Y%m%d').replace(tzinfo=timezone.utc) + timedelta(days=1)).timestamp()) * 1000
+    cutoffs = list(horizon_cutoffs or [])
+    if (any(type(t) is not int or not start < t <= end or t % (H4*1000) for t in cutoffs)
+            or cutoffs != sorted(set(cutoffs))):
+        raise ValueError('horizon cutoffs must increase on closed H4 boundaries inside evaluation')
     state = initial_state(name, slippage, digest, start=start, dataset=f'qdm-eurusd-development-{first}-{last}')
     if research_candidate in PROP_CANDIDATES:
         strategy = PropH4Candidate(research_candidate)
@@ -331,12 +339,29 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
     calendar = iter(financing_calendar(debit, sell_rate=sell_debit, start=start, end=end))
     upcoming = next(calendar, None)
     decisions = []
+    horizons = []
+    def capture_horizons(boundary):
+        while len(horizons) < len(cutoffs) and cutoffs[len(horizons)] <= boundary:
+            cutoff = cutoffs[len(horizons)]
+            # Capture before processing the next hour, including any pending
+            # decision queued at the prior closed H4. Never close/reset a trade.
+            horizons.append(dict(cutoff_msc=cutoff,
+                last_observed_tick=state.risk.last_tick.model_dump(mode='json') if state.risk.last_tick else None,
+                checkpoint=state.model_dump(mode='json'),
+                decisions=list(decisions), builder=builder.export_state().model_dump(mode='json'),
+                candidate_state=strategy.export_state().model_dump(mode='json'),
+                accounting=reconcile(state, slippage),
+                qualification='historical_snapshot_not_full_prop_lifecycle',
+                promotion_authorized=False))
+            write_json(output/(name+'-horizons.json'), horizons)
     if tick_cache_dir is None:
         ticks = read_qdm_ticks(path, sha256=digest, first_day=first, last_day=last)
     else:
         from trading_workspace_v2.forex_qdm_ticks import read_prepared_ticks
         ticks = read_prepared_ticks(path, cache_dir=tick_cache_dir, sha256=digest, first_day=first, last_day=last)
     for hour, quotes in hourly_quotes(ticks):
+        if cutoffs:
+            capture_horizons(hour.timestamp*1000)
         def post_due(boundary, state):
             nonlocal upcoming
             while upcoming is not None and upcoming.scheduled_time_msc <= boundary:
@@ -378,6 +403,8 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
         progress(name, hour.timestamp + HOUR, state)
         if state.execution.cursor_index % 24 == 0:
             write_json(output / (name + '-checkpoint.json'), state.model_dump(mode='json'))
+    if cutoffs:
+        capture_horizons(end)
     builder.finish()
     state = ForexPilotSnapshot.model_validate_json(state.model_dump_json())
     accounting = reconcile(state, slippage)
@@ -553,6 +580,8 @@ def main(argv=None, on_progress=None):
                 manifest['benchmark_only'] = True
                 manifest['benchmark_basis'] = 'current_source_against_frozen_registration_and_golden_artifacts'
             (args.output_dir/'protocol.md').write_bytes(protocol_bytes)
+            if registration.get('horizon_cutoffs'):
+                manifest['horizon_cutoffs'] = registration['horizon_cutoffs']
         if args.reuse_scenarios_from:
             source_bytes = (args.reuse_scenarios_from/'manifest.json').read_bytes()
             manifest['scenario_reuse_source'] = dict(path=str(args.reuse_scenarios_from.resolve()),
@@ -600,7 +629,7 @@ def main(argv=None, on_progress=None):
                 result = run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],
                     scenario['buy'], args.output_dir, progress,
                     development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate,
-                    tick_cache_dir=args.tick_cache_dir)
+                    tick_cache_dir=args.tick_cache_dir, horizon_cutoffs=manifest.get('horizon_cutoffs'))
             else:
                 receipt.setdefault('reused_scenarios', []).append(scenario['name'])
                 progress(scenario['name']+'_reused')

@@ -230,3 +230,22 @@ full cost-breakdown dictionary on every quote. Protective closes still use the
 full accounting path, so event cost breakdowns, rounding, financing and ledger
 provenance remain unchanged. Parity covers BUY/SELL, partial positions and
 alternate rounding; a source or cost-model change must rerun those parity tests.
+
+### Registered calendar horizons
+
+A registered annual study may declare `horizon_months: [3, 6, 12]` and exact
+`horizon_cutoffs` in UTC milliseconds. Registration validation requires the
+first calendar day, exact month boundaries and a final cutoff equal to the
+evaluation end. These are three nested observations, not independent trials.
+The pilot emits `<scenario>-horizons.json` before processing the next hour:
+execution/risk checkpoint, pending decisions, candidate/builder state, last
+observed quote and accounting reconciliation. It neither closes positions nor
+changes risk/sizing at a horizon. A weekend/data gap retains the last real quote;
+its age remains explicit rather than inventing a boundary price.
+
+Horizon declarations are included in scenario bindings and the new artifact is
+included in completed seals/reuse. Legacy studies without horizons retain their
+previous artifact set and binding. `tooling/ai-engines/forex_time_fit.py` verifies
+seals, causal cutoffs and accounting and reports horizon observations. This is
+not a full challenge simulation: the H4 pilot still uses its internal UTC risk
+guard; phase reset, firm inactivity and payout are not inferred from its PnL.

@@ -15,6 +15,8 @@ import sys
 REGISTERED_STUDIES = {
     'ddc56313f1656631bb418e0def6c90119e65e342ad87ae8156158ced09e2d8b6':
         'eurusd-h4-q12023-historical-robustness-v1',
+    'ce7de7f0d60ace46dc72884d6c8b00a3f6c36fb8bd7630a82909409f4b1bb659':
+        'eurusd-h4-2023-calendar-horizons-v1',
 }
 HISTORICAL_SCHEMA = 'forex-h4-historical-robustness-v1'
 HISTORICAL_PURPOSE = 'registered_historical_robustness_not_qualification'
@@ -54,6 +56,25 @@ def validate_registration(registration, inputs, candidate, *, protocol_sha256=No
                 raise ValueError('input window differs from study registration')
     if inputs['warmup']['last_day'] >= inputs['development']['first_day']:
         raise ValueError('warmup overlaps evaluation')
+    if 'input_pins' in registration:
+        pinned={role: registration['input_pins'][role] for role in ('warmup','development')}
+        if inputs != pinned:
+            raise ValueError('input content pins differ from study registration')
+    if 'horizon_cutoffs' in registration:
+        start = datetime.strptime(inputs['development']['first_day'], '%Y%m%d').replace(tzinfo=timezone.utc)
+        months = registration.get('horizon_months')
+        if months != [3, 6, 12] or start.day != 1:
+            raise ValueError('time-fit requires calendar 3/6/12 months from a month start')
+        expected_cutoffs = []
+        for count in months:
+            offset = start.year*12 + start.month-1 + count
+            boundary = start.replace(year=offset//12, month=offset%12+1)
+            expected_cutoffs.append(int(boundary.timestamp())*1000)
+        end = datetime.strptime(inputs['development']['last_day'], '%Y%m%d').replace(tzinfo=timezone.utc)+timedelta(days=1)
+        if (registration['horizon_cutoffs'] != expected_cutoffs
+                or any(type(value) is not int for value in registration['horizon_cutoffs'])
+                or expected_cutoffs[-1] != int(end.timestamp())*1000):
+            raise ValueError('time-fit cutoffs differ from registered calendar horizons')
     if protocol_sha256 is not None and protocol_sha256 != registration['protocol']['sha256']:
         raise ValueError('protocol differs from study registration')
     if account_spec_sha256 is not None and account_spec_sha256 != registration['account_spec']['sha256']:
@@ -104,6 +125,7 @@ def inspect_registered_manifest(manifest, run_dir):
             or manifest.get('prior_exposure') != registration['prior_exposure']
             or manifest.get('clean_oos') is not False
             or manifest.get('risk_usd') != [25, 100, 500]
+            or manifest.get('horizon_cutoffs') != registration.get('horizon_cutoffs')
             or binding.get('study_id') != registration['study_id']):
         raise ValueError('historical evidence scope differs from registration')
     validate_registration(registration, manifest['inputs'], manifest['candidate'],
