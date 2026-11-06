@@ -340,9 +340,22 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
     upcoming = next(calendar, None)
     decisions = []
     horizons = []
+
+    def post_due(boundary, current, *, inclusive=True):
+        nonlocal upcoming
+        while upcoming is not None and (upcoming.scheduled_time_msc < boundary
+                or inclusive and upcoming.scheduled_time_msc == boundary):
+            current = apply_forex_financing(current, upcoming)
+            upcoming = next(calendar, None)
+        return current
+
     def capture_horizons(boundary):
+        nonlocal state
         while len(horizons) < len(cutoffs) and cutoffs[len(horizons)] <= boundary:
             cutoff = cutoffs[len(horizons)]
+            # Calendar cash events continue through quote-free gaps. A horizon
+            # excludes events exactly at its cutoff and never invents a quote.
+            state = post_due(cutoff, state, inclusive=False)
             # Capture before processing the next hour, including any pending
             # decision queued at the prior closed H4. Never close/reset a trade.
             horizons.append(dict(cutoff_msc=cutoff,
@@ -362,16 +375,10 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
     for hour, quotes in hourly_quotes(ticks):
         if cutoffs:
             capture_horizons(hour.timestamp*1000)
-        def post_due(boundary, state):
-            nonlocal upcoming
-            while upcoming is not None and upcoming.scheduled_time_msc <= boundary:
-                state = apply_forex_financing(state, upcoming)
-                upcoming = next(calendar, None)
-            return state
         state = post_due(hour.timestamp * 1000, state)
         state = advance_forex_pilot(state, ticks=quotes, bar=vars(hour),
                                     cursor_index=state.execution.cursor_index + 1)
-        state = post_due((hour.timestamp + HOUR) * 1000, state)
+        state = post_due((hour.timestamp + HOUR) * 1000, state, inclusive=False)
         candle = builder.add(hour)
         if candle:
             position = state.execution.position
@@ -405,6 +412,7 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             write_json(output / (name + '-checkpoint.json'), state.model_dump(mode='json'))
     if cutoffs:
         capture_horizons(end)
+    state = post_due(end, state, inclusive=False)
     builder.finish()
     state = ForexPilotSnapshot.model_validate_json(state.model_dump_json())
     accounting = reconcile(state, slippage)
@@ -512,6 +520,8 @@ def main(argv=None, on_progress=None):
             frozen_registration = args.output_dir/'study-registration.json'
             frozen_registration.write_bytes(args.study_registration.read_bytes())
             registration = load_registration(frozen_registration, args.study_registration_sha256)
+            if registration.get('calendar_accounting') != 'exclusive_event_clock_v1':
+                raise ValueError('calendar accounting changed; freeze a new study registration before execution')
         inputs = input_contract(args.input_dir, args.input_manifest, research_candidate=args.candidate,
                                 registration=registration)
         account = observed_account_spec(args.account_spec, args.account_spec_sha256) if args.account_spec else None
@@ -549,7 +559,8 @@ def main(argv=None, on_progress=None):
                 financing_calendar=[t.model_dump(mode='json') for t in financing_calendar(s['buy'],
                     sell_rate=s['sell'], start=start, end=end)]) for s in scenarios],
             validation_holdout_read=False, broker_connected=False, price_basis='midpoint',
-            risk_usd=[25, 100, 500], broker_spec_verified=False)
+            risk_usd=[25, 100, 500], broker_spec_verified=False,
+            calendar_accounting='exclusive_event_clock_v1')
         if args.inspection_cache_dir:
             manifest['inspection_cache'] = dict(directory=str(args.inspection_cache_dir.resolve()),
                                                 entries={}, raw_hash_rechecked=True)

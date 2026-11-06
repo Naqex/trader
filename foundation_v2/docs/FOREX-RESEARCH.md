@@ -81,6 +81,22 @@ rules; a different target firm is not selected by changing an output label.
 
 ## Evidence and interruption
 
+### Calendar boundaries
+
+The runner posts declared financing even when quotes stop before a cutoff or
+the dataset end. Horizons and the final calendar interval exclude events exactly
+at their boundary. Quote-free cash events retain the last observed valuation;
+they do not create fills, ticks, candles or a forced close. A fee can trigger a
+risk halt and pending close; execution still needs a subsequent tradable quote.
+
+Historical execution with this runner requires a new registration declaring
+`calendar_accounting=exclusive_event_clock_v1` and pinning its numerical CLI.
+Legacy frozen registrations/artifacts remain readable but cannot execute against
+the changed calendar semantics. Source-bound caches/reuse must pass their guards;
+do not weaken bindings or rerun a completed annual batch just for presentation.
+Older raw results may need the explicitly labeled derived tail report; their
+original seals and accounting assumptions are preserved.
+
 New manifests record Python/Pydantic versions and Decimal precision/rounding.
 Scenario seals bind these values; the batch controller refuses completed-job
 reuse when the current numerical runtime differs or the older run omitted the

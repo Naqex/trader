@@ -25,6 +25,7 @@ class RegistrationTests(unittest.TestCase):
         self.protocol.write_bytes(b'Generated fixture, not market research.')
         self.candidate = pilot.ALL_STUDY_CANDIDATES[0]
         self.registration = dict(schema='forex-historical-study-registration-v1', study_id='fixture',
+            calendar_accounting='exclusive_event_clock_v1',
             data_role='historical_robustness', prior_exposure='unverified_owner_cannot_recall', clean_oos=False,
             candidates=[self.candidate], authorization=dict(promotion_authorized=False),
             protocol=dict(sha256=hashlib.sha256(self.protocol.read_bytes()).hexdigest()),
@@ -120,6 +121,30 @@ class RegistrationTests(unittest.TestCase):
                 pilot.main(self.argv())
         inspect.assert_not_called()
         self.assertEqual(json.loads((self.root/'attempt/receipt.json').read_text())['stage'],'failed')
+
+    def test_legacy_calendar_registration_cannot_execute_new_runner(self):
+        old = deepcopy(self.registration)
+        old.pop('calendar_accounting')
+        self.registration_path.write_bytes(json.dumps(old).encode())
+        self.digest = hashlib.sha256(self.registration_path.read_bytes()).hexdigest()
+        with patch.dict(registry.REGISTERED_STUDIES,{self.digest:'fixture'}), \
+             patch.object(pilot,'inspect_qdm') as inspect, \
+             patch.object(pilot,'run_scenario') as simulate, redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(ValueError,'calendar accounting changed'):
+                pilot.main(self.argv())
+        inspect.assert_not_called()
+        simulate.assert_not_called()
+
+    def test_calendar_contract_pins_numerical_cli_and_manifest_semantics(self):
+        self.registration['source_files'] = {'scripts/forex_h4_pilot.py':'a'*64}
+        with self.assertRaisesRegex(ValueError,'numerical source'):
+            registry.validate_registration(self.registration,self.inputs,self.candidate,
+                source_files={'scripts/forex_h4_pilot.py':'b'*64})
+        # Legacy evidence remains readable under its historical contract.
+        old = deepcopy(self.registration)
+        old.pop('calendar_accounting')
+        registry.validate_registration(old,self.inputs,self.candidate,
+            source_files={'scripts/forex_h4_pilot.py':'b'*64})
 
     def test_reuse_binding_changes_with_runtime_and_registration(self):
         baseline=dict(runtime=dict(python='fixture',pydantic='2',decimal_precision=28))

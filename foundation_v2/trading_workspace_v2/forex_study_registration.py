@@ -85,10 +85,11 @@ def validate_registration(registration, inputs, candidate, *, protocol_sha256=No
         normalized = {name.replace('\\', '/'): digest for name, digest in source_files.items()}
         if len(normalized) != len(source_files):
             raise ValueError('ambiguous numerical source paths')
-        # Only the CLI's contract plumbing changes in this implementation.
-        # Numerical modules and candidate definitions keep their frozen bytes.
+        # Legacy registrations allowed CLI plumbing drift. Calendar-aware
+        # registrations pin the CLI too because it owns numerical event timing.
         for name, digest in registration['source_files'].items():
-            if (not allow_source_drift and name != 'scripts/forex_h4_pilot.py'
+            if (not allow_source_drift
+                    and (name != 'scripts/forex_h4_pilot.py' or registration.get('calendar_accounting'))
                     and normalized.get(name) != digest):
                 raise ValueError('numerical source differs from study registration')
     if scenarios is not None:
@@ -127,6 +128,7 @@ def inspect_registered_manifest(manifest, run_dir):
             or manifest.get('prior_exposure') != registration['prior_exposure']
             or manifest.get('clean_oos') is not False
             or manifest.get('risk_usd') != [25, 100, 500]
+            or manifest.get('calendar_accounting') != registration.get('calendar_accounting')
             or manifest.get('horizon_cutoffs') != registration.get('horizon_cutoffs')
             or binding.get('study_id') != registration['study_id']):
         raise ValueError('historical evidence scope differs from registration')

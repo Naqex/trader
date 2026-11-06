@@ -48,12 +48,99 @@ class HorizonTests(unittest.TestCase):
                 for event in row['checkpoint']['execution']['ledger']:
                     self.assertLessEqual(event['virtual_time_utc']*1000,row['cutoff_msc'])
                 independent=Path(folder)/str(row['cutoff_msc']); independent.mkdir()
+                # An EOF prefix represents this cutoff, not the original
+                # dataset's later calendar end (which may contain cash events).
+                calendar = list(pilot.financing_calendar(Decimal(10)))
                 with patch.object(pilot,'read_qdm_ticks',return_value=iter(
-                        t for t in ticks if t.time_msc < row['cutoff_msc'])):
+                        t for t in ticks if t.time_msc < row['cutoff_msc'])), \
+                     patch.object(pilot,'financing_calendar',return_value=iter(
+                        t for t in calendar if t.scheduled_time_msc < row['cutoff_msc'])):
                     pilot.run_scenario(Path('unused'),warmup,'reference',Decimal(0),Decimal(10),
                         independent,lambda *args:None)
                 expected=json.loads((independent/'reference-checkpoint.json').read_bytes())
                 self.assertEqual(row['checkpoint'],expected)
+
+    def test_weekend_cutoffs_and_terminal_include_quote_free_financing(self):
+        # Mon Jan 3 to Sun Jan 9, 2022: 5 rollovers, Wednesday counts triple.
+        # The last Friday hourly mark is 21:00; its 22:00 fee must still post.
+        warmup = [candle(pilot.START//14400000+i-20) for i in range(20)]
+        offsets = [0, 1, 2, 3, 4, 4*24+20]
+        ticks = [BrokerReplayTick(time_msc=pilot.START+h*3600000+1, sequence=i+1,
+            bid='1.10200', ask='1.10220') for i,h in enumerate(offsets)]
+        cutoffs = [pilot.START+5*86400000, pilot.START+7*86400000]
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            with patch.object(pilot,'read_qdm_ticks',return_value=iter(ticks)):
+                result = pilot.run_scenario(Path('unused'),warmup,'reference',Decimal(0),Decimal(10),
+                    output,lambda *args:None,development=dict(sha256='a'*64,
+                        first_day='20220103',last_day='20220109'),horizon_cutoffs=cutoffs)
+            records = json.loads((output/'reference-horizons.json').read_bytes())
+            final = json.loads((output/'reference-checkpoint.json').read_bytes())
+            self.assertTrue(result['open_position'])
+            for row in records:
+                checkpoint = row['checkpoint']
+                fees = [e for e in checkpoint['execution']['ledger'] if e['kind']=='financing']
+                self.assertEqual(len(fees),5)
+                # Independent arithmetic, not apply_forex_financing/reconcile.
+                quantity = Decimal(checkpoint['execution']['position']['quantity'])
+                self.assertEqual(Decimal(checkpoint['execution']['balance']),Decimal(10000)-10*quantity*7)
+                self.assertEqual(checkpoint['risk']['observed_ticks'],len(ticks))
+                self.assertEqual(checkpoint['risk']['last_tick']['time_msc'],ticks[-1].time_msc)
+                self.assertEqual(checkpoint['execution']['cursor_index'],len(ticks))
+                self.assertEqual(checkpoint['execution']['position'],final['execution']['position'])
+                self.assertEqual(checkpoint['execution']['ledger'],final['execution']['ledger'])
+                self.assertFalse(checkpoint['risk']['overall_stopped'])
+            self.assertEqual(records[-1]['checkpoint'],final)
+
+    def test_exact_cutoff_cash_event_is_deferred_and_end_is_exclusive(self):
+        warmup = [candle(pilot.START//14400000+i-20) for i in range(20)]
+        ticks = [BrokerReplayTick(time_msc=pilot.START+h*3600000+1, sequence=h+1,
+            bid='1.10200', ask='1.10220') for h in range(5)]
+        cutoffs = [pilot.START+4*3600000,pilot.START+8*3600000]
+        terms = [pilot.FinancingTerms(event_id=str(t),scheduled_time_msc=t,known_at_msc=pilot.START,
+                    debit_buy_usd_per_lot='10',debit_sell_usd_per_lot='10',multiplier=1,
+                    source='boundary fixture',qualification='declared_scenario')
+                 for t in [*cutoffs,pilot.END]]
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            with patch.object(pilot,'read_qdm_ticks',return_value=iter(ticks)), \
+                 patch.object(pilot,'financing_calendar',return_value=iter(terms)):
+                pilot.run_scenario(Path('unused'),warmup,'reference',Decimal(0),Decimal(10),
+                    output,lambda *args:None,horizon_cutoffs=cutoffs)
+            records = json.loads((output/'reference-horizons.json').read_bytes())
+            final = json.loads((output/'reference-checkpoint.json').read_bytes())
+            event_times = lambda s:[e['virtual_time_utc']*1000 for e in s['execution']['ledger'] if e['kind']=='financing']
+            self.assertEqual(event_times(records[0]['checkpoint']),[])
+            self.assertIsNotNone(records[0]['checkpoint']['execution']['pending_market_order'])
+            self.assertEqual(event_times(records[1]['checkpoint']),[cutoffs[0]])
+            self.assertEqual(event_times(final),cutoffs)
+
+    def test_terminal_fee_can_halt_risk_without_fabricating_a_close(self):
+        warmup = [candle(pilot.START//14400000+i-20) for i in range(20)]
+        ticks = [BrokerReplayTick(time_msc=pilot.START+h*3600000+1,sequence=h+1,
+            bid='1.10200',ask='1.10220') for h in range(5)]
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            with patch.object(pilot,'read_qdm_ticks',return_value=iter(ticks)):
+                result = pilot.run_scenario(Path('unused'),warmup,'reference',Decimal(0),Decimal(100000),
+                    output,lambda *args:None,development=dict(sha256='a'*64,
+                        first_day='20220103',last_day='20220103'))
+            state = json.loads((output/'reference-checkpoint.json').read_bytes())
+            self.assertTrue(state['risk']['overall_stopped'])
+            self.assertIsNotNone(state['risk']['close_pending'])
+            self.assertTrue(result['open_position'])
+            self.assertEqual(result['closed_trades'],0)
+            self.assertEqual(result['observed_ticks'],5)
+            self.assertEqual(state['risk']['last_tick']['time_msc'],ticks[-1].time_msc)
+
+    def test_financing_cannot_invent_an_anchor_for_empty_data(self):
+        with tempfile.TemporaryDirectory() as folder:
+            output = Path(folder)
+            with patch.object(pilot,'read_qdm_ticks',return_value=iter(())), \
+                 self.assertRaisesRegex(ValueError,'known boundary'):
+                pilot.run_scenario(Path('unused'),[],'reference',Decimal(0),Decimal(10),
+                    output,lambda *args:None)
+            self.assertFalse((output/'reference-checkpoint.json').exists())
 
     def test_invalid_cutoff_fails_before_reading_ticks(self):
         for values in ([True], [pilot.START], [pilot.START+1], [pilot.START+8*3600000,pilot.START+4*3600000]):
