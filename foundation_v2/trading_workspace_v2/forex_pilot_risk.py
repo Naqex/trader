@@ -223,12 +223,13 @@ def queue_forex_pilot_exit(snapshot: ForexPilotSnapshot, *, operation_id: str) -
 
 class _PilotGuard:
     """Transactional adapter used only by advance_forex_pilot, never by a broker."""
-    def __init__(self, snapshot: ForexPilotSnapshot):
+    def __init__(self, snapshot: ForexPilotSnapshot, observer=None):
         self.state = snapshot.risk
         self.limits = snapshot.limits
         self.starting_balance = snapshot.execution.starting_balance
         self.last_tick = snapshot.risk.last_tick
         self.observed_ticks = snapshot.risk.observed_ticks
+        self.observer = observer.fork() if observer is not None else None
         self.day_start_msc, self.day_end_msc = _day_bounds(snapshot.risk.day)
 
     def _observe(self, tick, balance, floating, position, *, event_time_msc=None):
@@ -257,7 +258,7 @@ class _PilotGuard:
         if updates:
             self.state = state.model_copy(update=updates)
 
-    def begin_quote(self, tick, balance, floating, position):
+    def begin_quote(self, tick, balance, floating, position, pending=0):
         state = self.state
         if tick.time_msc < state.start_time_msc:
             raise ReplayExecutionError("pilot quote precedes its registered start time")
@@ -275,6 +276,8 @@ class _PilotGuard:
         prior_close = state.close_pending
         self.state = state
         self._observe(tick, balance, floating, position)
+        if self.observer is not None:
+            self.observer.quote(tick,balance,floating,position,pending)
         if (prior_close is not None and prior_close.event_time_msc is not None
                 and tick.time_msc <= prior_close.event_time_msc):
             return None
@@ -308,7 +311,8 @@ class _PilotGuard:
 
     def entry_ready(self, tick):
         decision = self.state.entry_decision_time_msc
-        return decision is None or tick.time_msc > decision
+        return ((self.observer is None or self.observer.running)
+                and (decision is None or tick.time_msc > decision))
 
     def prepare_order(self, order, tick, instrument):
         if self.state.entry_stop_distance is None:
@@ -324,8 +328,14 @@ class _PilotGuard:
                 if self.state.entry_stop_distance is not None else None,
             "decision_time_msc": self.state.entry_decision_time_msc}}
 
-    def finish_quote(self, tick, balance, floating, position):
+    def record_entry(self,tick,balance,floating,position,pending=0):
+        if self.observer is not None:
+            self.observer.quote(tick,balance,floating,position,pending)
+
+    def finish_quote(self, tick, balance, floating, position, pending=0):
         self._observe(tick, balance, floating, position)
+        if self.observer is not None:
+            self.observer.quote(tick,balance,floating,position,pending,completed=True)
         # These counters are private to this atomic window, not risk decisions.
         # Publish them once after all quotes validate instead of copying per tick.
         self.last_tick = tick
@@ -344,15 +354,18 @@ class _PilotGuard:
 
 
 def advance_forex_pilot(snapshot: ForexPilotSnapshot, *, ticks, bar: dict,
-                        cursor_index: int) -> ForexPilotSnapshot:
+                        cursor_index: int, observer=None) -> ForexPilotSnapshot:
     # Changes are published together only after the entire supplied window validates.
-    guard = _PilotGuard(snapshot)
+    guard = _PilotGuard(snapshot,observer)
     result = advance_tick_execution(snapshot.execution, ticks=ticks, bar=bar,
                                     cursor_index=cursor_index, _pilot_guard=guard)
     risk = guard.checkpoint()
     if result.snapshot.pending_market_order is None:
         risk = risk.model_copy(update={"entry_stop_distance": None, "entry_decision_time_msc": None})
-    return ForexPilotSnapshot(execution=result.snapshot, limits=snapshot.limits, risk=risk)
+    checkpoint = ForexPilotSnapshot(execution=result.snapshot, limits=snapshot.limits, risk=risk)
+    if observer is not None:
+        observer.commit(guard.observer)
+    return checkpoint
 
 
 def validate_pilot_close(snapshot, tick, closed, raw_trigger):

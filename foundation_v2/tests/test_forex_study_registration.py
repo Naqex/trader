@@ -103,12 +103,13 @@ class RegistrationTests(unittest.TestCase):
         registry.inspect_registered_manifest(manifest,self.root/'attempt')
         self.assertEqual((self.root/'attempt/study-registration.json').read_bytes(),self.registration_path.read_bytes())
         self.assertFalse((self.root/'attempt/results.json').exists())
-        for key in ('slippage','calendar','rate','scope'):
+        for key in ('slippage','calendar','rate','scope','profile'):
             bad=deepcopy(manifest)
             if key=='slippage': bad['scenarios'][0]['slippage']='0.1'
             if key=='calendar': bad['scenarios'][0]['financing_calendar'].pop()
             if key=='rate': bad['scenarios'][0]['financing_calendar'][0]['debit_buy_usd_per_lot']='0'
             if key=='scope': bad['clean_oos']=True
+            if key=='profile': bad['prop_profile']={'untrusted':'replacement'}
             with self.subTest(key=key),self.assertRaises(ValueError):
                 registry.inspect_registered_manifest(bad,self.root/'attempt')
 

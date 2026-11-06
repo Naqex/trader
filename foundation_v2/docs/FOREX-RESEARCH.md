@@ -81,6 +81,38 @@ rules; a different target firm is not selected by changing an output label.
 
 ## Evidence and interruption
 
+### Opt-in prop-path observations
+
+A source-bound historical registration may embed canonical `prop_profile`
+content. The runner then stages a `ForexPropObserver` per quote window and
+commits observations only after execution and risk validate. It measures equity
+pre/post-fill on every consumed quote and after declared financing. Initial
+entry fills are observed even if a protective stop closes on the same quote.
+
+The adapter supports the registered static USD profile, Prague midnight balance
+anchor, equity loss limits and flat/reset phase transitions. Native
+`money_oracle`, `calendar_oracle`, lifecycle evaluation and transition commands
+remain the rule owners. Native evaluation runs at cash, reset, position,
+qualifying-day and breach milestones; cheap comparisons use oracle-derived
+thresholds between them. Unsupported profiles are rejected. Each phase's loss
+allowances must be at least as broad as the unchanged internal safety brakes.
+
+After an evaluator-approved flat phase pass, the next H1 boundary starts a new
+execution/risk account at initial capital, with zero positions/pending orders and
+fresh risk/fee accounting; causal indicator history continues while position-age
+and per-account day latches reset. If that boundary
+is the end of the study, the next phase is not started. No earlier ticks are
+replayed. Completed phase accounts are retained and reconciled individually.
+Phase profits are not payouts and are not summed into the next phase's balance.
+
+`<scenario>-prop-path.json` and horizon snapshots retain tick DD, headroom,
+first breach, qualifying days, native lifecycle state, phase archives and reset
+milestones. They are covered by scenario seals. Lifecycle evaluation stops at
+its terminal event; account DD observations may include the subsequent close.
+CLI mid-scenario resume is still unsupported. Report readers reject missing
+calendar fees for prop paths instead of repairing risk/account state post hoc.
+These are declared-profile observations, not broker/firm certification or edge.
+
 ### Calendar boundaries
 
 The runner posts declared financing even when quotes stop before a cutoff or

@@ -42,6 +42,10 @@ def load_registration(path: Path, expected_sha256: str):
             or registration.get('prior_exposure') != 'unverified_owner_cannot_recall'
             or registration.get('authorization', {}).get('promotion_authorized') is not False):
         raise ValueError('unsupported historical registration scope')
+    if registration.get('prop_profile') is not None:
+        from .prop_session import PropProfileSnapshot
+        if PropProfileSnapshot.model_validate(registration['prop_profile']).model_dump(mode='json')!=registration['prop_profile']:
+            raise ValueError('prop profile must be canonical before registration')
     return registration
 
 
@@ -129,6 +133,7 @@ def inspect_registered_manifest(manifest, run_dir):
             or manifest.get('clean_oos') is not False
             or manifest.get('risk_usd') != [25, 100, 500]
             or manifest.get('calendar_accounting') != registration.get('calendar_accounting')
+            or manifest.get('prop_profile') != registration.get('prop_profile')
             or manifest.get('horizon_cutoffs') != registration.get('horizon_cutoffs')
             or binding.get('study_id') != registration['study_id']):
         raise ValueError('historical evidence scope differs from registration')

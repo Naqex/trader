@@ -237,6 +237,8 @@ def scenario_binding(manifest):
     keys = (*keys, 'runtime')
     if 'horizon_cutoffs' in manifest:
         keys = (*keys, 'horizon_cutoffs')
+    if 'prop_profile' in manifest:
+        keys = (*keys, 'prop_profile')
     return content_hash({key: manifest.get(key) for key in keys})
 
 
@@ -246,6 +248,8 @@ def scenario_files(manifest, name):
         files.append(name+'-candidate.json')
     if manifest.get('horizon_cutoffs'):
         files.append(name+'-horizons.json')
+    if manifest.get('prop_profile'):
+        files.append(name+'-prop-path.json')
     return files
 
 
@@ -317,7 +321,7 @@ def reuse_scenario(source, output, manifest, scenario):
 
 
 def run_scenario(path, warmup, name, slippage, debit, output, progress, *, development=None, sell_debit=None,
-                 research_candidate=None, tick_cache_dir=None, horizon_cutoffs=None):
+                 research_candidate=None, tick_cache_dir=None, horizon_cutoffs=None, prop_profile=None):
     if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     digest, first, last = EXPECTED['development'] if development is None else tuple(
@@ -329,6 +333,19 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             or cutoffs != sorted(set(cutoffs))):
         raise ValueError('horizon cutoffs must increase on closed H4 boundaries inside evaluation')
     state = initial_state(name, slippage, digest, start=start, dataset=f'qdm-eurusd-development-{first}-{last}')
+    observer = None
+    phase_accounts = []
+    if prop_profile is not None:
+        from trading_workspace_v2.forex_prop_observer import ForexPropObserver
+        from trading_workspace_v2.prop_session import MoneyOracleInput,money_oracle
+        observer = ForexPropObserver(prop_profile,start=start,end=end,identity=f'h4-{name}')
+        for spec in observer.profile.phases:
+            money = money_oracle(spec,MoneyOracleInput(initial_capital=spec.initial_capital,
+                daily_anchor=spec.initial_capital,balance_before_separate_costs=spec.initial_capital,
+                high_water_mark=spec.initial_capital))
+            if (money['daily_loss']['floor'] > spec.initial_capital-state.limits.daily_loss
+                    or money['overall_drawdown']['floor'] > spec.initial_capital-state.limits.overall_loss):
+                raise ValueError('prop profile is stricter than internal safety brakes')
     if research_candidate in PROP_CANDIDATES:
         strategy = PropH4Candidate(research_candidate)
     else:
@@ -345,7 +362,10 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
         nonlocal upcoming
         while upcoming is not None and (upcoming.scheduled_time_msc < boundary
                 or inclusive and upcoming.scheduled_time_msc == boundary):
-            current = apply_forex_financing(current, upcoming)
+            before = current
+            current = apply_forex_financing(before, upcoming)
+            if observer is not None:
+                observer.cash(upcoming.scheduled_time_msc,before,current)
             upcoming = next(calendar, None)
         return current
 
@@ -356,6 +376,8 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             # Calendar cash events continue through quote-free gaps. A horizon
             # excludes events exactly at its cutoff and never invents a quote.
             state = post_due(cutoff, state, inclusive=False)
+            if observer is not None:
+                observer.boundary(cutoff)
             # Capture before processing the next hour, including any pending
             # decision queued at the prior closed H4. Never close/reset a trade.
             horizons.append(dict(cutoff_msc=cutoff,
@@ -365,7 +387,9 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
                 candidate_state=strategy.export_state().model_dump(mode='json'),
                 accounting=reconcile(state, slippage),
                 qualification='historical_snapshot_not_full_prop_lifecycle',
-                promotion_authorized=False))
+                promotion_authorized=False,
+                **({'prop_path':observer.export(), 'completed_phase_accounts':list(phase_accounts)}
+                   if observer is not None else {})))
             write_json(output/(name+'-horizons.json'), horizons)
     if tick_cache_dir is None:
         ticks = read_qdm_ticks(path, sha256=digest, first_day=first, last_day=last)
@@ -377,7 +401,7 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             capture_horizons(hour.timestamp*1000)
         state = post_due(hour.timestamp * 1000, state)
         state = advance_forex_pilot(state, ticks=quotes, bar=vars(hour),
-                                    cursor_index=state.execution.cursor_index + 1)
+                                    cursor_index=state.execution.cursor_index + 1,observer=observer)
         state = post_due((hour.timestamp + HOUR) * 1000, state, inclusive=False)
         candle = builder.add(hour)
         if candle:
@@ -386,7 +410,8 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             if research_candidate in (*CANDIDATES, *PROP_CANDIDATES):
                 position_args['position_id'] = position.position_id if position else None
             signal, distance = strategy.observe(candle, **position_args)
-            if signal and state.risk.exit_pending is None and state.execution.pending_market_order is None:
+            if (signal and (observer is None or observer.running)
+                    and state.risk.exit_pending is None and state.execution.pending_market_order is None):
                 decision = dict(time_msc=(candle.timestamp + H4) * 1000, signal=signal,
                                 stop_distance=str(distance), status='queued')
                 operation = f'h4-{candle.timestamp}-{signal}'
@@ -407,12 +432,37 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
                         state = queue_forex_pilot_order(state, operation_id=operation, side=signal,
                             quantity=quantity, stop_loss=stop, stop_distance=distance, take_profit=None)
                 decisions.append(decision)
-        progress(name, hour.timestamp + HOUR, state)
+        boundary = (hour.timestamp+HOUR)*1000
+        if observer is not None and observer.attempt.status=='phase_passed' and boundary < end:
+            if state.execution.position is not None or state.execution.pending_market_order is not None:
+                raise ValueError('cannot reset a nonflat Forex execution account')
+            capture_horizons(boundary)
+            phase_accounts.append(dict(phase_index=observer.phase.phase_index,
+                checkpoint=state.model_dump(mode='json'),accounting=reconcile(state,slippage)))
+            observer.advance_phase(boundary)
+            state = initial_state(name,slippage,digest,start=boundary,
+                dataset=f'qdm-eurusd-development-{first}-{last}')
+            # Carry causal indicators, not the previous account's position/day latch.
+            if research_candidate in CANDIDATES:
+                strategy = ResearchH4Candidate.from_state(strategy.export_state().model_copy(update={
+                    'position_id':None,'position_side':None,'held_bars':0}))
+            elif research_candidate in PROP_CANDIDATES:
+                strategy = PropH4Candidate.from_state(strategy.export_state().model_copy(update={
+                    'position_id':None,'position_side':None,'last_entry_day':None}))
+        if observer is None:
+            progress(name,hour.timestamp+HOUR,state)
+        else:
+            progress(name,hour.timestamp+HOUR,state,observer)
         if state.execution.cursor_index % 24 == 0:
             write_json(output / (name + '-checkpoint.json'), state.model_dump(mode='json'))
+            if observer is not None:
+                write_json(output/(name+'-prop-path.json'),dict(**observer.export(),completed_phase_accounts=phase_accounts))
     if cutoffs:
         capture_horizons(end)
     state = post_due(end, state, inclusive=False)
+    if observer is not None:
+        observer.boundary(end)
+        write_json(output/(name+'-prop-path.json'),dict(**observer.export(),completed_phase_accounts=phase_accounts))
     builder.finish()
     state = ForexPilotSnapshot.model_validate_json(state.model_dump_json())
     accounting = reconcile(state, slippage)
@@ -428,18 +478,21 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             state=candidate_state.model_dump(mode='json'), builder=builder.export_state().model_dump(mode='json'),
             cursor_index=state.execution.cursor_index, cli_resume_supported=False))
         candidate_evidence = dict(candidate=research_candidate, candidate_state_roundtrip='passed')
+    ledgers = [state.execution.ledger,*[p['checkpoint']['execution']['ledger'] for p in phase_accounts]]
     return dict(scenario=name, **candidate_evidence, **accounting, balance_usd=str(state.execution.balance),
         equity_usd=str(state.execution.equity), open_position=state.execution.position.model_dump(mode='json')
             if state.execution.position else None,
         pending_entry=state.execution.pending_market_order is not None,
-        observed_ticks=state.risk.observed_ticks,
+        observed_ticks=observer.observed_ticks if observer is not None else state.risk.observed_ticks,
         minimum_observed_equity_usd=str(state.risk.minimum_observed_equity),
-        entry_fills=sum(e['kind'] == 'market_fill' for e in state.execution.ledger),
-        closed_trades=sum(e['kind'] == 'protective_fill' for e in state.execution.ledger),
+        entry_fills=sum(e['kind'] == 'market_fill' for ledger in ledgers for e in ledger),
+        closed_trades=sum(e['kind'] == 'protective_fill' for ledger in ledgers for e in ledger),
         signals=len(decisions), risk_stops=[s.model_dump(mode='json') for s in state.risk.stops],
         risk_rejections=[r.model_dump(mode='json') for r in state.risk.rejections],
         broker_spec_verified=False, strategy_pass=False, prop_pass=False,
-        intrabar_equity_coverage='insufficient', terminal_close_forced=False,
+        intrabar_equity_coverage='all_consumed_quotes_and_declared_cash' if observer is not None else 'insufficient',
+        **({'prop_path':observer.summary(),'balance_scope':'active_phase_account_not_sum_of_challenge_profits'}
+           if observer is not None else {}),terminal_close_forced=False,
         snapshot_restart='passed', excluded_h4=builder.excluded)
 
 
@@ -486,7 +539,7 @@ def main(argv=None, on_progress=None):
     receipt = dict(pid=os.getpid(), run_id=str(uuid4()), event_sequence=0,
         candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
         started_at_utc=datetime.now(timezone.utc).isoformat(), stage='manifest')
-    def progress(stage, boundary=None, state=None):
+    def progress(stage, boundary=None, state=None, study=None):
         nonlocal last_observed, last_cpu
         previous_stage = receipt['stage']
         observed, cpu = time.monotonic(), time.process_time()
@@ -506,6 +559,9 @@ def main(argv=None, on_progress=None):
         if state:
             receipt.update(observed_ticks=state.risk.observed_ticks,
                            cursor_index=state.execution.cursor_index)
+        if study is not None:
+            receipt.update(observed_ticks=study.observed_ticks,prop_phase=study.phase.phase_index,
+                prop_status=study.attempt.status,tick_drawdown_usd=str(study.path['maximum_drawdown']))
         logger.log(logging.ERROR if stage == 'failed' else logging.INFO,
                    json.dumps(dict(schema='forex-study-event-v1', level='ERROR' if stage == 'failed' else 'INFO',
                                    **receipt)))
@@ -533,6 +589,9 @@ def main(argv=None, on_progress=None):
         first, last = (inputs['development'][k] for k in ('first_day', 'last_day'))
         start = int(datetime.strptime(first, '%Y%m%d').replace(tzinfo=timezone.utc).timestamp()) * 1000
         end = int((datetime.strptime(last, '%Y%m%d').replace(tzinfo=timezone.utc) + timedelta(days=1)).timestamp()) * 1000
+        if registration and registration.get('prop_profile'):
+            from trading_workspace_v2.forex_prop_observer import ForexPropObserver
+            ForexPropObserver(registration['prop_profile'],start=start,end=end,identity='manifest-validation')
         source_files = [Path(__file__), *[V2 / 'trading_workspace_v2' / name for name in
             ('forex_h4.py', 'forex_pilot_risk.py', 'forex_financing.py', 'replay_execution.py',
              'replay_tick_execution.py', 'semantics/data_contracts.py', 'semantics/data_costs.py',
@@ -543,6 +602,9 @@ def main(argv=None, on_progress=None):
             for module in ('forex_qdm_ticks.py', 'forex_qdm_inspection.py'):
                 if V2/'trading_workspace_v2'/module not in source_files:
                     source_files.append(V2/'trading_workspace_v2'/module)
+        if registration and registration.get('prop_profile'):
+            source_files.extend(V2/'trading_workspace_v2'/module
+                for module in ('forex_prop_observer.py','prop_session.py'))
         protocol_bytes = args.research_protocol.read_bytes() if args.candidate else None
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             run_id=receipt['run_id'],
@@ -578,6 +640,8 @@ def main(argv=None, on_progress=None):
                 research_protocol=dict(path=str(args.research_protocol.resolve()),
                     sha256=hashlib.sha256(protocol_bytes).hexdigest()))
         if registration:
+            if registration.get('prop_profile'):
+                manifest['prop_profile'] = registration['prop_profile']
             validate_registration(registration, inputs, args.candidate,
                 protocol_sha256=manifest['research_protocol']['sha256'], source_files=manifest['source_files'],
                 account_spec_sha256=account['sha256'], scenarios=manifest['scenarios'],
@@ -640,7 +704,8 @@ def main(argv=None, on_progress=None):
                 result = run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],
                     scenario['buy'], args.output_dir, progress,
                     development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate,
-                    tick_cache_dir=args.tick_cache_dir, horizon_cutoffs=manifest.get('horizon_cutoffs'))
+                    tick_cache_dir=args.tick_cache_dir, horizon_cutoffs=manifest.get('horizon_cutoffs'),
+                    prop_profile=manifest.get('prop_profile'))
             else:
                 receipt.setdefault('reused_scenarios', []).append(scenario['name'])
                 progress(scenario['name']+'_reused')

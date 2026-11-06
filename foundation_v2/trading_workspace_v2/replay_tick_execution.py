@@ -311,7 +311,7 @@ def advance_tick_execution(
         last_tick = tick
         entry_ready = True
         if _pilot_guard is not None:
-            trigger = _pilot_guard.begin_quote(tick, balance, floating(tick), position)
+            trigger = _pilot_guard.begin_quote(tick, balance, floating(tick), position,int(pending is not None))
             if trigger is not None and position is not None:
                 close_position(tick, "pilot_risk_stop", trigger=trigger)
             entry_ready = _pilot_guard.entry_ready(tick)
@@ -348,6 +348,8 @@ def advance_tick_execution(
                     opened_cursor_index=cursor_index, opened_time_utc=tick.time_msc // 1000)
                 exposure = True
                 record("market_fill", tick, {**detail, "position_id": position.position_id})
+                if _pilot_guard is not None:
+                    _pilot_guard.record_entry(tick,balance,floating(tick),position,int(pending is not None))
         if position is not None:
             quote = tick.bid if position.side == "BUY" else tick.ask
             stop_hit = position.stop_loss is not None and (quote <= position.stop_loss if position.side == "BUY" else quote >= position.stop_loss)
@@ -358,7 +360,7 @@ def advance_tick_execution(
             exit_request = _pilot_guard.strategy_exit(tick, position)
             if exit_request is not None:
                 close_position(tick, "pilot_strategy_exit", exit_request=exit_request)
-            _pilot_guard.finish_quote(tick, balance, floating(tick), position)
+            _pilot_guard.finish_quote(tick, balance, floating(tick), position,int(pending is not None))
     if last_tick is None:
         raise ReplayExecutionError("tick coverage is empty; OHLC fallback is disabled")
     record("price_mark", last_tick, {
