@@ -19,6 +19,8 @@ REGISTERED_STUDIES = {
         'eurusd-h4-2023-calendar-horizons-v1',
     'c5e5c8b5bdaef5b0cbc753f2c134c562e2e0ca48fe520ccdea3e737dcf427a31':
         'eurusd-h4-2023-calendar-horizons-recovery-v2',
+    '2f7bfcd2fdfad9e3d2adcb14e8a0dd4f7fdafe85af8f389ee9f72d3e15299eb9':
+        'eurusd-h4-2023-prop-path-survivors-v1',
 }
 HISTORICAL_SCHEMA = 'forex-h4-historical-robustness-v1'
 HISTORICAL_PURPOSE = 'registered_historical_robustness_not_qualification'
