@@ -169,5 +169,30 @@ class PropObservationTests(unittest.TestCase):
             self.assertEqual(D(first['balance']),D(10000))
             self.assertFalse(result['prop_pass'])  # Declared simulation is not firm certification.
 
+    def test_real_range_candidate_carries_indicators_but_resets_account_day_latch(self):
+        from trading_workspace_v2.forex_h4 import Candle,H4
+        from trading_workspace_v2.forex_prop_candidates import UTC_RANGE
+        warmup=[Candle(pilot.START//1000+(i-80)*H4,D('1.1001'),D('1.101'),D('1.099'),D('1.1001'))
+                for i in range(80)]
+        ticks=[]
+        for hour in range(24):
+            bid=D('1.100') if hour<8 else D('1.104') if hour<16 else D('1.106')
+            ticks.append(BrokerReplayTick(time_msc=pilot.START+hour*3600000+1,sequence=hour+1,
+                bid=str(bid),ask=str(bid+D('.0002'))))
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.object(pilot,'read_qdm_ticks',return_value=iter(ticks)):
+                result=pilot.run_scenario(Path('unused'),warmup,'reference',D(0),D(10),Path(folder),lambda *a:None,
+                    research_candidate=UTC_RANGE,prop_profile=profile(targets=('1','1')),
+                    development=dict(sha256='a'*64,first_day='20220103',last_day='20220103'))
+            path=json.loads((Path(folder)/'reference-prop-path.json').read_bytes())
+            candidate=json.loads((Path(folder)/'reference-candidate.json').read_bytes())['state']
+            self.assertEqual(path['active']['phase_index'],2)
+            self.assertEqual(path['active']['qualifying_days'],0)
+            self.assertEqual(result['observed_ticks'],24)
+            self.assertIsNone(candidate['last_entry_day'])
+            self.assertIsNone(candidate['position_id'])
+            self.assertEqual(len(candidate['history']),80)
+            self.assertIsNotNone(candidate['atr'])
+
 
 if __name__=='__main__': unittest.main()
