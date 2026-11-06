@@ -288,10 +288,10 @@ alternate rounding; a source or cost-model change must rerun those parity tests.
 
 ### Registered calendar horizons
 
-A registered annual study may declare `horizon_months: [3, 6, 12]` and exact
+A registered study may declare `horizon_months: [3, 6]` or `[3, 6, 12]` and exact
 `horizon_cutoffs` in UTC milliseconds. Registration validation requires the
 first calendar day, exact month boundaries and a final cutoff equal to the
-evaluation end. These are three nested observations, not independent trials.
+evaluation end. These are nested observations, not independent trials.
 The pilot emits `<scenario>-horizons.json` before processing the next hour:
 execution/risk checkpoint, pending decisions, candidate/builder state, last
 observed quote and accounting reconciliation. It neither closes positions nor
@@ -302,5 +302,8 @@ Horizon declarations are included in scenario bindings and the new artifact is
 included in completed seals/reuse. Legacy studies without horizons retain their
 previous artifact set and binding. `tooling/ai-engines/forex_time_fit.py` verifies
 seals, causal cutoffs and accounting and reports horizon observations. This is
-not a full challenge simulation: the H4 pilot still uses its internal UTC risk
-guard; phase reset, firm inactivity and payout are not inferred from its PnL.
+not full firm certification. Without `prop_profile`, horizons alone do not
+evaluate phase transitions. Registered prop-enabled studies also use the native
+lifecycle and actual account reset described above; internal daily risk uses
+Europe/Prague. Firm inactivity, exceptions, payout eligibility and historical
+broker realism remain outside that declared subset, not inferred from PnL.
