@@ -1,4 +1,4 @@
-"""Durable, offline quote-stream coordinator for the fixed EURUSD H4 candidate.
+"""Durable, offline quote-stream coordinator for fixed EURUSD H4 candidates.
 
 Quotes are buffered until their hour has closed. A later quote or an explicit
 source watermark closes that hour; neither an unfinished bar nor its future
@@ -20,6 +20,7 @@ from .experiment_forward_binding import ArtifactContent, ExperimentForwardBindin
 from .forex_financing import FinancingTerms, apply_forex_financing
 from .forex_h4 import (HOUR, H4, TICK, Candle, CandleState, FixedH4Candidate,
                        H4Builder, H4BuilderState, H4CandidateState, size_for_stop)
+from .forex_prop_candidates import PropH4Candidate, PropH4State, UTC_RANGE
 from .forex_pilot_risk import (ForexPilotSnapshot, advance_forex_pilot,
     queue_forex_pilot_order, queue_forex_pilot_exit, _stop_at_fill)
 from .owner_absence_journal import _exclusive_file_lock
@@ -62,7 +63,7 @@ class ForexForwardSnapshot(BaseModel):
     binding: ExperimentForwardBinding
     pilot: ForexPilotSnapshot
     builder: H4BuilderState
-    candidate: H4CandidateState
+    candidate: H4CandidateState | PropH4State
     buffer_ticks: tuple[BrokerReplayTick, ...] = ()
     last_received: BrokerReplayTick | None = None
     received_ticks: int = Field(default=0, ge=0, strict=True)
@@ -76,6 +77,12 @@ class ForexForwardSnapshot(BaseModel):
 
     @model_validator(mode='after')
     def coherent_stream(self):
+        if isinstance(self.candidate, PropH4State):
+            if (self.candidate.candidate != UTC_RANGE or self.binding.candidate_id != UTC_RANGE
+                    or self.binding.purpose != 'research'):
+                raise ValueError('UTC range state requires its research binding')
+        elif self.binding.candidate_id not in ('fixed-h4', 'fixed-eurusd-h4'):
+            raise ValueError('fixed H4 state requires its fixed candidate binding')
         e = self.pilot.execution
         if e.timeframe_seconds != HOUR or e.cursor_index != self.committed_hours:
             raise ValueError('forward coordinator requires an hourly execution cursor')
@@ -194,7 +201,12 @@ class ForexForwardSession:
         if any(Decimal(str(spec[key])) != expected for key, expected in
                (('tick_size', TICK), ('quantity_min', Decimal('0.01')), ('quantity_step', Decimal('0.01')))):
             raise ValueError('fixed H4 sizing requires its declared tick and lot grid')
-        candidate = FixedH4Candidate()
+        if binding.candidate_id == UTC_RANGE and binding.purpose == 'research':
+            candidate = PropH4Candidate(UTC_RANGE)
+        elif binding.candidate_id in ('fixed-h4', 'fixed-eurusd-h4'):
+            candidate = FixedH4Candidate()
+        else:
+            raise ValueError('unsupported offline forward candidate or purpose')
         warmup_values = tuple(warmup)
         if warmup_values:
             encoded = forward_artifact_json([CandleState(**vars(p)).model_dump(mode='json') for p in warmup_values])
@@ -273,7 +285,8 @@ class ForexForwardSession:
         state = self._state
         pilot = state.pilot
         builder = H4Builder.from_state(state.builder)
-        candidate = FixedH4Candidate.from_state(state.candidate)
+        candidate = (PropH4Candidate.from_state(state.candidate) if isinstance(state.candidate, PropH4State)
+                     else FixedH4Candidate.from_state(state.candidate))
         mids = [(q.bid + q.ask) / 2 for q in self._buffer]
         hour = Candle(self._buffer[0].time_msc // HOUR_MSC * HOUR,
                       mids[0], max(mids), min(mids), mids[-1])
@@ -293,7 +306,10 @@ class ForexForwardSession:
         decisions = list(state.decisions)
         if candle is not None:
             position = pilot.execution.position
-            signal, distance = candidate.observe(candle, side=position.side if position else None)
+            position_args = dict(side=position.side if position else None)
+            if isinstance(candidate, PropH4Candidate):
+                position_args['position_id'] = position.position_id if position else None
+            signal, distance = candidate.observe(candle, **position_args)
             if signal and pilot.risk.exit_pending is None and pilot.execution.pending_market_order is None:
                 operation_id = f'h4-{candle.timestamp}-{signal}'
                 status, quantity = 'queued', None

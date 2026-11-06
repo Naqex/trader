@@ -61,6 +61,26 @@ An absent financing calendar means no modeled financing events, **not** verified
 zero swap. Hashes establish identity, not data completeness, known-at correctness,
 historical broker fees, strategy quality or promotion approval.
 
+### UTC range research replay
+
+The same offline coordinator/CLI also accepts the frozen candidate
+`eurusd-h4-utc-range00-08-atr14-r025-v1`, with `purpose: "research"` only.
+Add `source:candidate`, pinned to the executed
+`trading_workspace_v2/forex_prop_candidates.py`, alongside `SOURCE_FILES`.
+The existing spec/cost gates, quote cursor and checkpoint ownership still apply.
+Its snapshot retains `PropH4State`: causal range/ATR history, entry-day latch
+and position identity. A fixed-candidate checkpoint cannot be relabeled as UTC
+range or resumed with different artifacts. Legacy fixed snapshots keep their
+original state shape.
+
+Missing range hours skip that day's entries. Restoration preserves pending
+orders/exits and consumes a day's entry once; it does not reconstruct candles
+from future quotes. Bounded Jan1–Jan3/2023 consumed-data checks compare the full
+pilot/candidate/builder/decisions against batch, with two restores per cost
+scenario. This establishes software parity in that scope, not new edge evidence.
+It does not adapt `mt5_forward_session.py`, authorize broker orders, implement
+the prop lifecycle in this stream coordinator, or qualify the strategy for demo.
+
 ## Bounded consumption and recovery
 
 From the product checkout, using a private registration and output directory:

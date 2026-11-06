@@ -18,6 +18,7 @@ from trading_workspace_v2.forex_forward import (
     ForexForwardCheckpointCorrupt, forward_artifact_json,
 )
 from trading_workspace_v2.forex_h4 import HOUR, H4, Candle, CandleState
+from trading_workspace_v2.forex_prop_candidates import UTC_RANGE, PropH4State
 from trading_workspace_v2.forex_pilot_risk import initialize_forex_pilot
 from trading_workspace_v2.replay_tick_execution import initialize_tick_execution
 
@@ -32,7 +33,7 @@ def quote(hour, bid='1.10200', ask='1.10220', *, offset=1, sequence=0):
                 sequence=sequence, bid=bid, ask=ask)
 
 
-def fixture(*, warm=True, financing=(), **limits):
+def fixture(*, warm=True, financing=(), candidate_id='fixed-h4', purpose='system_fixture', **limits):
     execution = initialize_tick_execution(replay_session_id='forward-system-fixture', branch_id='main',
         dataset_id='synthetic', dataset_sha256=DIGEST, tick_snapshot_id='synthetic-quotes',
         tick_snapshot_sha256=DIGEST,
@@ -55,8 +56,8 @@ def fixture(*, warm=True, financing=(), **limits):
     if financing:
         artifacts['financing'] = forward_artifact_json([f.model_dump(mode='json') for f in financing])
     pins = {k: hashlib.sha256(v).hexdigest() for k, v in artifacts.items()}
-    binding = bind_experiment_artifacts(candidate_id='fixed-h4', strategy_revision='system-v1',
-        purpose='system_fixture', artifacts=artifacts, expected_sha256=pins)
+    binding = bind_experiment_artifacts(candidate_id=candidate_id, strategy_revision='system-v1',
+        purpose=purpose, artifacts=artifacts, expected_sha256=pins)
     return ForexForwardSession.create(pilot, binding=binding, artifacts=artifacts,
         expected_sha256=pins, warmup=candles, financing=financing, **limits), artifacts, pins
 
@@ -72,6 +73,60 @@ def close_hour(session, hour, bid='1.10200', ask='1.10220'):
 
 
 class ForexForwardTests(unittest.TestCase):
+    def test_utc_range_restarts_keep_range_entry_latch_and_pending_exit(self):
+        continuous, _, _ = fixture(candidate_id=UTC_RANGE,purpose='research')
+        interrupted, artifacts, pins = fixture(candidate_id=UTC_RANGE,purpose='research')
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'utc-range.json'
+            for hour in range(49):
+                bid,ask=('1.10400','1.10420') if hour%24>=8 else ('1.10200','1.10220')
+                close_hour(continuous,hour,bid,ask)
+                interrupted.observe_quote(quote(hour,bid,ask))
+                interrupted.save(path)
+                interrupted=ForexForwardSession.resume(path,artifacts=artifacts,expected_sha256=pins,
+                    candidate_id=UTC_RANGE,strategy_revision='system-v1',purpose='research')
+                interrupted.close_before((START+(hour+1)*HOUR)*1000)
+                self.assertEqual(interrupted.snapshot(),continuous.snapshot())
+                if hour==11:
+                    self.assertIsNotNone(interrupted.snapshot().pilot.execution.pending_market_order)
+                    self.assertIsNotNone(interrupted.snapshot().candidate.last_entry_day)
+                if hour==19:
+                    self.assertIsNotNone(interrupted.snapshot().pilot.risk.exit_pending)
+            state=interrupted.snapshot()
+            self.assertIsInstance(state.candidate,PropH4State)
+            self.assertEqual([d.signal for d in state.decisions],['BUY','EXIT','BUY','EXIT'])
+            self.assertIsNone(state.pilot.execution.position)
+            self.assertFalse(state.execution_capability)
+            self.assertFalse(state.strategy_qualified)
+
+    def test_candidate_state_identity_and_unsupported_purpose_are_rejected(self):
+        for identity,purpose in [(UTC_RANGE,'system_fixture'),('unimplemented','research')]:
+            with self.subTest(identity=identity),self.assertRaisesRegex(ValueError,'unsupported'):
+                fixture(candidate_id=identity,purpose=purpose)
+        fixed,_,_=fixture()
+        raw=fixed.snapshot().model_dump(mode='json')
+        raw['binding'].update(candidate_id=UTC_RANGE,purpose='research')
+        with self.assertRaisesRegex(ValueError,'fixed H4 state'):
+            ForexForwardSnapshot.model_validate(raw)
+        utc,_,_=fixture(candidate_id=UTC_RANGE,purpose='research')
+        raw=utc.snapshot().model_dump(mode='json')
+        raw['binding']['candidate_id']='fixed-eurusd-h4'
+        with self.assertRaisesRegex(ValueError,'research binding'):
+            ForexForwardSnapshot.model_validate(raw)
+
+    def test_utc_range_missing_range_hour_skips_day_without_inventing_bars(self):
+        session,_,_=fixture(candidate_id=UTC_RANGE,purpose='research')
+        for hour in range(49):
+            if hour==6:
+                continue
+            bid,ask=('1.10400','1.10420') if hour%24>=8 else ('1.10200','1.10220')
+            close_hour(session,hour,bid,ask)
+            if hour==23:
+                self.assertEqual(session.snapshot().decisions,())
+                self.assertIsNone(session.snapshot().pilot.execution.position)
+        self.assertEqual([d.signal for d in session.snapshot().decisions],['BUY','EXIT'])
+        self.assertIn(START+H4,session.snapshot().builder.excluded)
+
     def test_closed_hour_causality_partial_watermark_duplicate_and_order(self):
         session, _, _ = fixture(warm=False)
         first = quote(0)

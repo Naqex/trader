@@ -12,6 +12,7 @@ import unittest
 
 from test_forex_forward import fixture
 from trading_workspace_v2.forex_forward import forward_artifact_json
+from trading_workspace_v2.forex_prop_candidates import UTC_RANGE
 
 V2 = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('forex_forward_cli', V2 / 'scripts/forex_forward.py')
@@ -20,7 +21,7 @@ sys.modules[spec.name] = cli
 spec.loader.exec_module(cli)
 
 
-def registration(folder):
+def registration(folder, candidate_id='fixed-eurusd-h4'):
     session, _, _ = fixture(warm=False)
     pilot = session.snapshot().pilot.model_dump(mode='json')
     data = b'DateTime,Bid,Ask,Volume\n' + b''.join(
@@ -35,17 +36,44 @@ def registration(folder):
         path = folder / (name + '.dat')
         path.write_bytes(content)
         entries[name] = dict(path=path.name, sha256=hashlib.sha256(content).hexdigest())
-    for name, filename in cli.SOURCE_FILES.items():
+    sources=cli.SOURCE_FILES | (cli.RESEARCH_SOURCE_FILES if candidate_id==UTC_RANGE else {})
+    for name, filename in sources.items():
         path = V2 / filename
         entries[name] = dict(path=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
     manifest = folder / 'registration.json'
     manifest.write_bytes(forward_artifact_json(dict(schema_version='forex-forward-cli-v1',
-        candidate_id='fixed-eurusd-h4', strategy_revision='system-v1', purpose='system_fixture',
+        candidate_id=candidate_id, strategy_revision='system-v1',
+        purpose='research' if candidate_id==UTC_RANGE else 'system_fixture',
         first_day='20220103', last_day='20220103', artifacts=entries)))
     return manifest
 
 
 class ForexForwardCliTests(unittest.TestCase):
+    def test_utc_research_cli_resumes_and_requires_its_executed_source_pin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder=Path(directory)
+            manifest=registration(folder,UTC_RANGE)
+            checkpoint=folder/'utc.json'
+            cli.consume(manifest,checkpoint,resume=False,max_quotes=2,checkpoint_every=1)
+            result=cli.consume(manifest,checkpoint,resume=True,checkpoint_every=3)
+            self.assertTrue(result['source_eof'])
+            self.assertFalse(result['execution_capability'])
+            self.assertFalse(result['strategy_qualified'])
+            self.assertEqual(json.loads(checkpoint.read_bytes())['snapshot']['candidate']['candidate'],UTC_RANGE)
+            original=json.loads(manifest.read_bytes())
+            for change in ('missing','purpose','digest','source_path'):
+                from copy import deepcopy
+                bad=deepcopy(original)
+                if change=='missing':bad['artifacts'].pop('source:candidate')
+                if change=='purpose':bad['purpose']='system_fixture'
+                if change=='digest':bad['artifacts']['source:candidate']['sha256']='0'*64
+                if change=='source_path':bad['artifacts']['source:candidate']['path']=bad['artifacts']['source']['path']
+                manifest.write_bytes(forward_artifact_json(bad))
+                target=folder/(change+'.json')
+                with self.subTest(change=change),self.assertRaises(ValueError):
+                    cli.consume(manifest,target,resume=False)
+                self.assertFalse(target.exists())
+
     def test_qdm_batches_resume_to_identical_continuous_state_and_leave_final_hour_open(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)

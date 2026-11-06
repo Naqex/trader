@@ -18,6 +18,7 @@ from trading_workspace_v2.forex_financing import FinancingTerms
 from trading_workspace_v2.forex_forward import ForexForwardSession
 from trading_workspace_v2.forex_h4 import CandleState, read_qdm_ticks
 from trading_workspace_v2.forex_pilot_risk import ForexPilotSnapshot
+from trading_workspace_v2.forex_prop_candidates import UTC_RANGE
 
 
 SOURCE_FILES = {
@@ -34,6 +35,7 @@ SOURCE_FILES = {
     'source:data-costs': 'trading_workspace_v2/semantics/data_costs.py',
     'source:cli': 'scripts/forex_forward.py',
 }
+RESEARCH_SOURCE_FILES = {'source:candidate': 'trading_workspace_v2/forex_prop_candidates.py'}
 
 
 class ArtifactFile(BaseModel):
@@ -45,7 +47,7 @@ class ArtifactFile(BaseModel):
 class Registration(BaseModel):
     model_config = ConfigDict(extra='forbid', frozen=True)
     schema_version: Literal['forex-forward-cli-v1']
-    candidate_id: Literal['fixed-eurusd-h4']
+    candidate_id: Literal['fixed-eurusd-h4', 'eurusd-h4-utc-range00-08-atr14-r025-v1']
     strategy_revision: str = Field(min_length=1, strict=True)
     purpose: Literal['system_fixture', 'research']
     first_day: str = Field(pattern=r'^\d{8}$', strict=True)
@@ -60,6 +62,10 @@ class Registration(BaseModel):
         if self.first_day > self.last_day:
             raise ValueError('registered dates must be ordered')
         required = {'data', 'instrument_spec', 'cost_model', 'seed', *SOURCE_FILES}
+        if self.candidate_id == UTC_RANGE:
+            if self.purpose != 'research':
+                raise ValueError('UTC range is supported only for offline research')
+            required.update(RESEARCH_SOURCE_FILES)
         if not required <= self.artifacts.keys():
             raise ValueError('registration requires data/spec/cost/seed and all executed source pins')
         if self.artifacts.keys() - required - {'warmup', 'financing'}:
@@ -90,7 +96,8 @@ def consume(manifest: Path, checkpoint: Path, *, resume: bool, max_quotes: int =
         raise ValueError('checkpoint must not replace an input artifact')
     if not resume and checkpoint.exists():
         raise ValueError('checkpoint already exists; explicitly resume it')
-    for role, filename in SOURCE_FILES.items():
+    sources = SOURCE_FILES | (RESEARCH_SOURCE_FILES if registration.candidate_id == UTC_RANGE else {})
+    for role, filename in sources.items():
         if paths[role] != (V2 / filename).resolve():
             raise ValueError('source pin must reference executed module: ' + role)
     pins = {name: entry.sha256 for name, entry in registration.artifacts.items()}
