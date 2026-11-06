@@ -21,6 +21,8 @@ REGISTERED_STUDIES = {
         'eurusd-h4-2023-calendar-horizons-recovery-v2',
     '2f7bfcd2fdfad9e3d2adcb14e8a0dd4f7fdafe85af8f389ee9f72d3e15299eb9':
         'eurusd-h4-2023-prop-path-survivors-v1',
+    '22a08798500af13137cd4203140511065f63ea59caf5668e3985d14264daa0d7':
+        'eurusd-h4-2022-q2q3-period-robustness-v1',
 }
 HISTORICAL_SCHEMA = 'forex-h4-historical-robustness-v1'
 HISTORICAL_PURPOSE = 'registered_historical_robustness_not_qualification'
@@ -71,8 +73,9 @@ def validate_registration(registration, inputs, candidate, *, protocol_sha256=No
     if 'horizon_cutoffs' in registration:
         start = datetime.strptime(inputs['development']['first_day'], '%Y%m%d').replace(tzinfo=timezone.utc)
         months = registration.get('horizon_months')
-        if months != [3, 6, 12] or start.day != 1:
-            raise ValueError('time-fit requires calendar 3/6/12 months from a month start')
+        if (months not in ([3, 6], [3, 6, 12]) or start.day != 1
+                or any(type(value) is not int for value in months)):
+            raise ValueError('time-fit requires registered calendar 3/6 or 3/6/12 months from a month start')
         expected_cutoffs = []
         for count in months:
             offset = start.year*12 + start.month-1 + count

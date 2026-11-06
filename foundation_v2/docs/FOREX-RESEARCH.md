@@ -18,6 +18,13 @@ absolute CSV paths, SHA256 and date bounds, using `forex-h4-inputs-v1`:
 
 ### Registered historical robustness
 
+The period-robustness study uses the same fixed candidates and numerical core
+with registered calendar horizons `[3,6]`. Its April–September 2022 window and
+February–March warmup require their own frozen registration digest; an arbitrary
+date edit or a new content hash does not grant execution. The report reads the
+registered horizon labels and rejects missing or mixed worker cutoffs. Annual
+registrations retain `[3,6,12]`; no completed annual artifacts are rewritten.
+
 The explicit pair `--study-registration <frozen-registration.json>
 --study-registration-sha256 <registered-sha256>` enables the separately registered
 Q1/2023 study (warmup November–December2022). Supply the candidate, pinned input

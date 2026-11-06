@@ -17,6 +17,44 @@ from test_forex_prop_candidates import candle
 
 
 class RegistrationTests(unittest.TestCase):
+    def test_six_month_registration_checks_calendar_end_and_cutoff_types(self):
+        from datetime import datetime, timezone
+        ms = lambda value: int(datetime.fromisoformat(value).replace(tzinfo=timezone.utc).timestamp())*1000
+        registration = deepcopy(self.registration)
+        registration['windows'] = dict(warmup=dict(first_day='20220201', last_day='20220331'),
+                                    evaluation=dict(first_day='20220401', last_day='20220930'))
+        registration.update(horizon_months=[3, 6], horizon_cutoffs=[ms('2022-07-01'), ms('2022-10-01')])
+        inputs = deepcopy(self.inputs)
+        for role, window in [('warmup','warmup'), ('development','evaluation')]:
+            inputs[role].update(registration['windows'][window])
+        registry.validate_registration(registration, inputs, self.candidate)
+        for change in ('order', 'float_month', 'cutoff_type', 'wrong_cutoff', 'wrong_end'):
+            bad, bad_inputs = deepcopy(registration), deepcopy(inputs)
+            if change == 'order': bad['horizon_months'] = [6, 3]
+            if change == 'float_month': bad['horizon_months'] = [3.0, 6]
+            if change == 'cutoff_type': bad['horizon_cutoffs'][0] = float(bad['horizon_cutoffs'][0])
+            if change == 'wrong_cutoff': bad['horizon_cutoffs'][0] += 86400000
+            if change == 'wrong_end':
+                bad['windows']['evaluation']['last_day'] = '20220929'
+                bad_inputs['development']['last_day'] = '20220929'
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                registry.validate_registration(bad, bad_inputs, self.candidate)
+
+        self.registration = registration
+        self.registration_path.write_bytes(json.dumps(registration).encode())
+        self.digest = hashlib.sha256(self.registration_path.read_bytes()).hexdigest()
+        self.input_manifest.write_text(json.dumps(dict(schema='forex-h4-inputs-v1',**inputs)))
+        account=dict(sha256='a'*64,debit_buy_usd_per_lot='9.3',debit_sell_usd_per_lot='-0.31')
+        with patch.dict(registry.REGISTERED_STUDIES,{self.digest:'fixture'}), \
+             patch.object(pilot,'observed_account_spec',return_value=account), \
+             patch.object(pilot,'inspect_qdm',return_value=(dict(ticks=100,complete_h4=81),[candle(i) for i in range(81)])), \
+             patch.object(pilot,'run_scenario') as simulate, redirect_stdout(io.StringIO()):
+            pilot.main(self.argv('six-month-preflight'))
+            simulate.assert_not_called()
+            manifest=json.loads((self.root/'six-month-preflight/manifest.json').read_bytes())
+            registry.inspect_registered_manifest(manifest,self.root/'six-month-preflight')
+            self.assertEqual(manifest['horizon_cutoffs'],registration['horizon_cutoffs'])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
