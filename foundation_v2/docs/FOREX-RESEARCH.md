@@ -169,6 +169,19 @@ ledger prefixes are not cached as trusted. Changed source pins require a fresh
 binding before a future numerical study; completed reports retain their original
 source snapshots and are not replayed merely to read their results.
 
+### Experimental H1 PnL triage
+
+`scripts/forex_coarse_screen.py` and `forex_coarse_input.py` are an opt-in pilot
+on the already consumed Q1/2022 inputs. Observed hourly Bid/Ask extrema and
+first/last quotes feed the existing H4 candidate builder, sizing, bar protection,
+margin assumptions and cost arithmetic. Partial H4 hours still execute pending
+actions. Intrahour stops fill at a modeled level, not the first crossing tick;
+internal tick-risk stops, prop lifecycle and intrabar DD are not simulated.
+The distinct `forex-coarse-pnl-v1` schema always requires tick review and grants
+no automatic rejection or promotion. It is not a native verified tick dossier.
+Prepare its source-bound H1 cache once using `--prepare-only`, then use the same
+input manifest/cache/protocol with a new output directory for the coarse run.
+
 Historical execution with this runner requires a new registration declaring
 `calendar_accounting=exclusive_event_clock_v1` and pinning its numerical CLI.
 Legacy frozen registrations/artifacts remain readable but cannot execute against
