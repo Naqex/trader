@@ -21,8 +21,14 @@ POST_LONDON = 'eurusd-h1-post-london16-16ny-atr14x1p5-r025-v1'
 PRE_TOKYO = 'eurusd-h1-pre-tokyo18ny-10tokyo-atr14x1p5-r025-v1'
 FIX_COMPOSITE = 'eurusd-h1-fixing-composite-atr14x1p5-r025-v1'
 FIXING_CANDIDATES = (PRE_ECB, POST_LONDON, PRE_TOKYO, FIX_COMPOSITE)
+LONDON_ORB = 'eurusd-h1-london-orb08-09-atr14x1p5-r025-v1'
+NY_ORB = 'eurusd-h1-ny-orb08-09-atr14x1p5-r025-v1'
+ASIA_ORB = 'eurusd-h1-asia09-15tokyo-london-break-atr14x1p5-r025-v1'
+BB_FLAT = 'eurusd-h1-bb20-reentry-flat80-atr14x1p5-time12-r025-v1'
+ORB_CANDIDATES = (LONDON_ORB, NY_ORB, ASIA_ORB)
+ROUND7_CANDIDATES = (*ORB_CANDIDATES, BB_FLAT)
 INTRADAY_CANDIDATES = (RSI_REENTRY, SHOCK, DAY_BREAK, DAY_FADE, BB_REENTRY,
-                       PULLBACK, EUROPE_AM, POSTFIX, *FIXING_CANDIDATES)
+                       PULLBACK, EUROPE_AM, POSTFIX, *FIXING_CANDIDATES, *ROUND7_CANDIDATES)
 DAY = 86400
 
 
@@ -41,6 +47,28 @@ def fixing_entry(candidate, end):
             deadline += timedelta(days=1)
         return side, int(deadline.timestamp())
     return None, None
+
+
+def opening_entry(candidate, history, candle):
+    entry_zone = 'America/New_York' if candidate == NY_ORB else 'Europe/London'
+    range_zone = 'Asia/Tokyo' if candidate == ASIA_ORB else entry_zone
+    end = datetime.fromtimestamp(candle.timestamp+HOUR, timezone.utc)
+    local = end.astimezone(ZoneInfo(entry_zone))
+    if local.weekday() >= 5 or local.hour not in ((8,9,10,11,12) if candidate == ASIA_ORB else (10,11,12)):
+        return None, None
+    target_date = end.astimezone(ZoneInfo(range_zone)).date()
+    required = set(range(9,15)) if candidate == ASIA_ORB else {8}
+    observed = []
+    for bar in (*history, candle):
+        at = datetime.fromtimestamp(bar.timestamp, timezone.utc).astimezone(ZoneInfo(range_zone))
+        if at.date() == target_date and at.hour in required:
+            observed.append((at.hour,bar))
+    if {h for h,_ in observed} != required or len(observed) != len(required):
+        return None, None
+    high, low = max(b.high for _,b in observed), min(b.low for _,b in observed)
+    side = 'BUY' if candle.close > high else 'SELL' if candle.close < low else None
+    deadline = int(local.replace(hour=16,minute=0,second=0,microsecond=0).timestamp())
+    return side, deadline if side else None
 
 
 class IntradayH1State(BaseModel):
@@ -96,9 +124,9 @@ class IntradayH1State(BaseModel):
                 or (self.range_day is None) != (self.range_low is None)
                 or (self.range_day is not None and (self.day_index is None or self.range_day >= self.day_index
                     or self.range_low > self.range_high))
-                or (self.scheduled_exit is not None and (self.candidate not in FIXING_CANDIDATES
+                or (self.scheduled_exit is not None and (self.candidate not in (*FIXING_CANDIDATES,*ORB_CANDIDATES)
                     or self.scheduled_exit % HOUR))
-                or (self.candidate in FIXING_CANDIDATES and self.position_id is not None and self.scheduled_exit is None)
+                or (self.candidate in (*FIXING_CANDIDATES,*ORB_CANDIDATES) and self.position_id is not None and self.scheduled_exit is None)
                 or (self.last_entry_day is not None and (not times
                     or self.last_entry_day > (times[-1]+HOUR)//DAY))):
             raise ValueError('inconsistent intraday daily range state')
@@ -169,7 +197,7 @@ class IntradayH1Candidate:
         mean=sum(closes[-20:],Decimal(0))/20 if len(closes) >= 20 else None
         signal=None
         limit=24 if self.candidate == PULLBACK else 12
-        if self.candidate in FIXING_CANDIDATES:
+        if self.candidate in (*FIXING_CANDIDATES,*ORB_CANDIDATES):
             if side is not None:
                 if self.scheduled_exit is None or (self.position_id is not None and self.position_id != position_id):
                     raise ValueError('fixing position has no owned entry deadline')
@@ -177,7 +205,10 @@ class IntradayH1Candidate:
             else:
                 self.scheduled_exit=None
                 if distance is not None and distance > 0:
-                    signal,self.scheduled_exit=fixing_entry(self.candidate,end)
+                    if self.candidate in FIXING_CANDIDATES:
+                        signal,self.scheduled_exit=fixing_entry(self.candidate,end)
+                    elif self.last_entry_day != entry_day:
+                        signal,self.scheduled_exit=opening_entry(self.candidate,self.history,candle)
         elif self.candidate in (DAY_BREAK,DAY_FADE):
             if side is not None:
                 if hour >= 20 or self.last_entry_day != entry_day:
@@ -208,14 +239,16 @@ class IntradayH1Candidate:
             elif side is None and old_rsi is not None:
                 if old_rsi <= 30 < self.rsi:signal='BUY'
                 elif old_rsi >= 70 > self.rsi:signal='SELL'
-        elif self.candidate in (SHOCK,BB_REENTRY) and mean is not None:
+        elif self.candidate in (SHOCK,BB_REENTRY,BB_FLAT) and mean is not None:
             if (side == 'BUY' and bar.close >= mean) or (side == 'SELL' and bar.close <= mean):signal='EXIT'
             elif side is None and self.candidate == SHOCK and old_atr is not None:
                 span=previous.high-previous.low
                 if span > 0 and span >= 2*old_atr:
                     if previous.close <= previous.low+span/4 and bar.close > (previous.high+previous.low)/2:signal='BUY'
                     elif previous.close >= previous.high-span/4 and bar.close < (previous.high+previous.low)/2:signal='SELL'
-            elif side is None and self.candidate == BB_REENTRY:
+            elif side is None and (self.candidate == BB_REENTRY or (self.candidate == BB_FLAT
+                    and len(closes)>=80 and old_atr is not None
+                    and abs(mean-sum(closes[-80:],Decimal(0))/80)<=old_atr/2)):
                 sd=(sum(((v-mean)**2 for v in closes[-20:]),Decimal(0))/20).sqrt()
                 if sd > 0:
                     if previous.close <= mean-2*sd < bar.close:signal='BUY'
@@ -230,7 +263,7 @@ class IntradayH1Candidate:
                 elif fast < slow and previous.close >= prior_fast and bar.close < fast:signal='SELL'
         if signal in ('BUY','SELL'):
             if distance is None or distance <= 0:signal=None
-            elif self.candidate in (DAY_BREAK,DAY_FADE,EUROPE_AM,POSTFIX):self.last_entry_day=entry_day
+            elif self.candidate in (DAY_BREAK,DAY_FADE,EUROPE_AM,POSTFIX,*ORB_CANDIDATES):self.last_entry_day=entry_day
         self.position_id,self.position_side=position_id,side
         self.history.append(candle)
         return signal,distance
