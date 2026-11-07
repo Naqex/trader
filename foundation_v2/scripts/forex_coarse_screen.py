@@ -12,7 +12,7 @@ V2=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(V2))
 from forex_h4_pilot import (ALL_STUDY_CANDIDATES,H4_STUDY_CANDIDATES,STUDY_CANDIDATES,
     study_candidate,initial_state,financing_calendar,input_contract,observed_account_spec,write_json)
-from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES
+from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES,METAL_INTRADAY_CANDIDATES
 from trading_workspace_v2.forex_ml_candidate import ML_CANDIDATES, MLH1Candidate
 from trading_workspace_v2.forex_h4_candidates import METAL_CANDIDATES,METAL_BASELINE
 from trading_workspace_v2.research_market import MetalStudyMarket,metal_candidate,size_for_market_stop
@@ -37,9 +37,10 @@ def h4_from_hours(hours):
 def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage,buy_debit,sell_debit,
                     model_pack=None,market_spec=None,input_basis='observed_bidask'):
     began=time.perf_counter();cpu=time.process_time()
-    if candidate not in (*ALL_STUDY_CANDIDATES,*ML_CANDIDATES,*METAL_CANDIDATES):raise ValueError('unsupported coarse candidate')
+    metal=candidate in (*METAL_CANDIDATES,*METAL_INTRADAY_CANDIDATES)
+    if candidate not in (*ALL_STUDY_CANDIDATES,*ML_CANDIDATES,*METAL_CANDIDATES,*METAL_INTRADAY_CANDIDATES):raise ValueError('unsupported coarse candidate')
     if (candidate in ML_CANDIDATES)!=(model_pack is not None):raise ValueError('explicit ML pack required only for ML candidates')
-    if (candidate in METAL_CANDIDATES)!=(market_spec is not None):raise ValueError('explicit matching metal market required')
+    if metal!=(market_spec is not None):raise ValueError('explicit matching metal market required')
     if market_spec is not None:
         market_spec=MetalStudyMarket.model_validate(market_spec)
         if input_basis!='bid_ohlc_declared_ask':raise ValueError('metal indicative source basis required')
@@ -49,7 +50,7 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         raise ValueError('invalid coarse evaluation boundaries')
     if any(not x.is_finite() for x in (slippage,buy_debit,sell_debit)) or slippage<0:
         raise ValueError('invalid coarse costs')
-    period=HOUR if candidate in (*INTRADAY_CANDIDATES,*ML_CANDIDATES) else H4
+    period=HOUR if candidate in (*INTRADAY_CANDIDATES,*ML_CANDIDATES,*METAL_INTRADAY_CANDIDATES) else H4
     warmup=[CandleState(**vars(bar)).candle() for bar in warmup]
     if (len(warmup)<(100 if period==HOUR else 81) or any(b.timestamp<=a.timestamp for a,b in zip(warmup,warmup[1:]))
             or any(bar.timestamp%period or (bar.timestamp+period)*1000>start for bar in warmup)):

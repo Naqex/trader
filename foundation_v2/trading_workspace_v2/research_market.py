@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .forex_h4 import FixedH4Candidate, HOUR
 from .forex_h4_candidates import METAL_BASELINE, METAL_CANDIDATES, ResearchH4Candidate
+from .forex_intraday_candidates import METAL_INTRADAY_CANDIDATES,IntradayH1Candidate
 from .replay_tick_execution import initialize_tick_execution
 from .retained import CostModel, InstrumentSpec
 
@@ -59,6 +60,7 @@ class MetalStudyMarket(BaseModel):
 
 
 def metal_candidate(candidate):
+    if candidate in METAL_INTRADAY_CANDIDATES:return IntradayH1Candidate(candidate)
     if candidate not in METAL_CANDIDATES:raise ValueError('unknown metal research recipe')
     return FixedH4Candidate() if candidate == METAL_BASELINE else ResearchH4Candidate(candidate)
 

@@ -11,6 +11,7 @@ sys.path.insert(0,str(V2))
 from forex_coarse_screen import simulate_coarse,coarse_source_pins,h4_from_hours
 from forex_h4_pilot import write_json
 from trading_workspace_v2.forex_h4_candidates import METAL_CANDIDATES
+from trading_workspace_v2.forex_intraday_candidates import METAL_INTRADAY_CANDIDATES
 from trading_workspace_v2.research_market import MetalStudyMarket
 from trading_workspace_v2.research_metal_input import aggregate_bid_m1,indicative_hours
 from trading_workspace_v2.forex_study_registration import runtime_binding
@@ -38,20 +39,22 @@ def run(args):
         write_json(args.output_dir/'progress.json',value);print(json.dumps(value),flush=True)
     try:
         config=json.loads(args.config.read_bytes());pins=source_pins()
-        long_study=config.get('schema')=='metal-discovery9-v1'
+        intraday=config.get('schema')=='metal-discovery10-v1'
+        long_study=config.get('schema') in ('metal-discovery9-v1','metal-discovery10-v1')
+        candidates=METAL_INTRADAY_CANDIDATES if intraday else METAL_CANDIDATES
         input_sha=LONG_RAW_SHA if long_study else RAW_SHA
         years=list(range(2010,2025)) if long_study else [2021,2022,2023,2024]
-        if (config['schema'] not in ('metal-discovery8-v1','metal-discovery9-v1') or input_sha is None
+        if (config['schema'] not in ('metal-discovery8-v1','metal-discovery9-v1','metal-discovery10-v1') or input_sha is None
                 or config['input_sha256']!=input_sha
                 or config['source_files']!=pins or config['runtime']!=runtime_binding()
-                or config['candidates']!=list(METAL_CANDIDATES) or config['costs']!=COSTS
+                or config['candidates']!=list(candidates) or config['costs']!=COSTS
                 or config['years']!=years
                 or hashlib.sha256(Path(config['protocol_path']).read_bytes()).hexdigest()!=config['protocol_sha256']):
             raise ValueError('metal frozen study/source/runtime scope mismatch')
         markets=([MetalStudyMarket.model_validate(spec) for spec in config['market_specs']] if long_study
                  else [MetalStudyMarket.model_validate(config['market_spec'])])
         balances=[market.starting_balance_usd for market in markets]
-        if balances!=([Decimal('10000'),Decimal('50000')] if long_study else [Decimal('10000')]):
+        if balances!=([Decimal('50000')] if intraday else [Decimal('10000'),Decimal('50000')] if long_study else [Decimal('10000')]):
             raise ValueError('metal capital scopes differ from frozen study')
         write_json(args.output_dir/'manifest.json',config)
         shutil.copy2(config['protocol_path'],args.output_dir/'protocol.md')
@@ -74,10 +77,10 @@ def run(args):
                 warmstart=int(datetime(year-1,11,1,tzinfo=timezone.utc).timestamp())*1000
                 warm=[h for h in modeled if warmstart<=h.first_time_msc<start]
                 hours=[h for h in modeled if start<=h.first_time_msc<end]
-                warmup,_=h4_from_hours(warm)
+                warmup=([h.mid.candle() for h in warm] if intraday else h4_from_hours(warm)[0])
                 for market in markets:
                     capital=str(int(market.starting_balance_usd))
-                    for candidate in METAL_CANDIDATES:
+                    for candidate in candidates:
                         progress('indicative_H1_compute',year=year,capital=capital,candidate=candidate,scenario=name,completed_rows=len(rows))
                         row=simulate_coarse(candidate,warmup,hours,start=start,end=end,data_sha256=input_sha,
                             name=name,slippage=Decimal(cost['slippage']),buy_debit=Decimal(cost['buy_debit']),
@@ -88,7 +91,7 @@ def run(args):
                         rows.append(row)
                         write_json(args.output_dir/(str(year)+'-'+capital+'-'+candidate+'-'+name+'.json'),row)
         if source_pins()!=pins:raise ValueError('metal source drift during study')
-        result=dict(schema='metal-discovery9-results-v1' if long_study else 'metal-discovery8-results-v1',status='completed_indicative_triage_only',
+        result=dict(schema='metal-discovery10-results-v1' if intraday else 'metal-discovery9-results-v1' if long_study else 'metal-discovery8-results-v1',status='completed_indicative_triage_only',
             rows=rows,quality=quality,source_files=pins,protocol_sha256=config['protocol_sha256'],
             wall_seconds=time.perf_counter()-began,cpu_seconds=time.process_time()-cpu,
             native_tick_risk_and_prop='unsupported_not_evaluated',price_basis='observed_M1_Bid_plus_declared_Ask',

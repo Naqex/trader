@@ -29,7 +29,16 @@ ORB_CANDIDATES = (LONDON_ORB, NY_ORB, ASIA_ORB)
 ROUND7_CANDIDATES = (*ORB_CANDIDATES, BB_FLAT)
 INTRADAY_CANDIDATES = (RSI_REENTRY, SHOCK, DAY_BREAK, DAY_FADE, BB_REENTRY,
                        PULLBACK, EUROPE_AM, POSTFIX, *FIXING_CANDIDATES, *ROUND7_CANDIDATES)
+METAL_ASIA_ORB = 'xauusd-h1-asia09-15tokyo-london-break-atr14x1p5-r025-v1'
+METAL_RSI = 'xauusd-h1-rsi14-reentry-atr14x1p5-time12-r025-v1'
+METAL_AFTERNOON = 'xauusd-h1-london-afternoon-reversal15-19-atr14x1p5-r025-v1'
+METAL_INTRADAY_CANDIDATES = (METAL_ASIA_ORB,METAL_RSI,METAL_AFTERNOON)
+SCHEDULED_CANDIDATES = (*FIXING_CANDIDATES,*ORB_CANDIDATES,METAL_AFTERNOON)
 DAY = 86400
+
+
+def intraday_recipe(candidate):
+    return {METAL_ASIA_ORB:ASIA_ORB,METAL_RSI:RSI_REENTRY}.get(candidate,candidate)
 
 
 def intraday_contract(candidate):
@@ -105,9 +114,10 @@ class IntradayH1State(BaseModel):
 
     @model_validator(mode='after')
     def consistent(self):
+        recipe=intraday_recipe(self.candidate)
         times = [p.timestamp for p in self.history]
         seed_length = min(max(len(times)-1, 0), 14)
-        if (self.schema_version != 'forex-intraday-h1-v1' or self.candidate not in INTRADAY_CANDIDATES
+        if (self.schema_version != 'forex-intraday-h1-v1' or self.candidate not in (*INTRADAY_CANDIDATES,*METAL_INTRADAY_CANDIDATES)
                 or any(t % HOUR for t in times) or any(b <= a for a,b in zip(times,times[1:]))
                 or len(self.tr_seed) != min(len(times), 14) or any(v < 0 for v in self.tr_seed)
                 or (self.atr is None) != (len(times) < 14)
@@ -131,9 +141,9 @@ class IntradayH1State(BaseModel):
                 or (self.range_day is None) != (self.range_low is None)
                 or (self.range_day is not None and (self.day_index is None or self.range_day >= self.day_index
                     or self.range_low > self.range_high))
-                or (self.scheduled_exit is not None and (self.candidate not in (*FIXING_CANDIDATES,*ORB_CANDIDATES)
+                or (self.scheduled_exit is not None and (recipe not in SCHEDULED_CANDIDATES
                     or self.scheduled_exit % HOUR))
-                or (self.candidate in (*FIXING_CANDIDATES,*ORB_CANDIDATES) and self.position_id is not None and self.scheduled_exit is None)
+                or (recipe in SCHEDULED_CANDIDATES and self.position_id is not None and self.scheduled_exit is None)
                 or (self.last_entry_day is not None and (not times
                     or self.last_entry_day > (times[-1]+HOUR)//DAY))):
             raise ValueError('inconsistent intraday daily range state')
@@ -168,12 +178,13 @@ class IntradayH1Candidate:
 
     def observe(self, candle:Candle, *, side=None, position_id=None):
         bar = CandleState(**vars(candle))
+        recipe=intraday_recipe(self.candidate)
         if (bar.timestamp % HOUR or (self.history and bar.timestamp <= self.history[-1].timestamp)
                 or side not in (None,'BUY','SELL') or (side is None) != (position_id is None)
                 or (position_id is not None and (not isinstance(position_id,str) or not position_id.strip()))
                 or (position_id is not None and position_id == self.position_id and side != self.position_side)):
             raise ValueError('intraday requires closed increasing H1 and an unambiguous position identity')
-        if (self.candidate in (*FIXING_CANDIDATES,*ORB_CANDIDATES) and side is not None
+        if (recipe in SCHEDULED_CANDIDATES and side is not None
                 and (self.scheduled_exit is None or (self.position_id is not None and self.position_id != position_id))):
             raise ValueError('fixing position has no owned entry deadline')
         previous = self.history[-1] if self.history else None
@@ -206,35 +217,45 @@ class IntradayH1Candidate:
         closes=[p.close for p in self.history]
         mean=sum(closes[-20:],Decimal(0))/20 if len(closes) >= 20 else None
         signal=None
-        limit=24 if self.candidate == PULLBACK else 12
-        if self.candidate in (*FIXING_CANDIDATES,*ORB_CANDIDATES):
+        limit=24 if recipe == PULLBACK else 12
+        if recipe in SCHEDULED_CANDIDATES:
             if side is not None:
                 if end >= self.scheduled_exit:signal='EXIT'
             else:
                 self.scheduled_exit=None
                 if distance is not None and distance > 0:
-                    if self.candidate in FIXING_CANDIDATES:
-                        signal,self.scheduled_exit=fixing_entry(self.candidate,end)
+                    if recipe == METAL_AFTERNOON:
+                        local=datetime.fromtimestamp(end,timezone.utc).astimezone(ZoneInfo('Europe/London'))
+                        if local.weekday()<5 and local.hour==15 and self.last_entry_day!=entry_day:
+                            opens=[p.open for p in self.history if
+                                (at:=datetime.fromtimestamp(p.timestamp,timezone.utc).astimezone(ZoneInfo('Europe/London'))).date()==local.date()
+                                and at.hour==9]
+                            if len(opens)==1 and len(self.history)>=99 and self.atr is not None:
+                                change=bar.close-opens[0]
+                                signal='SELL' if change>=self.atr else 'BUY' if change<=-self.atr else None
+                                if signal:self.scheduled_exit=int(local.replace(hour=19).timestamp())
+                    elif recipe in FIXING_CANDIDATES:
+                        signal,self.scheduled_exit=fixing_entry(recipe,end)
                     elif self.last_entry_day != entry_day:
-                        signal,self.scheduled_exit=opening_entry(self.candidate,self.history,candle)
-        elif self.candidate in (DAY_BREAK,DAY_FADE):
+                        signal,self.scheduled_exit=opening_entry(recipe,self.history,candle)
+        elif recipe in (DAY_BREAK,DAY_FADE):
             if side is not None:
                 if hour >= 20 or self.last_entry_day != entry_day:
                     signal='EXIT'
-                elif self.candidate == DAY_FADE and self.range_day is not None:
+                elif recipe == DAY_FADE and self.range_day is not None:
                     midpoint=(self.range_high+self.range_low)/2
                     if (side == 'BUY' and bar.close >= midpoint) or (side == 'SELL' and bar.close <= midpoint):
                         signal='EXIT'
             elif (8 <= hour <= 16 and self.last_entry_day != entry_day and self.range_day is not None
                     and 0 < day-self.range_day <= 4):
-                if self.candidate == DAY_BREAK:
+                if recipe == DAY_BREAK:
                     signal='BUY' if bar.close > self.range_high else 'SELL' if bar.close < self.range_low else None
                 else:
                     lower,upper=bar.low < self.range_low,bar.high > self.range_high
                     if lower and not upper and bar.close > self.range_low:signal='BUY'
                     elif upper and not lower and bar.close < self.range_high:signal='SELL'
-        elif self.candidate in (EUROPE_AM,POSTFIX):
-            zone,start_hour,stop_hour,entry_side=(('Europe/Berlin',8,13,'SELL') if self.candidate == EUROPE_AM
+        elif recipe in (EUROPE_AM,POSTFIX):
+            zone,start_hour,stop_hour,entry_side=(('Europe/Berlin',8,13,'SELL') if recipe == EUROPE_AM
                                                 else ('Europe/London',16,20,'BUY'))
             local=datetime.fromtimestamp(end,timezone.utc).astimezone(ZoneInfo(zone))
             if side is not None and (local.hour >= stop_hour or self.last_entry_day != entry_day):signal='EXIT'
@@ -242,26 +263,26 @@ class IntradayH1Candidate:
                     and self.last_entry_day != entry_day):signal=entry_side
         elif side is not None and self.held_bars >= limit:
             signal='EXIT'
-        elif self.candidate == RSI_REENTRY and self.rsi is not None:
+        elif recipe == RSI_REENTRY and self.rsi is not None:
             if (side == 'BUY' and self.rsi >= 50) or (side == 'SELL' and self.rsi <= 50):signal='EXIT'
             elif side is None and old_rsi is not None:
                 if old_rsi <= 30 < self.rsi:signal='BUY'
                 elif old_rsi >= 70 > self.rsi:signal='SELL'
-        elif self.candidate in (SHOCK,BB_REENTRY,BB_FLAT) and mean is not None:
+        elif recipe in (SHOCK,BB_REENTRY,BB_FLAT) and mean is not None:
             if (side == 'BUY' and bar.close >= mean) or (side == 'SELL' and bar.close <= mean):signal='EXIT'
-            elif side is None and self.candidate == SHOCK and old_atr is not None:
+            elif side is None and recipe == SHOCK and old_atr is not None:
                 span=previous.high-previous.low
                 if span > 0 and span >= 2*old_atr:
                     if previous.close <= previous.low+span/4 and bar.close > (previous.high+previous.low)/2:signal='BUY'
                     elif previous.close >= previous.high-span/4 and bar.close < (previous.high+previous.low)/2:signal='SELL'
-            elif side is None and (self.candidate == BB_REENTRY or (self.candidate == BB_FLAT
+            elif side is None and (recipe == BB_REENTRY or (recipe == BB_FLAT
                     and len(closes)>=80 and old_atr is not None
                     and abs(mean-sum(closes[-80:],Decimal(0))/80)<=old_atr/2)):
                 sd=(sum(((v-mean)**2 for v in closes[-20:]),Decimal(0))/20).sqrt()
                 if sd > 0:
                     if previous.close <= mean-2*sd < bar.close:signal='BUY'
                     elif previous.close >= mean+2*sd > bar.close:signal='SELL'
-        elif self.candidate == PULLBACK and len(closes) >= 80:
+        elif recipe == PULLBACK and len(closes) >= 80:
             values=closes[-79:]+[bar.close]
             fast=sum(values[-20:],Decimal(0))/20;slow=sum(values,Decimal(0))/80
             if (side == 'BUY' and fast <= slow) or (side == 'SELL' and fast >= slow):signal='EXIT'
@@ -271,7 +292,7 @@ class IntradayH1Candidate:
                 elif fast < slow and previous.close >= prior_fast and bar.close < fast:signal='SELL'
         if signal in ('BUY','SELL'):
             if distance is None or distance <= 0:signal=None
-            elif self.candidate in (DAY_BREAK,DAY_FADE,EUROPE_AM,POSTFIX,*ORB_CANDIDATES):self.last_entry_day=entry_day
+            elif recipe in (DAY_BREAK,DAY_FADE,EUROPE_AM,POSTFIX,*ORB_CANDIDATES,METAL_AFTERNOON):self.last_entry_day=entry_day
         self.position_id,self.position_side=position_id,side
         self.history.append(candle)
         return signal,distance
