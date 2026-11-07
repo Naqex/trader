@@ -26,7 +26,7 @@ from trading_workspace_v2.forex_financing import FinancingTerms, apply_forex_fin
 from trading_workspace_v2.forex_h4_candidates import CANDIDATES, STUDY_CANDIDATES, ResearchH4Candidate
 from trading_workspace_v2.forex_prop_candidates import PROP_CANDIDATES, PropH4Candidate
 from trading_workspace_v2.forex_discovery_candidates import DISCOVERY_CANDIDATES, DiscoveryH4Candidate
-from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES, IntradayH1Candidate
+from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES, IntradayH1Candidate, intraday_contract
 from trading_workspace_v2.forex_pilot_risk import (
     ForexPilotSnapshot, _stop_at_fill, advance_forex_pilot, initialize_forex_pilot,
     queue_forex_pilot_exit, queue_forex_pilot_order,
@@ -661,7 +661,7 @@ def main(argv=None, on_progress=None):
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             run_id=receipt['run_id'],
             candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
-            contract=('CHALLENGE-DISCOVERY-ROUND4-20261108.md' if args.candidate in INTRADAY_CANDIDATES else
+            contract=(intraday_contract(args.candidate) if args.candidate in INTRADAY_CANDIDATES else
                       'DISCOVERY-ROUND3-20261107.md' if args.candidate in DISCOVERY_CANDIDATES else
                       'PROP-STRATEGY-ROUND2-20261105.md' if args.candidate in PROP_CANDIDATES else
                       'PROP-STRATEGY-ROUND1-20261105.md sections 4-6' if args.candidate else

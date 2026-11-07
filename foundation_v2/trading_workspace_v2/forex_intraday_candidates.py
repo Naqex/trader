@@ -32,6 +32,13 @@ INTRADAY_CANDIDATES = (RSI_REENTRY, SHOCK, DAY_BREAK, DAY_FADE, BB_REENTRY,
 DAY = 86400
 
 
+def intraday_contract(candidate):
+    if candidate in FIXING_CANDIDATES:return 'SESSION-DISCOVERY6-20261108.md'
+    if candidate in ROUND7_CANDIDATES:return 'ORB-DISCOVERY7-20261108.md'
+    if candidate in INTRADAY_CANDIDATES:return 'CHALLENGE-DISCOVERY-ROUND4-20261108.md'
+    raise ValueError('unknown H1 contract')
+
+
 def fixing_entry(candidate, end):
     now = datetime.fromtimestamp(end, timezone.utc)
     slots = ((PRE_ECB, 'America/New_York', 2, 'Europe/Berlin', 14, 'SELL', 5),

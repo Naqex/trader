@@ -4,7 +4,7 @@ import unittest
 
 from trading_workspace_v2.forex_h4 import Candle
 from trading_workspace_v2.forex_intraday_candidates import (
-    LONDON_ORB,NY_ORB,ASIA_ORB,BB_REENTRY,BB_FLAT,opening_entry,IntradayH1Candidate)
+    LONDON_ORB,NY_ORB,ASIA_ORB,BB_REENTRY,BB_FLAT,opening_entry,IntradayH1Candidate,intraday_contract,PRE_ECB)
 
 
 def stamp(value):return int(datetime.fromisoformat(value).replace(tzinfo=timezone.utc).timestamp())
@@ -13,6 +13,12 @@ def bar(at,close='1.10000',high='1.10100',low='1.09900'):
 
 
 class OpeningTests(unittest.TestCase):
+    def test_protocol_ownership_is_not_legacy_discovery4_for_new_rules(self):
+        self.assertEqual(intraday_contract(ASIA_ORB),'ORB-DISCOVERY7-20261108.md')
+        self.assertEqual(intraday_contract(PRE_ECB),'SESSION-DISCOVERY6-20261108.md')
+        self.assertEqual(intraday_contract(BB_REENTRY),'CHALLENGE-DISCOVERY-ROUND4-20261108.md')
+        with self.assertRaises(ValueError):intraday_contract('unknown')
+
     def test_closed_range_and_dst_clock_not_same_bar_breakout(self):
         rangebar=bar('2024-04-02T07:00:00') # 08London
         self.assertEqual(opening_entry(LONDON_ORB,[],rangebar),(None,None))
