@@ -423,7 +423,10 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             raise ValueError('scenario checkpoint risk limits differ')
         state=restored
         template=strategy.export_state()
-        strategy=type(strategy).from_state(type(template).model_validate(packet['candidate_state']))
+        candidate_state=type(template).model_validate(packet['candidate_state'])
+        if hasattr(template,'candidate') and candidate_state.candidate!=template.candidate:
+            raise ValueError('scenario checkpoint candidate identity differs')
+        strategy=type(strategy).from_state(candidate_state)
         template=builder.export_state()
         builder=H4Builder.from_state(type(template).model_validate(packet['builder']))
         decisions=packet['decisions'];horizons=packet['horizons'];flat_calendar=packet['flat_calendar']

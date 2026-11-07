@@ -161,6 +161,12 @@ class ScenarioResumeTests(unittest.TestCase):
             self.assertGreater(D(actual['financing_debit_usd']),0)
             for name in ('reference-prop-path.json','reference-candidate.json','reference-checkpoint.json'):
                 self.assertEqual((root/'base'/name).read_bytes(),(root/'resumed'/name).read_bytes(),name)
+            changed=deepcopy(packet)
+            changed['payload']['candidate_state']['candidate']='eurusd-h1-ny-orb08-09-atr14x1p5-r025-v1'
+            changed['payload_sha256']=pilot.content_hash(changed['payload'])
+            (root/'wrong-policy').mkdir()
+            with self.assertRaisesRegex(ValueError,'candidate identity'):
+                run(root/'wrong-policy',packet=changed)
 
 
 if __name__=='__main__':unittest.main()
