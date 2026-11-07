@@ -50,8 +50,10 @@ class FixingTests(unittest.TestCase):
         self.assertIsNotNone(c.scheduled_exit)
         self.assertIsNone(c.observe(bar(entry+3600))[0])
         self.assertIsNone(c.scheduled_exit)
+        before=c.export_state()
         with self.assertRaisesRegex(ValueError,'owned entry'):
             c.observe(bar(entry+7200),side='BUY',position_id='external')
+        self.assertEqual(c.export_state(),before)
 
     def test_composite_keeps_one_owned_deadline_and_no_reversal(self):
         entry=stamp('2024-04-02T06:00:00');c=IntradayH1Candidate(FIX_COMPOSITE)

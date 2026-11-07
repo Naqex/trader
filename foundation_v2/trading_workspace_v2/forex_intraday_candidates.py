@@ -173,6 +173,9 @@ class IntradayH1Candidate:
                 or (position_id is not None and (not isinstance(position_id,str) or not position_id.strip()))
                 or (position_id is not None and position_id == self.position_id and side != self.position_side)):
             raise ValueError('intraday requires closed increasing H1 and an unambiguous position identity')
+        if (self.candidate in (*FIXING_CANDIDATES,*ORB_CANDIDATES) and side is not None
+                and (self.scheduled_exit is None or (self.position_id is not None and self.position_id != position_id))):
+            raise ValueError('fixing position has no owned entry deadline')
         previous = self.history[-1] if self.history else None
         old_atr, old_rsi = self.atr, self.rsi
         if previous is not None:
@@ -206,8 +209,6 @@ class IntradayH1Candidate:
         limit=24 if self.candidate == PULLBACK else 12
         if self.candidate in (*FIXING_CANDIDATES,*ORB_CANDIDATES):
             if side is not None:
-                if self.scheduled_exit is None or (self.position_id is not None and self.position_id != position_id):
-                    raise ValueError('fixing position has no owned entry deadline')
                 if end >= self.scheduled_exit:signal='EXIT'
             else:
                 self.scheduled_exit=None
