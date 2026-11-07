@@ -254,11 +254,15 @@ class ForexPropObserver:
                 or result.session.session_id!=attempt.session_id or phase.session_id!=attempt.session_id
                 or phase.attempt_id!=attempt.attempt_id or phase.profile_hash!=result.profile.profile_hash
                 or attempt.profile_hash!=result.profile.profile_hash
+                or result.session.profile!=result.profile or attempt.profile_id!=result.profile.profile_id
+                or attempt.terms_version!=result.profile.terms_version
                 or attempt.virtual_start_utc!=utc(result.start) or attempt.virtual_cutoff_utc!=utc(result.end)):
             raise ValueError('observer checkpoint identity differs')
         result.attempt,result.phase=attempt,phase
         if not 1<=phase.phase_index<=len(result.profile.phases) or set(active['path'])!=set(result.path):
             raise ValueError('observer checkpoint phase/path scope differs')
+        if phase.initial_balance!=result.profile.phases[phase.phase_index-1].initial_capital:
+            raise ValueError('observer checkpoint initial capital differs')
         result.resume=deepcopy(active['resume'])
         result.last_time=active['last_observation_time_msc'];result.observed_ticks=active['observed_ticks']
         if (any(type(v) is not int for v in (result.last_time,result.observed_ticks))

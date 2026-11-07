@@ -210,7 +210,7 @@ decisions recorded before outcomes and a separate replay, because skipped
 entries change subsequent position and risk state; summing selected original
 trade P&Ls is not that replay.
 
-State roundtrip validation is not a CLI resume implementation. On interruption,
+State roundtrip validation alone is not a CLI resume implementation. On interruption,
 reconcile PID/identity, receipt and existing artifacts first; retain the failed
 attempt and do not overwrite it or duplicate a worker. These offline results
 cannot grant execution, qualify a prop account or certify an OOS edge.
@@ -230,11 +230,38 @@ Hashes and final snapshot/accounting are verified before copying artifacts.
 Changed bindings or a request with no seals fails; it never silently reruns the
 whole study. The new manifest/seal records the source attempt and run identity.
 
-This is reuse at a scenario boundary. `cli_resume_supported=false` still refers
-to restoring an in-progress simulation; candidate/builder/financing/cursor state
-is not restored midway. Legacy outputs without seals remain historical evidence
-and are not automatically adopted. Source changes conservatively invalidate
-reuse; numeric equivalence across versions is a separate review, not inferred.
+This is reuse at a scenario boundary. Legacy outputs without seals remain
+historical evidence and are not automatically adopted. Source changes
+conservatively invalidate reuse; equivalence across versions is a separate
+review, not inferred from an unchanged strategy name.
+
+### Resume a complete in-scenario checkpoint
+
+New CLI runs also atomically write `<scenario>-resume.json` every24observed
+H1windows. The checksummed packet contains execution/risk, candidate/builder,
+decisions, horizon snapshots, completed phase accounts, financing progress and
+the full prop observer state. A position, pending intent, day reset or phase2
+must survive restoration; an account checkpoint by itself is insufficient.
+
+Use `--resume-scenarios-from <stopped-attempt>` with a **new output directory**.
+The CLI keeps sealed scenarios and restores a complete packet for an unfinished
+scenario. Workspace batch jobs forward this through `resume_scenarios_from`.
+Do not also set `reuse_scenarios_from`. Reconcile the old process first; source,
+input, protocol, costs/spec/risk/runtime and warmup bindings must match exactly.
+It validates the consumed input prefix again before continuing numerical work,
+so resume still has input I/O. It does not repeat the prefix's trading decisions.
+
+The legacy `<scenario>-checkpoint.json`, candidate export or observer summary
+with `cli_resume_supported=false` is **not** a complete resume packet. Missing,
+changed or corrupt packets fail explicitly; there is no silent restart or
+automatic migration of an old partial run. Keep the failed attempt and its
+completed seals. Recovery does not grant broker execution or strategy promotion.
+
+Verification: interrupted vs uninterrupted final files, H1 quote gap with cash,
+EOF, open position, actual phase reset and invalid binding/risk/input tests in
+`tests/test_forex_scenario_resume.py`; CLI reuse+resume tests in
+`tests/test_forex_scenario_reuse.py`. Source/input changes still need a new
+registered experiment or explicit compatibility review, not edited hashes.
 
 Tests: `tests/test_forex_prop_candidates.py`, `tests/test_forex_h4_candidates.py`, `tests/test_forex_h4.py`; workspace
 fixture regression: `tooling/ai-engines/tests/test_forex_research.py`.

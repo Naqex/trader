@@ -84,6 +84,9 @@ class ScenarioResumeTests(unittest.TestCase):
                     self.assertEqual(after.export(),before.export())
                 bad=deepcopy(packet);bad['reset_msc']+=1000
                 with self.assertRaises(ValueError):ForexPropObserver.from_checkpoint(bad)
+                bad=deepcopy(packet)
+                bad['session']['profile']['phases'][0]['profit_target']['threshold']['amount']='999'
+                with self.assertRaises(ValueError):ForexPropObserver.from_checkpoint(bad)
 
     def test_runner_resume_preserves_actual_phase_accounts(self):
         from trading_workspace_v2.forex_prop_candidates import UTC_RANGE
