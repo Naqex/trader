@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from test_forex_pilot_risk import execution, ms, tick, advance
 from trading_workspace_v2.forex_pilot_risk import (
-    ForexPilotSnapshot, initialize_forex_pilot, queue_forex_pilot_order,
+    ForexPilotSnapshot, initialize_forex_pilot, queue_forex_pilot_order,validate_pilot_entry,
 )
 from trading_workspace_v2.replay_tick_execution import ReplayTickExecutionSnapshot
 
@@ -65,6 +65,15 @@ class PilotEntryTests(unittest.TestCase):
         fill=next(event for event in result.execution.ledger if event['kind']=='market_fill')
         self.assertEqual(fill['details']['pilot_entry']['decision_time_msc'],original_decision)
         ForexPilotSnapshot.model_validate_json(result.model_dump_json())
+        from trading_workspace_v2.forex_financing import _FinancingLedgerIndex
+        from trading_workspace_v2.replay_execution import ReplayExecutionEventV2
+        from trading_workspace_v2.replay_tick_execution import BrokerReplayTick
+        event=ReplayExecutionEventV2.model_validate(fill);quote=BrokerReplayTick.model_validate(fill['details'])
+        owned_index=_FinancingLedgerIndex(result.execution.ledger)
+        validate_pilot_entry(result.execution,quote,event,_financing_index=owned_index)
+        with self.assertRaisesRegex(ValueError,'different ledger'):
+            validate_pilot_entry(result.execution,quote,event,
+                _financing_index=_FinancingLedgerIndex(list(result.execution.ledger)))
         bad=copy.deepcopy(result.execution.model_dump(mode='json'))
         next(event for event in bad['ledger'] if event['kind']=='market_fill')[
             'details']['pilot_entry']['decision_time_msc']+=1

@@ -178,7 +178,7 @@ def validate_tick_execution_event(
     if event.kind in {"market_fill", "order_rejected", "protective_fill"}:
         if "pilot_entry" in d:
             from .forex_pilot_risk import validate_pilot_entry
-            validate_pilot_entry(snapshot, tick, event)
+            validate_pilot_entry(snapshot, tick, event,_financing_index=_financing_index)
         side = d.get("side")
         if side not in {"BUY", "SELL"}:
             raise ReplayExecutionError("tick fill lacks its position side")
@@ -196,7 +196,7 @@ def validate_tick_execution_event(
                 reason = "pilot_risk_stop"
             elif d.get("reason") == "pilot_strategy_exit":
                 from .forex_pilot_risk import validate_pilot_exit
-                validate_pilot_exit(snapshot, tick, closed, event)
+                validate_pilot_exit(snapshot, tick, closed, event,_financing_index=_financing_index)
                 reason = "pilot_strategy_exit"
             else:
                 reason = "stop_loss" if stop_hit else "take_profit" if target_hit else None

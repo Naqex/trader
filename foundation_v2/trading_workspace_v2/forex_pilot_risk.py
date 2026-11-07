@@ -73,8 +73,16 @@ class PilotExitRequest(BaseModel):
         return self
 
 
-def _validate_exit_source(execution, request):
-    source = next((raw for raw in reversed(execution.ledger)
+def _validation_checkpoints(execution, cursor, index):
+    if index is not None:
+        if index.ledger is not execution.ledger:
+            raise ReplayExecutionError('pilot index belongs to a different ledger')
+        return reversed(index.closed_checkpoints.get(cursor,()))
+    return (raw for raw in reversed(execution.ledger) if raw['cursor_index']==cursor)
+
+
+def _validate_exit_source(execution, request, *, _financing_index=None):
+    source = next((raw for raw in _validation_checkpoints(execution,request.submitted_cursor_index,_financing_index)
         if raw["cursor_index"] == request.submitted_cursor_index and raw["kind"] == "price_mark"), None)
     if (source is None or source["virtual_time_utc"] * 1000 != request.decision_time_msc
             or (source["details"].get("open_position") or {}).get("position_id") != request.position_id
@@ -381,22 +389,22 @@ def validate_pilot_close(snapshot, tick, closed, raw_trigger):
         raise ReplayExecutionError("pilot trigger equity differs from its frozen quote and costs")
 
 
-def validate_pilot_exit(snapshot, tick, closed, event):
+def validate_pilot_exit(snapshot, tick, closed, event, *, _financing_index=None):
     request = PilotExitRequest.model_validate(event.details.get("pilot_exit"))
-    _validate_exit_source(snapshot, request)
+    _validate_exit_source(snapshot, request,_financing_index=_financing_index)
     if (tick.time_msc <= request.decision_time_msc or request.position_id != closed.position_id
             or request.submitted_cursor_index >= event.cursor_index
             or event.details.get("command_operation_id") != request.operation_id):
         raise ReplayExecutionError("pilot strategy exit must fill strictly after its closed-bar decision")
 
 
-def validate_pilot_entry(snapshot, tick, event):
+def validate_pilot_entry(snapshot, tick, event, *, _financing_index=None):
     proof = event.details["pilot_entry"]
     decision = proof.get("decision_time_msc")
     if decision is not None and (type(decision) is not int or tick.time_msc <= decision):
         raise ReplayExecutionError("pilot entry must fill strictly after its decision")
     if decision is not None:
-        checkpoints = [raw for raw in reversed(snapshot.ledger)
+        checkpoints = [raw for raw in _validation_checkpoints(snapshot,event.cursor_index-1,_financing_index)
             if raw["sequence"] < event.sequence and raw["cursor_index"] == event.cursor_index - 1
             and raw["kind"] in {"price_mark", "financing"}]
         source = next((raw for raw in checkpoints if raw["virtual_time_utc"] * 1000 == decision), None)

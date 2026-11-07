@@ -88,11 +88,15 @@ class _FinancingLedgerIndex:
         self.ledger = ledger
         self.by_sequence = {}
         self.first_event_sequence = {}
+        self.closed_checkpoints = {}
         for raw in ledger:
             sequence = raw.get("sequence")
             if type(sequence) is not int:
                 continue  # The event/lineage validators reject malformed sequences.
             self.by_sequence.setdefault(sequence, raw)
+            cursor = raw.get('cursor_index')
+            if type(cursor) is int and raw.get('kind') in {'price_mark','financing'}:
+                self.closed_checkpoints.setdefault(cursor,[]).append(raw)
             details = raw.get("details")
             terms = details.get("financing_terms") if isinstance(details, dict) else None
             event_id = terms.get("event_id") if isinstance(terms, dict) else None
