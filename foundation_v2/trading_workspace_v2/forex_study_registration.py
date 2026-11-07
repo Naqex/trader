@@ -13,6 +13,8 @@ import sys
 
 
 REGISTERED_STUDIES = {
+    'bf63fed63a24512e583020a76b79609e90c61fef6e493a3b5e376c92cc60f611':
+        'eurusd-h1-asia-2023-checkpoint-recovery-v2',
     '227e13f359d0e6344acadbd7f14eacc48ce1174f08e32b3ac917c2bddcdb6f42':
         'eurusd-h1-survivors-2023-native-prop-v1',
     '053383f823b8c66281a309b802faa9cce8817e758055abc03ef3fb7a3e36d2e0':
