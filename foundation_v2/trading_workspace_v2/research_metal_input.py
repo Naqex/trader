@@ -9,8 +9,12 @@ from .forex_coarse_input import CoarseHour
 from .forex_h4 import CandleState
 
 
-def aggregate_bid_m1(path,sha256,*,on_progress=None):
+def aggregate_bid_m1(path,sha256,*,on_progress=None,first_day='20200101',last_day='20241231'):
     path=Path(path)
+    if (first_day,last_day) not in (('20200101','20241231'),('20091101','20241231')):
+        raise ValueError('unregistered metal input window')
+    lower=datetime.strptime(first_day,'%Y%m%d').replace(tzinfo=timezone.utc)
+    upper=datetime.strptime(last_day,'%Y%m%d').replace(tzinfo=timezone.utc)
     with path.open('rb') as stream:
         if hashlib.file_digest(stream,'sha256').hexdigest()!=sha256:
             raise ValueError('metal raw M1 hash mismatch')
@@ -22,7 +26,7 @@ def aggregate_bid_m1(path,sha256,*,on_progress=None):
         for row in reader:
             if row['Date']!=day_text:
                 day=datetime.strptime(row['Date'],'%Y.%m.%d').replace(tzinfo=timezone.utc)
-                if not 2020<=day.year<=2024:raise ValueError('metal source scope excludes holdout/other years')
+                if not lower<=day<=upper:raise ValueError('metal source scope excludes holdout/other years')
                 base=int(day.timestamp());day_text=row['Date']
             clock=row['Time']
             if (len(clock)!=8 or clock[2]!=':' or clock[5]!=':' or clock[6:]!='00'

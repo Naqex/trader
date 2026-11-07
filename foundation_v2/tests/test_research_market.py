@@ -49,6 +49,15 @@ class MarketTests(unittest.TestCase):
                 self.assertEqual(size_for_market_stop(distance,instrument=instrument,model=model),
                     size_for_stop(distance,slippage=slip))
 
+    def test_capital_feasibility_preserves_risk_percent_with_actual_lot_floor(self):
+        small=MetalStudyMarket();large=MetalStudyMarket(starting_balance_usd='50000')
+        a=small.execution('fixture',D('.1'),'a'*64,START)
+        b=large.execution('fixture',D('.1'),'a'*64,START)
+        self.assertEqual(b.starting_balance,50000)
+        instrument=InstrumentSpec.from_mapping(b.instrument_spec);model=CostModel.from_mapping(b.cost_model)
+        self.assertIsNone(size_for_market_stop(D(30),instrument=instrument,model=model,budget=a.starting_balance*D('.0025')))
+        self.assertEqual(size_for_market_stop(D(30),instrument=instrument,model=model,budget=b.starting_balance*D('.0025')),D('.04'))
+
     def test_incompatible_geometry_currency_and_nonfinite_rejected(self):
         for update in ({'tick_size':'.01'},{'contract_size':'100000'},{'instrument_id':'EURUSD'},
                        {'quote_ccy':'JPY'},{'leverage':'Infinity'}):

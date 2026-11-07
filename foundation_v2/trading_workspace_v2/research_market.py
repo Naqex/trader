@@ -25,6 +25,7 @@ class MetalStudyMarket(BaseModel):
     quantity_min: Decimal = Field(default=Decimal('.01'), gt=0)
     quantity_step: Decimal = Field(default=Decimal('.01'), gt=0)
     leverage: Decimal = Field(default=Decimal('10'), gt=0)
+    starting_balance_usd: Decimal = Field(default=Decimal('10000'), gt=0)
     commission_usd_per_lot_per_side: Decimal = Field(default=Decimal('2.5'), ge=0)
     source_price_basis: Literal['bid_ohlc_with_declared_ask'] = 'bid_ohlc_with_declared_ask'
     broker_verified: Literal[False] = False
@@ -34,7 +35,8 @@ class MetalStudyMarket(BaseModel):
         if (self.contract_size != 100 or self.tick_size != Decimal('.001')
                 or self.quantity_min != Decimal('.01') or self.quantity_step != Decimal('.01')
                 or self.pip_size % self.tick_size or self.leverage != 10
-                or self.commission_usd_per_lot_per_side != Decimal('2.5')):
+                or self.commission_usd_per_lot_per_side != Decimal('2.5')
+                or self.starting_balance_usd not in (Decimal('10000'),Decimal('50000'))):
             raise ValueError('metal study geometry differs from frozen declared contract')
         return self
 
@@ -47,7 +49,7 @@ class MetalStudyMarket(BaseModel):
         return initialize_tick_execution(replay_session_id='metal-coarse-'+name,branch_id='main',
             dataset_id='qdm-xauusd-indicative-m1',dataset_sha256=data_hash,
             tick_snapshot_id='indicative-bars-not-observed-ticks',tick_snapshot_sha256=data_hash,
-            spread_price='0',timeframe_seconds=HOUR,starting_balance='10000',cursor_index=0,
+            spread_price='0',timeframe_seconds=HOUR,starting_balance=str(self.starting_balance_usd),cursor_index=0,
             instrument_spec=self.instrument(start),
             cost_model=dict(version='metal-declared-'+name,spread_basis='bid_ask_embedded',
                 commission_per_side_account='0',commission_per_side_per_quantity_account=str(self.commission_usd_per_lot_per_side),

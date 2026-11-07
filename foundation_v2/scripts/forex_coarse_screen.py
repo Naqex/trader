@@ -143,7 +143,8 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
                 decision=dict(time_msc=(candle.timestamp+period)*1000,signal=signal,
                     stop_distance=str(distance),status='queued')
                 if signal in ('BUY','SELL'):
-                    quantity=(size_for_market_stop(distance,instrument=instrument,model=model) if market_spec
+                    quantity=(size_for_market_stop(distance,instrument=instrument,model=model,
+                                budget=base.starting_balance*Decimal('.0025')) if market_spec
                               else size_for_stop(distance,slippage=slippage))
                     if quantity is not None and quantity>50:raise ValueError('coarse quantity exceeds account maximum')
                     decision['quantity']=str(quantity) if quantity else None
