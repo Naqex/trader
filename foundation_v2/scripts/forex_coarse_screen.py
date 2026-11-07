@@ -13,6 +13,7 @@ sys.path.insert(0,str(V2))
 from forex_h4_pilot import (ALL_STUDY_CANDIDATES,H4_STUDY_CANDIDATES,STUDY_CANDIDATES,
     study_candidate,initial_state,financing_calendar,input_contract,observed_account_spec,write_json)
 from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES
+from trading_workspace_v2.forex_ml_candidate import ML_CANDIDATES, MLH1Candidate
 from trading_workspace_v2.execution_semantics import protective_exit_for_bar
 from trading_workspace_v2.forex_coarse_input import CoarseHour,load_coarse_hours,prepare_coarse_hours
 from trading_workspace_v2.forex_h4 import CandleState,H4,HOUR,H4Builder,TICK,size_for_stop
@@ -31,15 +32,16 @@ def h4_from_hours(hours):
     return bars,list(builder.excluded)
 
 
-def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage,buy_debit,sell_debit):
+def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage,buy_debit,sell_debit,model_pack=None):
     began=time.perf_counter();cpu=time.process_time()
-    if candidate not in ALL_STUDY_CANDIDATES:raise ValueError('unsupported coarse candidate')
+    if candidate not in (*ALL_STUDY_CANDIDATES,*ML_CANDIDATES):raise ValueError('unsupported coarse candidate')
+    if (candidate in ML_CANDIDATES)!=(model_pack is not None):raise ValueError('explicit ML pack required only for ML candidates')
     if (type(start) is not int or type(end) is not int or start>=end
             or start%(HOUR*1000) or end%(HOUR*1000)):
         raise ValueError('invalid coarse evaluation boundaries')
     if any(not x.is_finite() for x in (slippage,buy_debit,sell_debit)) or slippage<0:
         raise ValueError('invalid coarse costs')
-    period=HOUR if candidate in INTRADAY_CANDIDATES else H4
+    period=HOUR if candidate in (*INTRADAY_CANDIDATES,*ML_CANDIDATES) else H4
     warmup=[CandleState(**vars(bar)).candle() for bar in warmup]
     if (len(warmup)<(100 if period==HOUR else 81) or any(b.timestamp<=a.timestamp for a,b in zip(warmup,warmup[1:]))
             or any(bar.timestamp%period or (bar.timestamp+period)*1000>start for bar in warmup)):
@@ -51,7 +53,7 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         raise ValueError('coarse hours outside ordered evaluation window')
     base=initial_state(name,slippage,data_sha256,start=start).execution
     model=CostModel.from_mapping(base.cost_model);instrument=InstrumentSpec.from_mapping(base.instrument_spec)
-    strategy=study_candidate(candidate)
+    strategy=MLH1Candidate(candidate,model_pack) if model_pack is not None else study_candidate(candidate)
     for candle in warmup:strategy.observe(candle)
     builder=H4Builder();position=None;pending=None;balance=base.starting_balance
     finance_total=Decimal(0);position_finance=Decimal(0);position_entry_msc=None;counter=0;rejections=0
@@ -124,6 +126,7 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         if candle is not None:
             kwargs=dict(side=position.side if position else None)
             if candidate!=STUDY_CANDIDATES[0]:kwargs['position_id']=position.position_id if position else None
+            if model_pack is not None:kwargs['spread']=hour.ask[3]-hour.bid[3]
             signal,distance=strategy.observe(candle,**kwargs)
             if signal:
                 decision=dict(time_msc=(candle.timestamp+period)*1000,signal=signal,
@@ -159,7 +162,7 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
 def coarse_source_pins():
     files=[Path(__file__),V2/'scripts/forex_h4_pilot.py',*[V2/'trading_workspace_v2'/name for name in (
         'forex_coarse_input.py','forex_h4.py','forex_h4_candidates.py','forex_prop_candidates.py',
-        'forex_discovery_candidates.py','forex_intraday_candidates.py','forex_pilot_risk.py',
+        'forex_discovery_candidates.py','forex_intraday_candidates.py','forex_ml_candidate.py','forex_pilot_risk.py',
         'forex_financing.py','forex_qdm_inspection.py','forex_study_registration.py','execution_semantics.py',
         'semantics/data_costs.py','semantics/data_contracts.py','replay_execution.py','replay_tick_execution.py')]]
     return {str(p.relative_to(V2)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
