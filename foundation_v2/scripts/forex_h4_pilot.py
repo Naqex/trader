@@ -250,6 +250,8 @@ def scenario_binding(manifest):
     keys = (*keys, 'runtime')
     if 'horizon_cutoffs' in manifest:
         keys = (*keys, 'horizon_cutoffs')
+    if 'pre_quote_flat_financing' in manifest:
+        keys = (*keys, 'pre_quote_flat_financing')
     if 'prop_profile' in manifest:
         keys = (*keys, 'prop_profile')
     return content_hash({key: manifest.get(key) for key in keys})
@@ -334,7 +336,8 @@ def reuse_scenario(source, output, manifest, scenario):
 
 
 def run_scenario(path, warmup, name, slippage, debit, output, progress, *, development=None, sell_debit=None,
-                 research_candidate=None, tick_cache_dir=None, horizon_cutoffs=None, prop_profile=None):
+                 research_candidate=None, tick_cache_dir=None, horizon_cutoffs=None, prop_profile=None,
+                 pre_quote_flat_financing=False):
     if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     digest, first, last = EXPECTED['development'] if development is None else tuple(
@@ -367,13 +370,26 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
     upcoming = next(calendar, None)
     decisions = []
     horizons = []
+    flat_calendar = []
 
     def post_due(boundary, current, *, inclusive=True):
         nonlocal upcoming
         while upcoming is not None and (upcoming.scheduled_time_msc < boundary
                 or inclusive and upcoming.scheduled_time_msc == boundary):
             before = current
-            current = apply_forex_financing(before, upcoming)
+            if pre_quote_flat_financing and before.risk.last_tick is None:
+                e = before.execution
+                if (e.ledger or e.position is not None or e.pending_market_order is not None
+                        or e.balance != e.starting_balance or e.floating_pl != 0
+                        or upcoming.scheduled_time_msc < before.risk.start_time_msc):
+                    raise ValueError('pre-quote financing exemption requires a pristine flat account')
+                # No position exists to finance and no quote exists to value.
+                # Record non-applicability, never fabricate a price/cash event.
+                flat_calendar.append(dict(phase_index=observer.phase.phase_index if observer else 1,
+                    account_start_msc=before.risk.start_time_msc,terms=upcoming.model_dump(mode='json'),
+                    debit_usd='0',reason='pristine_flat_account_before_first_quote'))
+            else:
+                current = apply_forex_financing(before, upcoming)
             if observer is not None:
                 observer.cash(upcoming.scheduled_time_msc,before,current)
             upcoming = next(calendar, None)
@@ -398,6 +414,7 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
                 accounting=reconcile(state, slippage),
                 qualification='historical_snapshot_not_full_prop_lifecycle',
                 promotion_authorized=False,
+                **({'pre_quote_flat_financing':list(flat_calendar)} if flat_calendar else {}),
                 **({'prop_path':observer.export(), 'completed_phase_accounts':list(phase_accounts)}
                    if observer is not None else {})))
             write_json(output/(name+'-horizons.json'), horizons)
@@ -506,6 +523,7 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
         intrabar_equity_coverage='all_consumed_quotes_and_declared_cash' if observer is not None else 'insufficient',
         **({'prop_path':observer.summary(),'balance_scope':'active_phase_account_not_sum_of_challenge_profits'}
            if observer is not None else {}),terminal_close_forced=False,
+        **({'pre_quote_flat_financing':flat_calendar} if flat_calendar else {}),
         snapshot_restart='passed', excluded_h4=builder.excluded)
 
 
@@ -672,6 +690,8 @@ def main(argv=None, on_progress=None):
             (args.output_dir/'protocol.md').write_bytes(protocol_bytes)
             if registration.get('horizon_cutoffs'):
                 manifest['horizon_cutoffs'] = registration['horizon_cutoffs']
+            if registration.get('pre_quote_flat_financing'):
+                manifest['pre_quote_flat_financing'] = registration['pre_quote_flat_financing']
         if args.reuse_scenarios_from:
             source_bytes = (args.reuse_scenarios_from/'manifest.json').read_bytes()
             manifest['scenario_reuse_source'] = dict(path=str(args.reuse_scenarios_from.resolve()),
@@ -716,11 +736,13 @@ def main(argv=None, on_progress=None):
         for scenario in scenarios:
             result = reused.get(scenario['name'])
             if result is None:
+                progress(scenario['name'])
                 result = run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],
                     scenario['buy'], args.output_dir, progress,
                     development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate,
                     tick_cache_dir=args.tick_cache_dir, horizon_cutoffs=manifest.get('horizon_cutoffs'),
-                    prop_profile=manifest.get('prop_profile'))
+                    prop_profile=manifest.get('prop_profile'),
+                    pre_quote_flat_financing=manifest.get('pre_quote_flat_financing')=='explicit_not_applicable_v1')
             else:
                 receipt.setdefault('reused_scenarios', []).append(scenario['name'])
                 progress(scenario['name']+'_reused')

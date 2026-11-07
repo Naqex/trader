@@ -54,6 +54,8 @@ def load_registration(path: Path, expected_sha256: str):
         from .prop_session import PropProfileSnapshot
         if PropProfileSnapshot.model_validate(registration['prop_profile']).model_dump(mode='json')!=registration['prop_profile']:
             raise ValueError('prop profile must be canonical before registration')
+    if registration.get('pre_quote_flat_financing') not in (None,'explicit_not_applicable_v1'):
+        raise ValueError('unsupported pre-quote financing contract')
     return registration
 
 
@@ -144,6 +146,7 @@ def inspect_registered_manifest(manifest, run_dir):
             or manifest.get('calendar_accounting') != registration.get('calendar_accounting')
             or manifest.get('prop_profile') != registration.get('prop_profile')
             or manifest.get('horizon_cutoffs') != registration.get('horizon_cutoffs')
+            or manifest.get('pre_quote_flat_financing') != registration.get('pre_quote_flat_financing')
             or binding.get('study_id') != registration['study_id']):
         raise ValueError('historical evidence scope differs from registration')
     validate_registration(registration, manifest['inputs'], manifest['candidate'],
