@@ -1,6 +1,6 @@
-"""Eight frozen H1 hypotheses; execution and account risk remain external."""
+"""Frozen H1 hypotheses; execution and account risk remain external."""
 from collections import deque
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -16,9 +16,31 @@ BB_REENTRY = 'eurusd-h1-bb20-reentry-atr14x1p5-time12-r025-v1'
 PULLBACK = 'eurusd-h1-pullback20-80-atr14x1p5-time24-r025-v1'
 EUROPE_AM = 'eurusd-h1-europe-am-short-atr14x1p5-close13-r025-v1'
 POSTFIX = 'eurusd-h1-london-postfix16-20-atr14x1p5-r025-v1'
+PRE_ECB = 'eurusd-h1-pre-ecb02ny-14berlin-atr14x1p5-r025-v1'
+POST_LONDON = 'eurusd-h1-post-london16-16ny-atr14x1p5-r025-v1'
+PRE_TOKYO = 'eurusd-h1-pre-tokyo18ny-10tokyo-atr14x1p5-r025-v1'
+FIX_COMPOSITE = 'eurusd-h1-fixing-composite-atr14x1p5-r025-v1'
+FIXING_CANDIDATES = (PRE_ECB, POST_LONDON, PRE_TOKYO, FIX_COMPOSITE)
 INTRADAY_CANDIDATES = (RSI_REENTRY, SHOCK, DAY_BREAK, DAY_FADE, BB_REENTRY,
-                       PULLBACK, EUROPE_AM, POSTFIX)
+                       PULLBACK, EUROPE_AM, POSTFIX, *FIXING_CANDIDATES)
 DAY = 86400
+
+
+def fixing_entry(candidate, end):
+    now = datetime.fromtimestamp(end, timezone.utc)
+    slots = ((PRE_ECB, 'America/New_York', 2, 'Europe/Berlin', 14, 'SELL', 5),
+             (POST_LONDON, 'Europe/London', 16, 'America/New_York', 16, 'BUY', 5),
+             (PRE_TOKYO, 'America/New_York', 18, 'Asia/Tokyo', 10, 'SELL', 4))
+    for identity, entry_zone, entry_hour, exit_zone, exit_hour, side, weekdays in slots:
+        local = now.astimezone(ZoneInfo(entry_zone))
+        if (candidate not in (identity, FIX_COMPOSITE) or local.weekday() >= weekdays
+                or local.hour != entry_hour or local.minute or local.second):
+            continue
+        deadline = now.astimezone(ZoneInfo(exit_zone)).replace(hour=exit_hour, minute=0, second=0, microsecond=0)
+        if deadline <= now:
+            deadline += timedelta(days=1)
+        return side, int(deadline.timestamp())
+    return None, None
 
 
 class IntradayH1State(BaseModel):
@@ -44,6 +66,7 @@ class IntradayH1State(BaseModel):
     range_day: int | None = Field(default=None, ge=0, strict=True)
     range_high: Decimal | None = Field(default=None, gt=0)
     range_low: Decimal | None = Field(default=None, gt=0)
+    scheduled_exit: int | None = Field(default=None, gt=0, strict=True)
 
     @model_validator(mode='after')
     def consistent(self):
@@ -73,6 +96,9 @@ class IntradayH1State(BaseModel):
                 or (self.range_day is None) != (self.range_low is None)
                 or (self.range_day is not None and (self.day_index is None or self.range_day >= self.day_index
                     or self.range_low > self.range_high))
+                or (self.scheduled_exit is not None and (self.candidate not in FIXING_CANDIDATES
+                    or self.scheduled_exit % HOUR))
+                or (self.candidate in FIXING_CANDIDATES and self.position_id is not None and self.scheduled_exit is None)
                 or (self.last_entry_day is not None and (not times
                     or self.last_entry_day > (times[-1]+HOUR)//DAY))):
             raise ValueError('inconsistent intraday daily range state')
@@ -143,7 +169,16 @@ class IntradayH1Candidate:
         mean=sum(closes[-20:],Decimal(0))/20 if len(closes) >= 20 else None
         signal=None
         limit=24 if self.candidate == PULLBACK else 12
-        if self.candidate in (DAY_BREAK,DAY_FADE):
+        if self.candidate in FIXING_CANDIDATES:
+            if side is not None:
+                if self.scheduled_exit is None or (self.position_id is not None and self.position_id != position_id):
+                    raise ValueError('fixing position has no owned entry deadline')
+                if end >= self.scheduled_exit:signal='EXIT'
+            else:
+                self.scheduled_exit=None
+                if distance is not None and distance > 0:
+                    signal,self.scheduled_exit=fixing_entry(self.candidate,end)
+        elif self.candidate in (DAY_BREAK,DAY_FADE):
             if side is not None:
                 if hour >= 20 or self.last_entry_day != entry_day:
                     signal='EXIT'
