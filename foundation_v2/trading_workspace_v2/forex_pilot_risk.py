@@ -370,7 +370,12 @@ def advance_forex_pilot(snapshot: ForexPilotSnapshot, *, ticks, bar: dict,
     risk = guard.checkpoint()
     if result.snapshot.pending_market_order is None:
         risk = risk.model_copy(update={"entry_stop_distance": None, "entry_decision_time_msc": None})
-    checkpoint = ForexPilotSnapshot(execution=result.snapshot, limits=snapshot.limits, risk=risk)
+    # advance_tick_execution's typed result has just validated the entire ledger.
+    # Reuse that exact local value; still validate limits/risk and all pilot
+    # cross-field invariants before committing the transactional observer.
+    checkpoint = ForexPilotSnapshot.model_construct(execution=result.snapshot,
+        limits=PilotRiskLimits.model_validate(snapshot.limits), risk=PilotRiskState.model_validate(risk))
+    checkpoint.supported_offline_account()
     if observer is not None:
         observer.commit(guard.observer)
     return checkpoint

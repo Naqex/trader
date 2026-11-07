@@ -50,6 +50,17 @@ class PilotEntryTests(unittest.TestCase):
         self.assertEqual(result.risk.rejections[-1].reason, 'trade_risk')
         self.assertEqual(result.risk.rejections[-1].estimated_loss, Decimal('26.65'))
 
+    def test_parent_ledger_and_limit_corruption_still_rejected_at_advance(self):
+        initial = self.initial()
+        changed = copy.deepcopy(initial)
+        changed.execution.ledger[-1]['equity'] = '9999'
+        with self.assertRaises(ValueError):
+            advance(changed, [tick(when=ms()+60001)])
+        limits = initial.limits.model_copy(update={'daily_loss': Decimal(10)})
+        changed = initial.model_copy(update={'limits': limits})
+        with self.assertRaisesRegex(ValueError, 'trade <= daily'):
+            advance(changed, [tick(when=ms()+60001)])
+
     def test_queued_closed_bar_entry_survives_later_financing_during_quote_gap(self):
         from test_forex_financing import terms
         from trading_workspace_v2.forex_financing import apply_forex_financing
