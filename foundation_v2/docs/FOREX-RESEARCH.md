@@ -88,6 +88,32 @@ rules; a different target firm is not selected by changing an output label.
 
 ## Evidence and interruption
 
+### Discovery candidates and feasibility probes
+
+The development CLI also accepts the three fixed hypotheses preregistered in
+workspace `planning/research/DISCOVERY-ROUND3-20261107.md`: failed prior20 range
+rejection, compression6/24 breakout and same-day UTC range rejection. Their
+shared `DiscoveryH4State` retains prior bars, WilderATR14, position identity/age
+and the range-fade entry-day latch. The original five definitions are unchanged.
+New rules share the existing tick execution, cash, risk, sizing and seals;
+changing the candidate is not permission to change input windows or costs.
+
+`scripts/forex_signal_screen.py --input-manifest <inputs.json>
+--inspection-cache-dir <prepared-cache> --protocol <protocol.md>
+--candidate <id> [--candidate <id> ...] --output <new-screen.json>` loads verified
+H4 inspection caches for registered development input. It calls the same rules
+with a flat position probe and records entry opportunities and lot feasibility.
+It does not simulate holdings, fills, exits, PnL, drawdown or a prop account.
+Counts are not executed trade counts, and the result never qualifies a strategy.
+
+Probe results, source/protocol/input pins and timing support inexpensive triage.
+No opportunities or no sizeable lots require review, not rejection of a whole
+strategy family. Initial discovery compares all three new candidates and the
+UTC comparator with the tick core regardless of probe outcome; this does not
+estimate a true-edge false-negative rate. The workspace discovery reporter
+reconciles completed tick outcomes with that same screen binding. Ambiguous
+intrabar SL/TP ordering cannot be resolved by these H4 probes.
+
 ### Opt-in prop-path observations
 
 A source-bound historical registration may embed canonical `prop_profile`

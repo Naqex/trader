@@ -25,6 +25,7 @@ from trading_workspace_v2.forex_h4 import (
 from trading_workspace_v2.forex_financing import FinancingTerms, apply_forex_financing
 from trading_workspace_v2.forex_h4_candidates import CANDIDATES, STUDY_CANDIDATES, ResearchH4Candidate
 from trading_workspace_v2.forex_prop_candidates import PROP_CANDIDATES, PropH4Candidate
+from trading_workspace_v2.forex_discovery_candidates import DISCOVERY_CANDIDATES, DiscoveryH4Candidate
 from trading_workspace_v2.forex_pilot_risk import (
     ForexPilotSnapshot, _stop_at_fill, advance_forex_pilot, initialize_forex_pilot,
     queue_forex_pilot_exit, queue_forex_pilot_order,
@@ -42,7 +43,19 @@ START = int(datetime(2022, 1, 3, tzinfo=timezone.utc).timestamp()) * 1000
 END = int(datetime(2022, 1, 15, tzinfo=timezone.utc).timestamp()) * 1000
 SCENARIOS = [('reference', Decimal('0'), Decimal('10')),
              ('cost-stress', Decimal('0.00002'), Decimal('20'))]
-ALL_STUDY_CANDIDATES = (*STUDY_CANDIDATES, *PROP_CANDIDATES)
+ALL_STUDY_CANDIDATES = (*STUDY_CANDIDATES, *PROP_CANDIDATES, *DISCOVERY_CANDIDATES)
+
+
+def study_candidate(candidate):
+    if candidate in DISCOVERY_CANDIDATES:
+        return DiscoveryH4Candidate(candidate)
+    if candidate in PROP_CANDIDATES:
+        return PropH4Candidate(candidate)
+    if candidate in CANDIDATES:
+        return ResearchH4Candidate(candidate)
+    if candidate is None or candidate==STUDY_CANDIDATES[0]:
+        return FixedH4Candidate()
+    raise ValueError('unregistered research candidate')
 
 
 def event_logger(output):
@@ -346,10 +359,7 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             if (money['daily_loss']['floor'] > spec.initial_capital-state.limits.daily_loss
                     or money['overall_drawdown']['floor'] > spec.initial_capital-state.limits.overall_loss):
                 raise ValueError('prop profile is stricter than internal safety brakes')
-    if research_candidate in PROP_CANDIDATES:
-        strategy = PropH4Candidate(research_candidate)
-    else:
-        strategy = ResearchH4Candidate(research_candidate) if research_candidate in CANDIDATES else FixedH4Candidate()
+    strategy = study_candidate(research_candidate)
     builder = H4Builder()
     for candle in warmup:
         strategy.observe(candle)
@@ -407,7 +417,7 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
         if candle:
             position = state.execution.position
             position_args = dict(side=position.side if position else None)
-            if research_candidate in (*CANDIDATES, *PROP_CANDIDATES):
+            if research_candidate in (*CANDIDATES, *PROP_CANDIDATES, *DISCOVERY_CANDIDATES):
                 position_args['position_id'] = position.position_id if position else None
             signal, distance = strategy.observe(candle, **position_args)
             if (signal and (observer is None or observer.running)
@@ -449,6 +459,9 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             elif research_candidate in PROP_CANDIDATES:
                 strategy = PropH4Candidate.from_state(strategy.export_state().model_copy(update={
                     'position_id':None,'position_side':None,'last_entry_day':None}))
+            elif research_candidate in DISCOVERY_CANDIDATES:
+                strategy = DiscoveryH4Candidate.from_state(strategy.export_state().model_copy(update={
+                    'position_id':None,'position_side':None,'held_bars':0,'last_entry_day':None}))
         if observer is None:
             progress(name,hour.timestamp+HOUR,state)
         else:
@@ -595,7 +608,8 @@ def main(argv=None, on_progress=None):
         source_files = [Path(__file__), *[V2 / 'trading_workspace_v2' / name for name in
             ('forex_h4.py', 'forex_pilot_risk.py', 'forex_financing.py', 'replay_execution.py',
              'replay_tick_execution.py', 'semantics/data_contracts.py', 'semantics/data_costs.py',
-             'forex_h4_candidates.py', 'forex_prop_candidates.py', 'forex_study_registration.py')]]
+             'forex_h4_candidates.py', 'forex_prop_candidates.py', 'forex_discovery_candidates.py',
+             'forex_study_registration.py')]]
         if args.inspection_cache_dir:
             source_files.append(V2/'trading_workspace_v2/forex_qdm_inspection.py')
         if args.tick_cache_dir:
@@ -609,7 +623,8 @@ def main(argv=None, on_progress=None):
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             run_id=receipt['run_id'],
             candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
-            contract=('PROP-STRATEGY-ROUND2-20261105.md' if args.candidate in PROP_CANDIDATES else
+            contract=('DISCOVERY-ROUND3-20261107.md' if args.candidate in DISCOVERY_CANDIDATES else
+                      'PROP-STRATEGY-ROUND2-20261105.md' if args.candidate in PROP_CANDIDATES else
                       'PROP-STRATEGY-ROUND1-20261105.md sections 4-6' if args.candidate else
                       'FOREX-PROP-PILOT-20261102.md sections 9-10'),
             created_at_utc=datetime.now(timezone.utc).isoformat(),
