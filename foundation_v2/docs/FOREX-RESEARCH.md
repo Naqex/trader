@@ -352,7 +352,7 @@ broker realism remain outside that declared subset, not inferred from PnL.
 ### Experimental H1 PnL triage
 
 `scripts/forex_coarse_screen.py` and `forex_coarse_input.py` are an opt-in pilot
-restricted to pinned, already consumed Q1/2022 inputs. Observed hourly Bid/Ask
+restricted by default to pinned, already consumed Q1/2022 inputs. Observed hourly Bid/Ask
 extrema and first/last quotes feed the existing H4 candidate builder, sizing,
 bar protection and cost arithmetic. Partial H4 hours still execute pending
 actions. Intrahour stops fill at a modeled level, not the first crossing tick;
@@ -396,3 +396,12 @@ the dossier verifies the candidate clock, raw/date binding and cache hash.
 Candidate state includes Wilder RSI/ATR, retained history, position age and
 daily range/latch data. Missing hours remain missing. These are offline research
 recipes, not broker-runner support, qualified edges or trading permission.
+
+Historical coarse screens outside that fixed quarter require a whitelisted
+`--study-registration` and its SHA256, with exact candidate/input/protocol,
+account-cost and numerical-source bindings. The registration additionally pins
+`coarse_source_files`; the whitelist module is excluded from that content hash
+to avoid self-reference, while the output still records its actual source hash.
+The coarse path rejects prop-lifecycle registrations and dates in 2025+; it
+cannot open holdout data as a cheap search. Scope/manifest failures now retain
+`failure.json` and atomic progress before any input-cache access or simulation.

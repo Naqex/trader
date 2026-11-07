@@ -10,7 +10,8 @@ import time
 
 V2=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(V2))
-from forex_h4_pilot import ALL_STUDY_CANDIDATES,H4_STUDY_CANDIDATES,STUDY_CANDIDATES,study_candidate,initial_state,financing_calendar
+from forex_h4_pilot import (ALL_STUDY_CANDIDATES,H4_STUDY_CANDIDATES,STUDY_CANDIDATES,
+    study_candidate,initial_state,financing_calendar,input_contract,observed_account_spec,write_json)
 from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES
 from trading_workspace_v2.execution_semantics import protective_exit_for_bar
 from trading_workspace_v2.forex_coarse_input import CoarseHour,load_coarse_hours,prepare_coarse_hours
@@ -18,6 +19,7 @@ from trading_workspace_v2.forex_h4 import CandleState,H4,HOUR,H4Builder,TICK,siz
 from trading_workspace_v2.forex_pilot_risk import _stop_at_fill
 from trading_workspace_v2.replay_execution import ReplayOpenPosition
 from trading_workspace_v2.retained import CostModel,InstrumentSpec,calculate_round_trip_cost
+from trading_workspace_v2.forex_study_registration import load_registration,validate_registration
 
 
 def h4_from_hours(hours):
@@ -154,6 +156,15 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         automatic_rejection_authorized=False,promotion_authorized=False,broker_calls=0,model_calls=0)
 
 
+def coarse_source_pins():
+    files=[Path(__file__),V2/'scripts/forex_h4_pilot.py',*[V2/'trading_workspace_v2'/name for name in (
+        'forex_coarse_input.py','forex_h4.py','forex_h4_candidates.py','forex_prop_candidates.py',
+        'forex_discovery_candidates.py','forex_intraday_candidates.py','forex_pilot_risk.py',
+        'forex_financing.py','forex_qdm_inspection.py','forex_study_registration.py','execution_semantics.py',
+        'semantics/data_costs.py','semantics/data_contracts.py','replay_execution.py','replay_tick_execution.py')]]
+    return {str(p.relative_to(V2)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+
+
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--input-manifest',type=Path,required=True)
@@ -162,57 +173,97 @@ def main(argv=None):
     parser.add_argument('--output-dir',type=Path,required=True)
     parser.add_argument('--prepare-only',action='store_true')
     parser.add_argument('--candidate',action='append',choices=ALL_STUDY_CANDIDATES)
-    args=parser.parse_args(argv);args.output_dir.mkdir(parents=True,exist_ok=False)
-    inputs=json.loads(args.input_manifest.read_bytes())
-    expected={'warmup':('20211201','20211231','63b63be980254b572bbc3ec2d7e1d68726ffeb510d0202f29c0c975670e1a640'),
-        'development':('20220103','20220331','dfe850eff9150032b865f82949f758fe422b9798fb9f55f7077c48cd63f8a2de')}
-    for role,(first,last,digest) in expected.items():
-        if any(inputs[role][k]!=v for k,v in [('first_day',first),('last_day',last),('sha256',digest)]):
-            raise ValueError('coarse pilot permits only frozen consumed Q1 inputs')
-    start_time=time.perf_counter();prepared={};proofs={}
+    parser.add_argument('--study-registration',type=Path)
+    parser.add_argument('--study-registration-sha256')
+    args=parser.parse_args(argv)
+    if bool(args.study_registration) != bool(args.study_registration_sha256):
+        parser.error('study registration requires both path and SHA256')
+    args.output_dir.mkdir(parents=True,exist_ok=False)
+    start_time=time.perf_counter();prepared={};proofs={};phase='manifest'
     def progress(event):
         event.update(updated_at_utc=datetime.now(timezone.utc).isoformat())
-        (args.output_dir/'progress.json').write_text(json.dumps(event,indent=2))
+        write_json(args.output_dir/'progress.json',event)
         print(json.dumps(event),flush=True)
     try:
+        progress(dict(stage=phase,status='validating_scope'))
+        raw=json.loads(args.input_manifest.read_bytes())
+        protocol_hash=hashlib.sha256(args.protocol.read_bytes()).hexdigest()
+        source_pins=coarse_source_pins()
+        registration=(load_registration(args.study_registration,args.study_registration_sha256)
+                      if args.study_registration else None)
+        selected=args.candidate or (list(registration['candidates']) if registration else list(H4_STUDY_CANDIDATES))
+        if not selected or len(selected)!=len(set(selected)):raise ValueError('empty or duplicate coarse candidates')
+        scenarios=[('reference',Decimal(0),Decimal('9.3'),Decimal('-.31')),
+                   ('cost-stress',Decimal('.00002'),Decimal(20),Decimal(20))]
+        if registration:
+            if registration.get('prop_profile') is not None:
+                raise ValueError('coarse screen does not evaluate registered prop lifecycle')
+            inputs=input_contract(args.input_manifest.parent,args.input_manifest,
+                research_candidate=selected[0],registration=registration)
+            if inputs['development']['last_day']>'20241231':
+                raise ValueError('coarse historical screen excludes 2025+ holdout')
+            account=registration['account_spec']
+            observed=observed_account_spec(Path(account['path']),account['sha256'])
+            scenarios[0]=('reference',Decimal(0),Decimal(observed['debit_buy_usd_per_lot']),
+                          Decimal(observed['debit_sell_usd_per_lot']))
+            # The whitelist module cannot pin its own content registration hash.
+            bound={k:v for k,v in source_pins.items() if k!='trading_workspace_v2/forex_study_registration.py'}
+            if registration.get('coarse_source_files')!=bound:
+                raise ValueError('coarse numerical sources differ from registration')
+            (args.output_dir/'study-registration.json').write_bytes(args.study_registration.read_bytes())
+        else:
+            inputs={role:raw[role] for role in ('warmup','development')}
+            expected={'warmup':('20211201','20211231','63b63be980254b572bbc3ec2d7e1d68726ffeb510d0202f29c0c975670e1a640'),
+                'development':('20220103','20220331','dfe850eff9150032b865f82949f758fe422b9798fb9f55f7077c48cd63f8a2de')}
+            if raw.get('schema')!='forex-h4-inputs-v1' or any(
+                    any(inputs[role][k]!=v for k,v in zip(('first_day','last_day','sha256'),values))
+                    for role,values in expected.items()):
+                raise ValueError('coarse pilot permits only frozen consumed Q1 inputs without registration')
+        start=int(datetime.strptime(inputs['development']['first_day'],'%Y%m%d').replace(tzinfo=timezone.utc).timestamp())*1000
+        end=int((datetime.strptime(inputs['development']['last_day'],'%Y%m%d').replace(tzinfo=timezone.utc)+timedelta(days=1)).timestamp())*1000
+        if registration:
+            declared=[dict(name=name,commission_usd_per_lot_per_side='2.50',slippage=str(slip),
+                financing_calendar=[t.model_dump(mode='json') for t in financing_calendar(buy,sell_rate=sell,start=start,end=end)])
+                for name,slip,buy,sell in scenarios]
+            for candidate in selected:
+                validate_registration(registration,inputs,candidate,protocol_sha256=protocol_hash,
+                    source_files=source_pins,account_spec_sha256=account['sha256'],scenarios=declared)
+        deadline=registration.get('preparation_deadline_seconds',300) if registration else 300
+        if type(deadline) is not int or not 1<=deadline<=1800:raise ValueError('invalid preparation deadline')
         for role,item in inputs.items():
-            if role not in expected:continue
+            phase='load_'+role
+            progress(dict(stage=phase,status='preparing' if args.prepare_only else 'loading'))
             kwargs={k:item[k] for k in ('sha256','first_day','last_day')}
             fn=prepare_coarse_hours if args.prepare_only else load_coarse_hours
-            extra=dict(on_progress=progress,deadline_seconds=max(.1,300-(time.perf_counter()-start_time))) if args.prepare_only else {}
+            extra=dict(on_progress=progress,deadline_seconds=max(.1,deadline-(time.perf_counter()-start_time))) if args.prepare_only else {}
             prepared[role],proofs[role]=fn(Path(item['path']),cache_dir=args.cache_dir,**kwargs,**extra)
         if args.prepare_only:
-            result=dict(status='prepared',inputs=inputs,proofs=proofs,wall_seconds=time.perf_counter()-start_time)
+            result=dict(status='prepared',inputs=raw,proofs=proofs,wall_seconds=time.perf_counter()-start_time)
         else:
-            selected=args.candidate or list(H4_STUDY_CANDIDATES)
-            if len(selected)!=len(set(selected)):raise ValueError('duplicate coarse candidates')
-            warmup,_=h4_from_hours(prepared['warmup']);rows=[]
-            start=int(datetime(2022,1,3,tzinfo=timezone.utc).timestamp())*1000
-            end=int(datetime(2022,4,1,tzinfo=timezone.utc).timestamp())*1000
+            warmup,_=h4_from_hours(prepared['warmup']);rows=[];phase='coarse_compute'
             for candidate in selected:
                 candidate_warmup=([h.mid.candle() for h in prepared['warmup']]
                     if candidate in INTRADAY_CANDIDATES else warmup)
-                for name,slip,buy,sell in [('reference','0','9.3','-.31'),('cost-stress','.00002','20','20')]:
+                for name,slip,buy,sell in scenarios:
                     row=simulate_coarse(candidate,candidate_warmup,prepared['development'],start=start,end=end,
-                        data_sha256=inputs['development']['sha256'],name=name,slippage=Decimal(slip),
-                        buy_debit=Decimal(buy),sell_debit=Decimal(sell))
-                    rows.append(row);progress(dict(stage='coarse_compute',candidate=candidate,scenario=name,
+                        data_sha256=inputs['development']['sha256'],name=name,slippage=slip,
+                        buy_debit=buy,sell_debit=sell)
+                    rows.append(row);progress(dict(stage=phase,candidate=candidate,scenario=name,
                         completed_rows=len(rows),wall_seconds=row['wall_seconds']))
             result=dict(schema='forex-coarse-screen-report-v1',status='completed_triage_only',
-                rows=rows,inputs=inputs,proofs=proofs,wall_seconds=time.perf_counter()-start_time,
+                rows=rows,inputs=raw,proofs=proofs,wall_seconds=time.perf_counter()-start_time,
                 promotion_authorized=False,automatic_rejection_authorized=False)
-        source_files=[Path(__file__),V2/'trading_workspace_v2/forex_coarse_input.py',
-            V2/'scripts/forex_h4_pilot.py',*[V2/'trading_workspace_v2'/name for name in (
-                'forex_h4.py','forex_h4_candidates.py','forex_prop_candidates.py','forex_discovery_candidates.py',
-                'forex_intraday_candidates.py','forex_pilot_risk.py','forex_financing.py','execution_semantics.py','semantics/data_costs.py',
-                'semantics/data_contracts.py','replay_execution.py','replay_tick_execution.py')]]
-        result.update(protocol_sha256=hashlib.sha256(args.protocol.read_bytes()).hexdigest(),
-            source_files={str(p.relative_to(V2)):hashlib.sha256(p.read_bytes()).hexdigest() for p in source_files},
-            broker_calls=0,model_calls=0)
-        (args.output_dir/'result.json').write_text(json.dumps(result,indent=2))
+        if coarse_source_pins()!=source_pins:raise ValueError('coarse source changed during run')
+        result.update(protocol_sha256=protocol_hash,source_files=source_pins,broker_calls=0,model_calls=0)
+        if registration:
+            result.update(study_registration=dict(study_id=registration['study_id'],sha256=args.study_registration_sha256),
+                clean_oos=False,data_role=registration['data_role'],prop_lifecycle='not_evaluated')
+        write_json(args.output_dir/'result.json',result)
         progress(dict(stage='completed',status=result['status'],wall_seconds=time.perf_counter()-start_time))
     except Exception as error:
-        progress(dict(stage='failed',status='failed',error_type=type(error).__name__))
+        failure=dict(stage='failed',status='failed',error_type=type(error).__name__,failed_phase=phase)
+        write_json(args.output_dir/'failure.json',failure)
+        progress(failure)
         raise
 
 

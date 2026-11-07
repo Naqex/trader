@@ -4,6 +4,7 @@ import hashlib,json
 from pathlib import Path
 import sys,tempfile,unittest
 from unittest.mock import patch
+from copy import deepcopy
 
 V2=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(V2),str(V2/'scripts')]
@@ -154,6 +155,70 @@ class CoarseTests(unittest.TestCase):
             self.assertEqual((last.first_sequence,last.last_sequence,last.ticks),(5,5,1))
             self.assertEqual(last.mid.timestamp,START//1000+7200)
             self.assertEqual(last.bid,(D('1.09900'),)*4)
+
+    def registered_fixture(self,root):
+        from trading_workspace_v2.forex_intraday_candidates import RSI_REENTRY
+        proto=root/'protocol.md';proto.write_text('synthetic registered CLI scope fixture')
+        raw=dict(schema='forex-h4-inputs-v1')
+        for role,first,last in [('warmup','20221101','20221231'),('development','20230103','20230104')]:
+            path=root/(role+'.csv');path.write_text('fixture bytes; cache loader mocked')
+            raw[role]=dict(path=str(path),sha256=hashlib.sha256(path.read_bytes()).hexdigest(),first_day=first,last_day=last)
+        manifest=root/'inputs.json';manifest.write_text(json.dumps(raw))
+        bound={k:v for k,v in coarse.coarse_source_pins().items() if k!='trading_workspace_v2/forex_study_registration.py'}
+        reg=dict(study_id='fixture',candidates=[RSI_REENTRY],prop_profile=None,
+            windows=dict(warmup={k:raw['warmup'][k] for k in ('first_day','last_day')},
+                         evaluation={k:raw['development'][k] for k in ('first_day','last_day')}),
+            input_pins={k:raw[k] for k in ('warmup','development')},
+            account_spec=dict(path=str(root/'spec.json'),sha256='a'*64),
+            protocol=dict(sha256=hashlib.sha256(proto.read_bytes()).hexdigest()),
+            coarse_source_files=bound,source_files=bound,data_role='historical_robustness',scenarios=[
+                dict(name=name,commission_usd_per_lot_per_side='2.50',slippage_price_per_side=slip,
+                     financing_debit_buy_usd_per_lot=buy,financing_debit_sell_usd_per_lot=sell)
+                for name,slip,buy,sell in [('reference','0','9.3','-.31'),('cost-stress','.00002','20','20')]])
+        registration=root/'registration.json';registration.write_text(json.dumps(reg))
+        args=['--input-manifest',str(manifest),'--protocol',str(proto),'--cache-dir',str(root/'cache'),
+              '--study-registration',str(registration),'--study-registration-sha256','b'*64]
+        return args,raw,reg
+
+    def test_registered_coarse_cli_uses_pinned_historical_window_and_costs(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);args,raw,reg=self.registered_fixture(root)
+            warm=int(datetime(2022,12,27,tzinfo=timezone.utc).timestamp())*1000
+            start=int(datetime(2023,1,3,tzinfo=timezone.utc).timestamp())*1000
+            def loader(path,**kwargs):
+                values=[hour(i,start=warm) for i in range(100)] if path.name=='warmup.csv' else [hour(i,start=start) for i in range(4)]
+                return values,dict(hours=len(values),binding=kwargs)
+            with patch.object(coarse,'load_registration',return_value=reg), \
+                 patch.object(coarse,'observed_account_spec',return_value=dict(sha256='a'*64,debit_buy_usd_per_lot='9.3',debit_sell_usd_per_lot='-.31')), \
+                 patch.object(coarse,'load_coarse_hours',side_effect=loader):
+                coarse.main(args+['--output-dir',str(root/'out')])
+            result=json.loads((root/'out/result.json').read_bytes())
+            self.assertEqual(len(result['rows']),2)
+            self.assertEqual(result['study_registration']['study_id'],'fixture')
+            self.assertFalse(result['clean_oos']);self.assertFalse(result['promotion_authorized'])
+            self.assertEqual(result['inputs']['development']['first_day'],'20230103')
+
+    def test_coarse_cli_rejects_source_or_holdout_scope_and_keeps_failure_status(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);args,raw,reg=self.registered_fixture(root)
+            for kind in ('source','holdout','unknown-registration'):
+                bad=deepcopy(reg);manifest=deepcopy(raw)
+                if kind=='source':bad['coarse_source_files']['scripts/forex_coarse_screen.py']='0'*64
+                if kind=='holdout':
+                    for role,window,first,last in [('warmup','warmup','20241101','20241231'),('development','evaluation','20250103','20250104')]:
+                        manifest[role].update(first_day=first,last_day=last)
+                        bad['windows'][window].update(first_day=first,last_day=last)
+                        bad['input_pins'][role].update(first_day=first,last_day=last)
+                (root/'inputs.json').write_text(json.dumps(manifest))
+                with patch.object(coarse,'load_registration',return_value=bad) as registration, \
+                     patch.object(coarse,'observed_account_spec',return_value=dict(sha256='a'*64,debit_buy_usd_per_lot='9.3',debit_sell_usd_per_lot='-.31')), \
+                     patch.object(coarse,'load_coarse_hours') as load, self.assertRaises(ValueError):
+                    if kind=='unknown-registration':registration.side_effect=ValueError('unregistered')
+                    coarse.main(args+['--output-dir',str(root/kind)])
+                load.assert_not_called()
+                failure=json.loads((root/kind/'failure.json').read_bytes())
+                self.assertEqual(failure['status'],'failed');self.assertEqual(failure['failed_phase'],'manifest')
+                self.assertEqual(json.loads((root/kind/'progress.json').read_bytes())['stage'],'failed')
 
 
 if __name__=='__main__':unittest.main()
