@@ -101,17 +101,27 @@ def prepare_coarse_hours(path,*,cache_dir,sha256,first_day,last_day,on_progress=
                 **{k:v for k,v in current.items() if k not in ('mid','timestamp')}).model_dump(mode='json'))
     try:
         for q in read_qdm_ticks(Path(path),sha256=sha256,first_day=first_day,last_day=last_day):
-            stamp=q.time_msc//(HOUR*1000)*HOUR;mid=(q.bid+q.ask)/2
+            bid,ask=q.bid,q.ask
+            stamp=q.time_msc//(HOUR*1000)*HOUR;mid=(bid+ask)/2;spread=ask-bid
             if current is None or current['timestamp']!=stamp:
                 publish_hour()
-                current=dict(timestamp=stamp,mid=[mid]*4,bid=[q.bid]*4,ask=[q.ask]*4,
+                current=dict(timestamp=stamp,mid=[mid]*4,bid=[bid]*4,ask=[ask]*4,
                     first_time_msc=q.time_msc,last_time_msc=q.time_msc,first_sequence=q.sequence,
-                    last_sequence=q.sequence,ticks=1,maximum_spread=q.ask-q.bid)
+                    last_sequence=q.sequence,ticks=1,maximum_spread=spread)
+                mids,bids,asks=current['mid'],current['bid'],current['ask']
             else:
-                for name,value in (('mid',mid),('bid',q.bid),('ask',q.ask)):
-                    prices=current[name];prices[1]=max(prices[1],value);prices[2]=min(prices[2],value);prices[3]=value
-                current.update(last_time_msc=q.time_msc,last_sequence=q.sequence,ticks=current['ticks']+1,
-                    maximum_spread=max(current['maximum_spread'],q.ask-q.bid))
+                # These lists live for one hour. Avoid temporary tuples/kwargs
+                # per quote; mid extrema must still come from observed mids.
+                if mid>mids[1]:mids[1]=mid
+                if mid<mids[2]:mids[2]=mid
+                if bid>bids[1]:bids[1]=bid
+                if bid<bids[2]:bids[2]=bid
+                if ask>asks[1]:asks[1]=ask
+                if ask<asks[2]:asks[2]=ask
+                mids[3],bids[3],asks[3]=mid,bid,ask
+                current['last_time_msc']=q.time_msc;current['last_sequence']=q.sequence
+                current['ticks']+=1
+                if spread>current['maximum_spread']:current['maximum_spread']=spread
             count+=1
             if count%65536==0:
                 if time.monotonic()-began>deadline_seconds:raise TimeoutError('coarse preparation deadline')

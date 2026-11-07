@@ -131,5 +131,29 @@ class CoarseTests(unittest.TestCase):
             entry.write_bytes(before);raw.write_text(raw.read_text()+'\n')
             with self.assertRaisesRegex(ValueError,'hash'):load_coarse_hours(raw,**kwargs)
 
+    def test_observed_mid_extrema_and_spread_survive_hour_boundary(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);raw=root/'spread.csv'
+            raw.write_text('DateTime,Bid,Ask,Volume\n'
+                '20220103 00:00:00.001,1.10000,1.10020,0\n'
+                '20220103 00:10:00.002,1.10010,1.10012,0\n'
+                '20220103 00:20:00.003,1.09990,1.10030,0\n'
+                '20220103 00:59:00.004,1.09980,1.09990,0\n'
+                '20220103 02:00:00.005,1.09900,1.09910,0\n')
+            hours,_=prepare_coarse_hours(raw,cache_dir=root/'cache',
+                sha256=hashlib.sha256(raw.read_bytes()).hexdigest(),
+                first_day='20220103',last_day='20220103')
+            first,last=hours
+            self.assertEqual(first.bid,(D('1.10000'),D('1.10010'),D('1.09980'),D('1.09980')))
+            self.assertEqual(first.ask,(D('1.10020'),D('1.10030'),D('1.09990'),D('1.09990')))
+            self.assertEqual(first.mid.high,D('1.10011'))
+            self.assertEqual(first.mid.low,D('1.09985'))
+            self.assertEqual(first.maximum_spread,D('.00040'))
+            self.assertEqual((first.first_sequence,first.last_sequence,first.ticks),(1,4,4))
+            self.assertEqual(first.last_time_msc,START+3540004)
+            self.assertEqual((last.first_sequence,last.last_sequence,last.ticks),(5,5,1))
+            self.assertEqual(last.mid.timestamp,START//1000+7200)
+            self.assertEqual(last.bid,(D('1.09900'),)*4)
+
 
 if __name__=='__main__':unittest.main()

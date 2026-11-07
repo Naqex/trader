@@ -371,3 +371,11 @@ data or prop qualification. A new rule needs its own fixtures and tick review.
 The workspace's `COARSE-SCREEN-REVIEW-20261107.md` records the frozen protocol,
 source/input pins, comparisons and timings; do not dispatch old completed studies
 or relax native registration/cache guards to use the experimental screen.
+
+Hourly preparation updates extrema in place without per-quote temporary maps
+or min/max calls. Mid extrema still come from observed mid quotes, not the
+average of Bid/Ask extrema at potentially different instants. The preparation
+change preserves all hour fields and the 16 consumed-quarter coarse scenarios;
+it does not change fills, costs or the native tick engine. Source changes still
+produce new coarse-cache bindings. Keep previous attempts intact and prepare
+the new binding rather than relabeling an old cache.
