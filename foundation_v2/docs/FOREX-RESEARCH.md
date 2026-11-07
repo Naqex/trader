@@ -169,19 +169,6 @@ ledger prefixes are not cached as trusted. Changed source pins require a fresh
 binding before a future numerical study; completed reports retain their original
 source snapshots and are not replayed merely to read their results.
 
-### Experimental H1 PnL triage
-
-`scripts/forex_coarse_screen.py` and `forex_coarse_input.py` are an opt-in pilot
-on the already consumed Q1/2022 inputs. Observed hourly Bid/Ask extrema and
-first/last quotes feed the existing H4 candidate builder, sizing, bar protection,
-margin assumptions and cost arithmetic. Partial H4 hours still execute pending
-actions. Intrahour stops fill at a modeled level, not the first crossing tick;
-internal tick-risk stops, prop lifecycle and intrabar DD are not simulated.
-The distinct `forex-coarse-pnl-v1` schema always requires tick review and grants
-no automatic rejection or promotion. It is not a native verified tick dossier.
-Prepare its source-bound H1 cache once using `--prepare-only`, then use the same
-input manifest/cache/protocol with a new output directory for the coarse run.
-
 Historical execution with this runner requires a new registration declaring
 `calendar_accounting=exclusive_event_clock_v1` and pinning its numerical CLI.
 Legacy frozen registrations/artifacts remain readable but cannot execute against
@@ -361,3 +348,26 @@ evaluate phase transitions. Registered prop-enabled studies also use the native
 lifecycle and actual account reset described above; internal daily risk uses
 Europe/Prague. Firm inactivity, exceptions, payout eligibility and historical
 broker realism remain outside that declared subset, not inferred from PnL.
+
+### Experimental H1 PnL triage
+
+`scripts/forex_coarse_screen.py` and `forex_coarse_input.py` are an opt-in pilot
+restricted to pinned, already consumed Q1/2022 inputs. Observed hourly Bid/Ask
+extrema and first/last quotes feed the existing H4 candidate builder, sizing,
+bar protection and cost arithmetic. Partial H4 hours still execute pending
+actions. Intrahour stops fill at a modeled level, not the first crossing tick;
+internal tick-risk stops, prop lifecycle and intrabar DD are not simulated.
+Its simplified margin check uses initial capital, not full account risk state.
+The distinct `forex-coarse-pnl-v1` schema always requires tick review and grants
+no automatic rejection or promotion. It is not a native verified tick dossier.
+Prepare its source-bound H1 cache once using `--prepare-only`, then use the same
+input manifest/cache/protocol with a new output directory for the coarse run.
+
+The November 7 engineering pilot matched eight current-source tick cases on a
+five-day prefix. Eight full-quarter historical comparisons differed by $0.04–
+$0.48, all optimistic differences from modeled stops. This supports experimental
+triage of the checked rules, not exact fills, calibrated error bounds, unseen
+data or prop qualification. A new rule needs its own fixtures and tick review.
+The workspace's `COARSE-SCREEN-REVIEW-20261107.md` records the frozen protocol,
+source/input pins, comparisons and timings; do not dispatch old completed studies
+or relax native registration/cache guards to use the experimental screen.
