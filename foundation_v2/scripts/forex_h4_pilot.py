@@ -26,6 +26,7 @@ from trading_workspace_v2.forex_financing import FinancingTerms, apply_forex_fin
 from trading_workspace_v2.forex_h4_candidates import CANDIDATES, STUDY_CANDIDATES, ResearchH4Candidate
 from trading_workspace_v2.forex_prop_candidates import PROP_CANDIDATES, PropH4Candidate
 from trading_workspace_v2.forex_discovery_candidates import DISCOVERY_CANDIDATES, DiscoveryH4Candidate
+from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES, IntradayH1Candidate
 from trading_workspace_v2.forex_pilot_risk import (
     ForexPilotSnapshot, _stop_at_fill, advance_forex_pilot, initialize_forex_pilot,
     queue_forex_pilot_exit, queue_forex_pilot_order,
@@ -43,10 +44,13 @@ START = int(datetime(2022, 1, 3, tzinfo=timezone.utc).timestamp()) * 1000
 END = int(datetime(2022, 1, 15, tzinfo=timezone.utc).timestamp()) * 1000
 SCENARIOS = [('reference', Decimal('0'), Decimal('10')),
              ('cost-stress', Decimal('0.00002'), Decimal('20'))]
-ALL_STUDY_CANDIDATES = (*STUDY_CANDIDATES, *PROP_CANDIDATES, *DISCOVERY_CANDIDATES)
+H4_STUDY_CANDIDATES = (*STUDY_CANDIDATES, *PROP_CANDIDATES, *DISCOVERY_CANDIDATES)
+ALL_STUDY_CANDIDATES = (*H4_STUDY_CANDIDATES, *INTRADAY_CANDIDATES)
 
 
 def study_candidate(candidate):
+    if candidate in INTRADAY_CANDIDATES:
+        return IntradayH1Candidate(candidate)
     if candidate in DISCOVERY_CANDIDATES:
         return DiscoveryH4Candidate(candidate)
     if candidate in PROP_CANDIDATES:
@@ -254,6 +258,8 @@ def scenario_binding(manifest):
         keys = (*keys, 'pre_quote_flat_financing')
     if 'prop_profile' in manifest:
         keys = (*keys, 'prop_profile')
+    if 'decision_timeframe_seconds' in manifest:
+        keys = (*keys, 'decision_timeframe_seconds', 'hourly_warmup')
     return content_hash({key: manifest.get(key) for key in keys})
 
 
@@ -364,6 +370,9 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
                 raise ValueError('prop profile is stricter than internal safety brakes')
     strategy = study_candidate(research_candidate)
     builder = H4Builder()
+    period = HOUR if research_candidate in INTRADAY_CANDIDATES else H4
+    if any((bar.timestamp+period)*1000 > start for bar in warmup):
+        raise ValueError('warmup must end before evaluation')
     for candle in warmup:
         strategy.observe(candle)
     calendar = iter(financing_calendar(debit, sell_rate=sell_debit, start=start, end=end))
@@ -430,16 +439,17 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
         state = advance_forex_pilot(state, ticks=quotes, bar=vars(hour),
                                     cursor_index=state.execution.cursor_index + 1,observer=observer)
         state = post_due((hour.timestamp + HOUR) * 1000, state, inclusive=False)
-        candle = builder.add(hour)
+        complete_h4 = builder.add(hour)
+        candle = hour if period == HOUR else complete_h4
         if candle:
             position = state.execution.position
             position_args = dict(side=position.side if position else None)
-            if research_candidate in (*CANDIDATES, *PROP_CANDIDATES, *DISCOVERY_CANDIDATES):
+            if research_candidate in (*CANDIDATES, *PROP_CANDIDATES, *DISCOVERY_CANDIDATES, *INTRADAY_CANDIDATES):
                 position_args['position_id'] = position.position_id if position else None
             signal, distance = strategy.observe(candle, **position_args)
             if (signal and (observer is None or observer.running)
                     and state.risk.exit_pending is None and state.execution.pending_market_order is None):
-                decision = dict(time_msc=(candle.timestamp + H4) * 1000, signal=signal,
+                decision = dict(time_msc=(candle.timestamp + period) * 1000, signal=signal,
                                 stop_distance=str(distance), status='queued')
                 operation = f'h4-{candle.timestamp}-{signal}'
                 if signal == 'EXIT':
@@ -478,6 +488,9 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
                     'position_id':None,'position_side':None,'last_entry_day':None}))
             elif research_candidate in DISCOVERY_CANDIDATES:
                 strategy = DiscoveryH4Candidate.from_state(strategy.export_state().model_copy(update={
+                    'position_id':None,'position_side':None,'held_bars':0,'last_entry_day':None}))
+            elif research_candidate in INTRADAY_CANDIDATES:
+                strategy = IntradayH1Candidate.from_state(strategy.export_state().model_copy(update={
                     'position_id':None,'position_side':None,'held_bars':0,'last_entry_day':None}))
         if observer is None:
             progress(name,hour.timestamp+HOUR,state)
@@ -536,6 +549,8 @@ def main(argv=None, on_progress=None):
                         help='Load prepared quality/H4 evidence; original input hashes are still checked')
     parser.add_argument('--tick-cache-dir', type=Path,
                         help='Load lossless prepared development ticks; raw/cache hashes and tick validation remain enabled')
+    parser.add_argument('--warmup-hours-cache-dir', type=Path,
+                        help='Source-bound observed H1 cache required for H1 research candidates')
     parser.add_argument('--benchmark-only', action='store_true',
                         help='Run registered current-source parity/performance benchmark; never qualify or promote')
     parser.add_argument('--account-spec', type=Path)
@@ -562,6 +577,8 @@ def main(argv=None, on_progress=None):
         parser.error('benchmark-only requires a registered study')
     if args.preflight_only and args.reuse_scenarios_from:
         parser.error('preflight-only does not resume scenarios')
+    if (args.candidate in INTRADAY_CANDIDATES) != (args.warmup_hours_cache_dir is not None):
+        parser.error('H1 research requires its warmup-hours cache; H4 must not supply one')
     args.output_dir.mkdir(parents=True, exist_ok=False)
     logger, handler = event_logger(args.output_dir)
     began = time.monotonic()
@@ -628,6 +645,9 @@ def main(argv=None, on_progress=None):
              'replay_tick_execution.py', 'semantics/data_contracts.py', 'semantics/data_costs.py',
              'forex_h4_candidates.py', 'forex_prop_candidates.py', 'forex_discovery_candidates.py',
              'forex_study_registration.py')]]
+        if args.candidate in INTRADAY_CANDIDATES:
+            source_files.extend(V2/'trading_workspace_v2'/module for module in
+                ('forex_intraday_candidates.py','forex_coarse_input.py','forex_qdm_inspection.py'))
         if args.inspection_cache_dir:
             source_files.append(V2/'trading_workspace_v2/forex_qdm_inspection.py')
         if args.tick_cache_dir:
@@ -641,7 +661,8 @@ def main(argv=None, on_progress=None):
         manifest = dict(schema='forex-h4-development-v1', purpose='integration_probe_not_qualification',
             run_id=receipt['run_id'],
             candidate=args.candidate or 'eurusd-h4-donchian20-10-atr14-r025-v1',
-            contract=('DISCOVERY-ROUND3-20261107.md' if args.candidate in DISCOVERY_CANDIDATES else
+            contract=('CHALLENGE-DISCOVERY-ROUND4-20261108.md' if args.candidate in INTRADAY_CANDIDATES else
+                      'DISCOVERY-ROUND3-20261107.md' if args.candidate in DISCOVERY_CANDIDATES else
                       'PROP-STRATEGY-ROUND2-20261105.md' if args.candidate in PROP_CANDIDATES else
                       'PROP-STRATEGY-ROUND1-20261105.md sections 4-6' if args.candidate else
                       'FOREX-PROP-PILOT-20261102.md sections 9-10'),
@@ -656,6 +677,11 @@ def main(argv=None, on_progress=None):
             validation_holdout_read=False, broker_connected=False, price_basis='midpoint',
             risk_usd=[25, 100, 500], broker_spec_verified=False,
             calendar_accounting='exclusive_event_clock_v1')
+        if args.candidate in INTRADAY_CANDIDATES:
+            from trading_workspace_v2.forex_coarse_input import load_coarse_hours
+            hourly_warmup, hourly_proof = load_coarse_hours(paths['warmup'],cache_dir=args.warmup_hours_cache_dir,
+                **{k:inputs['warmup'][k] for k in ('sha256','first_day','last_day')})
+            manifest.update(decision_timeframe_seconds=HOUR,hourly_warmup=hourly_proof)
         if args.inspection_cache_dir:
             manifest['inspection_cache'] = dict(directory=str(args.inspection_cache_dir.resolve()),
                                                 entries={}, raw_hash_rechecked=True)
@@ -717,11 +743,15 @@ def main(argv=None, on_progress=None):
                 quality[name], bars = inspect_qdm(paths[name], **terms)
             if name == 'warmup':
                 warmup = bars
+                if args.candidate in INTRADAY_CANDIDATES:
+                    if len(hourly_warmup) != quality[name]['quoted_hours']:
+                        raise ValueError('hourly warmup differs from observed quality coverage')
+                    warmup=[h.mid.candle() for h in hourly_warmup]
         write_json(args.output_dir / 'quality.json', quality)
-        if args.inspection_cache_dir:
+        if args.inspection_cache_dir or args.candidate in INTRADAY_CANDIDATES:
             write_json(args.output_dir / 'manifest.json', manifest)
-        if len(warmup) < (81 if args.candidate else 21):
-            raise ValueError('insufficient H4 warmup')
+        if len(warmup) < (100 if args.candidate in INTRADAY_CANDIDATES else 81 if args.candidate else 21):
+            raise ValueError('insufficient observed warmup')
         if args.preflight_only:
             progress('preflight_passed_no_simulation')
             return

@@ -379,3 +379,20 @@ change preserves all hour fields and the 16 consumed-quarter coarse scenarios;
 it does not change fills, costs or the native tick engine. Source changes still
 produce new coarse-cache bindings. Keep previous attempts intact and prepare
 the new binding rather than relabeling an old cache.
+
+### Frozen H1 research recipes
+
+`forex_intraday_candidates.py` adds eight opt-in H1 recipes from Discovery4.
+`forex_h4_pilot.py` still aggregates H4 quality evidence, but observes each
+closed H1 directly for those IDs and queues orders at its H1 close time. H4
+IDs keep their previous decision clock. The legacy flat signal screen stays
+H4-only; the coarse CLI keeps its old H4 default and requires explicit H1 IDs.
+
+H1 native runs require `--warmup-hours-cache-dir` with a prepared, source-bound
+observed H1 cache. Prepare once before dispatch; the batch accepts the matching
+`warmup_hours_cache_dir` job field. Quality H4 bars are not silently passed as
+H1 warmup. Manifests bind the decision period and H1 proof before reuse checks;
+the dossier verifies the candidate clock, raw/date binding and cache hash.
+Candidate state includes Wilder RSI/ATR, retained history, position age and
+daily range/latch data. Missing hours remain missing. These are offline research
+recipes, not broker-runner support, qualified edges or trading permission.

@@ -7,7 +7,7 @@ from pathlib import Path
 
 V2=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(V2))
-from forex_h4_pilot import ALL_STUDY_CANDIDATES, input_contract, study_candidate
+from forex_h4_pilot import H4_STUDY_CANDIDATES as ALL_STUDY_CANDIDATES, input_contract, study_candidate
 from trading_workspace_v2.forex_h4 import H4,size_for_stop
 from trading_workspace_v2.forex_qdm_inspection import load_inspection
 

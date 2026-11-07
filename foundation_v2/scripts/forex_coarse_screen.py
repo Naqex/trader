@@ -10,7 +10,8 @@ import time
 
 V2=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(V2))
-from forex_h4_pilot import ALL_STUDY_CANDIDATES,STUDY_CANDIDATES,study_candidate,initial_state,financing_calendar
+from forex_h4_pilot import ALL_STUDY_CANDIDATES,H4_STUDY_CANDIDATES,STUDY_CANDIDATES,study_candidate,initial_state,financing_calendar
+from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES
 from trading_workspace_v2.execution_semantics import protective_exit_for_bar
 from trading_workspace_v2.forex_coarse_input import CoarseHour,load_coarse_hours,prepare_coarse_hours
 from trading_workspace_v2.forex_h4 import CandleState,H4,HOUR,H4Builder,TICK,size_for_stop
@@ -36,9 +37,10 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         raise ValueError('invalid coarse evaluation boundaries')
     if any(not x.is_finite() for x in (slippage,buy_debit,sell_debit)) or slippage<0:
         raise ValueError('invalid coarse costs')
+    period=HOUR if candidate in INTRADAY_CANDIDATES else H4
     warmup=[CandleState(**vars(bar)).candle() for bar in warmup]
-    if (len(warmup)<81 or any(b.timestamp<=a.timestamp for a,b in zip(warmup,warmup[1:]))
-            or any(bar.timestamp%H4 or (bar.timestamp+H4)*1000>start for bar in warmup)):
+    if (len(warmup)<(100 if period==HOUR else 81) or any(b.timestamp<=a.timestamp for a,b in zip(warmup,warmup[1:]))
+            or any(bar.timestamp%period or (bar.timestamp+period)*1000>start for bar in warmup)):
         raise ValueError('invalid coarse warmup')
     hours=[CoarseHour.model_validate(h) for h in hours]
     if (not hours or any(not start<=h.first_time_msc<=h.last_time_msc<end for h in hours)
@@ -115,13 +117,14 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
                 take_profit=None,spread_price=0,tick_size=TICK,allow_open_gap=True)
             if protection:
                 close(hour,protection['exit_price'],protection['reason'],at_open=protection['at_open'])
-        candle=builder.add(hour.mid.candle())
+        complete_h4=builder.add(hour.mid.candle())
+        candle=hour.mid.candle() if period==HOUR else complete_h4
         if candle is not None:
             kwargs=dict(side=position.side if position else None)
             if candidate!=STUDY_CANDIDATES[0]:kwargs['position_id']=position.position_id if position else None
             signal,distance=strategy.observe(candle,**kwargs)
             if signal:
-                decision=dict(time_msc=(candle.timestamp+H4)*1000,signal=signal,
+                decision=dict(time_msc=(candle.timestamp+period)*1000,signal=signal,
                     stop_distance=str(distance),status='queued')
                 if signal in ('BUY','SELL'):
                     quantity=size_for_stop(distance,slippage=slippage)
@@ -181,14 +184,16 @@ def main(argv=None):
         if args.prepare_only:
             result=dict(status='prepared',inputs=inputs,proofs=proofs,wall_seconds=time.perf_counter()-start_time)
         else:
-            selected=args.candidate or list(ALL_STUDY_CANDIDATES)
+            selected=args.candidate or list(H4_STUDY_CANDIDATES)
             if len(selected)!=len(set(selected)):raise ValueError('duplicate coarse candidates')
             warmup,_=h4_from_hours(prepared['warmup']);rows=[]
             start=int(datetime(2022,1,3,tzinfo=timezone.utc).timestamp())*1000
             end=int(datetime(2022,4,1,tzinfo=timezone.utc).timestamp())*1000
             for candidate in selected:
+                candidate_warmup=([h.mid.candle() for h in prepared['warmup']]
+                    if candidate in INTRADAY_CANDIDATES else warmup)
                 for name,slip,buy,sell in [('reference','0','9.3','-.31'),('cost-stress','.00002','20','20')]:
-                    row=simulate_coarse(candidate,warmup,prepared['development'],start=start,end=end,
+                    row=simulate_coarse(candidate,candidate_warmup,prepared['development'],start=start,end=end,
                         data_sha256=inputs['development']['sha256'],name=name,slippage=Decimal(slip),
                         buy_debit=Decimal(buy),sell_debit=Decimal(sell))
                     rows.append(row);progress(dict(stage='coarse_compute',candidate=candidate,scenario=name,
@@ -199,7 +204,7 @@ def main(argv=None):
         source_files=[Path(__file__),V2/'trading_workspace_v2/forex_coarse_input.py',
             V2/'scripts/forex_h4_pilot.py',*[V2/'trading_workspace_v2'/name for name in (
                 'forex_h4.py','forex_h4_candidates.py','forex_prop_candidates.py','forex_discovery_candidates.py',
-                'forex_pilot_risk.py','forex_financing.py','execution_semantics.py','semantics/data_costs.py',
+                'forex_intraday_candidates.py','forex_pilot_risk.py','forex_financing.py','execution_semantics.py','semantics/data_costs.py',
                 'semantics/data_contracts.py','replay_execution.py','replay_tick_execution.py')]]
         result.update(protocol_sha256=hashlib.sha256(args.protocol.read_bytes()).hexdigest(),
             source_files={str(p.relative_to(V2)):hashlib.sha256(p.read_bytes()).hexdigest() for p in source_files},

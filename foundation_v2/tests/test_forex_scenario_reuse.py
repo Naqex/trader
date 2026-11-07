@@ -45,6 +45,36 @@ class ScenarioReuseTests(unittest.TestCase):
             '--research-protocol',str(self.protocol),'--output-dir',str(self.root/name)]
         return argv+(['--reuse-scenarios-from',str(self.root/previous)] if previous else [])
 
+    def test_h1_cli_clock_provenance_and_sealed_reuse(self):
+        from trading_workspace_v2.forex_coarse_input import prepare_coarse_hours
+        from trading_workspace_v2.forex_intraday_candidates import EUROPE_AM
+        warm=json.loads(self.inputs.read_bytes())['warmup']
+        cache=self.root/'hours'
+        prepare_coarse_hours(Path(warm['path']),cache_dir=cache,
+            **{k:warm[k] for k in ('sha256','first_day','last_day')})
+        def args(name,previous=None):
+            argv=self.args(name,previous)
+            argv[argv.index('--candidate')+1]=EUROPE_AM
+            return argv+['--warmup-hours-cache-dir',str(cache)]
+        with redirect_stdout(io.StringIO()):pilot.main(args('h1-original'))
+        manifest=json.loads((self.root/'h1-original/manifest.json').read_bytes())
+        self.assertEqual(manifest['decision_timeframe_seconds'],3600)
+        self.assertEqual(manifest['hourly_warmup']['hours'],324)
+        decisions=json.loads((self.root/'h1-original/reference-decisions.json').read_bytes())
+        self.assertEqual(decisions[0]['time_msc'],int(datetime(2022,1,3,7,tzinfo=timezone.utc).timestamp())*1000)
+        with patch.object(pilot,'run_scenario') as run,redirect_stdout(io.StringIO()):
+            pilot.main(args('h1-reused','h1-original'))
+        run.assert_not_called()
+        self.assertEqual((self.root/'h1-original/results.json').read_bytes(),
+                         (self.root/'h1-reused/results.json').read_bytes())
+
+    def test_h1_cli_rejects_missing_hourly_warmup_before_dispatch(self):
+        from trading_workspace_v2.forex_intraday_candidates import RSI_REENTRY
+        argv=self.args('no-h1-cache');argv[argv.index('--candidate')+1]=RSI_REENTRY
+        with patch.object(pilot,'run_scenario') as run, self.assertRaises(SystemExit):pilot.main(argv)
+        run.assert_not_called()
+        self.assertFalse((self.root/'no-h1-cache').exists())
+
     def interrupted(self):
         original = pilot.run_scenario
         def stop_stress(path, warmup, name, *args, **kwargs):
