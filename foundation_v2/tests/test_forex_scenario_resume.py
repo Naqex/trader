@@ -67,6 +67,20 @@ class ScenarioResumeTests(unittest.TestCase):
                     if kind!='checksum':changed['payload_sha256']=pilot.content_hash(changed['payload'])
                     with self.assertRaises(ValueError):self.run_case(root,packet=changed,ticks=ticks)
 
+    def test_checkpoint_keeps_newly_queued_entry_before_its_first_fill(self):
+        _,ticks=self.fixture()
+        for index in range(20):
+            ticks[index]=ticks[index].model_copy(update={'bid':D('1.10000'),'ask':D('1.10020')})
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            for name in ('base','partial','resumed'):(root/name).mkdir()
+            expected=self.run_case(root/'base',ticks=ticks)
+            with self.assertRaises(InterruptedError):self.run_case(root/'partial',ticks=ticks,stop=24)
+            packet=json.loads((root/'partial/reference-resume.json').read_bytes())
+            self.assertIsNotNone(packet['payload']['checkpoint']['execution']['pending_market_order'])
+            actual=self.run_case(root/'resumed',ticks=ticks,packet=packet)
+            self.assertEqual(actual,expected)
+
     def test_observer_restores_reset_phase_and_latched_breach_state(self):
         for state in ('running','phase2','breached'):
             with self.subTest(state=state):
