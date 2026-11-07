@@ -39,11 +39,21 @@ class Rule:
 
 
 class CoarseTests(unittest.TestCase):
-    def run_case(self,hours,*,side='BUY',hold=False,start=START,end=None,buy='10',sell='10',slip='0',rule=None):
+    def run_case(self,hours,*,side='BUY',hold=False,start=START,end=None,buy='10',sell='10',slip='0',rule=None,
+                 input_basis='observed_bidask'):
         with patch.object(coarse,'study_candidate',return_value=rule or Rule(side=side,hold=hold,start=start)):
             return coarse.simulate_coarse(BASELINE,warmup(start),hours,start=start,
                 end=end or start+86400000,data_sha256='a'*64,name='fixture',slippage=D(slip),
-                buy_debit=D(buy),sell_debit=D(sell))
+                buy_debit=D(buy),sell_debit=D(sell),input_basis=input_basis)
+
+    def test_declared_fx_ask_is_not_reported_as_observed_ticks(self):
+        result=self.run_case([hour(h) for h in range(9)],input_basis='bid_ohlc_declared_ask')
+        self.assertIsNone(result['source_ticks'])
+        self.assertEqual(result['source_m1_rows'],9)
+        self.assertEqual(result['input_basis'],'bid_ohlc_declared_ask')
+        self.assertFalse(result['broker_spec_verified'])
+        self.assertFalse(result['promotion_authorized'])
+        self.assertEqual(result['trades'][0]['exit_price_basis'],'modeled_M1_open_declared_Ask_not_observed_quote')
 
     def test_next_open_buy_sell_costs_and_no_same_bar_fill(self):
         for side,last in [('BUY','1.10300'),('SELL','1.09700')]:

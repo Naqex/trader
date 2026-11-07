@@ -9,9 +9,12 @@ from .forex_coarse_input import CoarseHour
 from .forex_h4 import CandleState
 
 
-def aggregate_bid_m1(path,sha256,*,on_progress=None,first_day='20200101',last_day='20241231'):
+def aggregate_bid_m1(path,sha256,*,on_progress=None,first_day='20200101',last_day='20241231',
+                     price_tick=Decimal('.001')):
     path=Path(path)
-    if (first_day,last_day) not in (('20200101','20241231'),('20091101','20241231')):
+    windows = (('20200101','20241231'),('20091101','20241231')) if price_tick==Decimal('.001') else (
+        ('20091101','20221231'),) if price_tick==Decimal('.00001') else ()
+    if (first_day,last_day) not in windows:
         raise ValueError('unregistered metal input window')
     lower=datetime.strptime(first_day,'%Y%m%d').replace(tzinfo=timezone.utc)
     upper=datetime.strptime(last_day,'%Y%m%d').replace(tzinfo=timezone.utc)
@@ -37,7 +40,7 @@ def aggregate_bid_m1(path,sha256,*,on_progress=None,first_day='20200101',last_da
             if previous is not None and at<=previous:raise ValueError('M1 order/duplicates')
             values=[Decimal(row[key]) for key in ('Open','High','Low','Close')]
             o,h,l,c=values;volume=Decimal(row['Volume'])
-            if (any(not p.is_finite() or p<=0 or p%Decimal('.001') for p in values)
+            if (any(not p.is_finite() or p<=0 or p%price_tick for p in values)
                     or not volume.is_finite() or volume<0 or l>min(o,c) or h<max(o,c)):
                 raise ValueError('invalid M1 Bid OHLC/grid/volume')
             if previous is not None:
@@ -58,8 +61,9 @@ def aggregate_bid_m1(path,sha256,*,on_progress=None,first_day='20200101',last_da
         timestamp_basis='UTC_start_of_M1_bar; modeled open time, not actual first quote millisecond')
 
 
-def indicative_hours(raw,spread):
-    if not spread.is_finite() or spread<0 or spread%Decimal('.001'):
+def indicative_hours(raw,spread,*,price_tick=Decimal('.001')):
+    if (price_tick not in (Decimal('.001'),Decimal('.00001'))
+            or not spread.is_finite() or spread<0 or spread%price_tick):
         raise ValueError('invalid declared metal spread')
     result=[]
     for bar in raw:

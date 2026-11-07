@@ -40,3 +40,16 @@ class MetalInputTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             path=Path(temp)/'m1.csv';path.write_bytes(b'bad-format')
             with self.assertRaisesRegex(ValueError,'hash mismatch'):aggregate_bid_m1(path,'a'*64)
+
+    def test_fx_development_grid_and_window_are_explicit(self):
+        text='Date,Time,Open,High,Low,Close,Volume\n2010.01.04,00:00:00,1.40001,1.40003,1.40000,1.40002,1\n'
+        with tempfile.TemporaryDirectory() as temp:
+            path=Path(temp)/'m1.csv';path.write_text(text,encoding='utf-8')
+            digest=hashlib.sha256(path.read_bytes()).hexdigest()
+            raw,quality=aggregate_bid_m1(path,digest,first_day='20091101',last_day='20221231',price_tick=D('.00001'))
+            self.assertEqual(quality['rows'],1)
+            self.assertIsNone(quality['tick_count'])
+            modeled=indicative_hours(raw,D('.00010'),price_tick=D('.00001'))
+            self.assertEqual(modeled[0].ask[0],D('1.40011'))
+            with self.assertRaises(ValueError):
+                aggregate_bid_m1(path,digest,first_day='20091101',last_day='20241231',price_tick=D('.00001'))

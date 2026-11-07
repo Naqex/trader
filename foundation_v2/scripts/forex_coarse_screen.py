@@ -44,7 +44,8 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
     if market_spec is not None:
         market_spec=MetalStudyMarket.model_validate(market_spec)
         if input_basis!='bid_ohlc_declared_ask':raise ValueError('metal indicative source basis required')
-    elif input_basis!='observed_bidask':raise ValueError('legacy quote source basis changed')
+    elif input_basis not in ('observed_bidask','bid_ohlc_declared_ask'):
+        raise ValueError('unsupported FX source basis')
     if (type(start) is not int or type(end) is not int or start>=end
             or start%(HOUR*1000) or end%(HOUR*1000)):
         raise ValueError('invalid coarse evaluation boundaries')
@@ -96,7 +97,7 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
             reason=reason,entry_fill=str(position.entry_fill),exit_fill=str(price),
             price_net_usd=str(value),timed_financing_usd=str(position_finance),
             net_usd=str(value-position_finance),costs=costs,
-            exit_price_basis=('modeled_M1_open_declared_Ask_not_observed_quote' if market_spec else
+            exit_price_basis=('modeled_M1_open_declared_Ask_not_observed_quote' if input_basis=='bid_ohlc_declared_ask' else
                 'observed_open_closeable_side') if at_open else 'modeled_stop_level_not_first_crossing_tick'))
         position=None;position_finance=Decimal(0);position_entry_msc=None
     for index,hour in enumerate(hours,1):
@@ -171,10 +172,11 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         internal_risk_and_prop='not_evaluated',intrabar_drawdown='not_evaluated',
         qualification='approximate_triage_only_tick_review_required',
         automatic_rejection_authorized=False,promotion_authorized=False,broker_calls=0,model_calls=0)
+    if input_basis=='bid_ohlc_declared_ask':
+        result.update(input_basis=input_basis,source_m1_rows=result.pop('source_ticks'),source_ticks=None,
+            execution_basis='M1_Bid_to_H1_declared_Ask_model_not_observed_bidask',broker_spec_verified=False)
     if market_spec:
         result.update(research_market=market_spec.model_dump(mode='json'),input_basis=input_basis,
-            source_m1_rows=result.pop('source_ticks'),source_ticks=None,
-            execution_basis='M1_Bid_to_H1_declared_Ask_model_not_observed_bidask',
             skipped_minimum_lot=sum(d['status']=='skipped_minimum_lot' for d in decisions),
             broker_spec_verified=False)
     return result
