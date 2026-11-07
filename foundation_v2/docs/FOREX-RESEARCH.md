@@ -162,6 +162,13 @@ The horizon reader independently binds those exemptions to the declared calendar
 and the account's first observed hour; missing, duplicate or later exemptions
 fail. Existing anchored financing guards and legacy defaults remain unchanged.
 
+Tick snapshots run generic V2 money/margin contracts and tick lineage checks in
+one ordered ledger pass. The parent delegates to the tick validator; it does not
+drop margin checks. Full snapshot validation remains mandatory: mutable public
+ledger prefixes are not cached as trusted. Changed source pins require a fresh
+binding before a future numerical study; completed reports retain their original
+source snapshots and are not replayed merely to read their results.
+
 Historical execution with this runner requires a new registration declaring
 `calendar_accounting=exclusive_event_clock_v1` and pinning its numerical CLI.
 Legacy frozen registrations/artifacts remain readable but cannot execute against

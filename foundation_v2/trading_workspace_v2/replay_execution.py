@@ -236,12 +236,11 @@ class ReplayExecutionSnapshotV2(ReplayExecutionSnapshot):
 
     @model_validator(mode="after")
     def margin_ledger_is_consistent(self):
-        financing_index = None
         if self.schema_version == "replay-execution-tick-v1":
-            from .forex_financing import _FinancingLedgerIndex
-            financing_index = _FinancingLedgerIndex(self.ledger)
+            # Tick snapshots validate all V2 contracts in their ordered ledger pass.
+            return self
         for raw in self.ledger:
-            replay_event_for_snapshot(self, raw, _financing_index=financing_index)
+            replay_event_for_snapshot(self, raw)
         return self
 
 

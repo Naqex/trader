@@ -64,6 +64,7 @@ class ReplayTickExecutionSnapshot(ReplayExecutionSnapshotV2):
 
     @model_validator(mode="after")
     def tick_quotes_and_ledger_are_consistent(self):
+        from .replay_execution import replay_event_for_snapshot
         if (self.last_bid is None) != (self.last_ask is None):
             raise ValueError("tick checkpoint requires both last quotes")
         if self.last_bid is not None and self.last_ask < self.last_bid:
@@ -76,7 +77,7 @@ class ReplayTickExecutionSnapshot(ReplayExecutionSnapshotV2):
         from .forex_financing import _FinancingLedgerIndex
         financing_index = _FinancingLedgerIndex(self.ledger)
         for sequence, raw in enumerate(self.ledger, start=1):
-            event = validate_tick_execution_event(self, raw, _financing_index=financing_index)
+            event = replay_event_for_snapshot(self, raw, _financing_index=financing_index)
             if (event.sequence != sequence or event.replay_session_id != self.replay_session_id
                     or event.branch_id != self.branch_id or event.dataset_id != self.dataset_id
                     or event.dataset_sha256 != self.dataset_sha256
