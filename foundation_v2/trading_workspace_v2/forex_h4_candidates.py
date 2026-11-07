@@ -12,12 +12,21 @@ ZSCORE = 'eurusd-h4-z20-2-atr14-time6-r025-v1'
 BASELINE = 'eurusd-h4-donchian20-10-atr14-r025-v1'
 CANDIDATES = (SMA, ZSCORE)
 STUDY_CANDIDATES = (BASELINE, *CANDIDATES)
+METAL_BASELINE = 'xauusd-h4-donchian20-10-atr14-r025-v1'
+METAL_SMA = 'xauusd-h4-sma20-80-atr14-r025-v1'
+METAL_ZSCORE = 'xauusd-h4-z20-2-atr14-time6-r025-v1'
+METAL_CANDIDATES = (METAL_BASELINE, METAL_SMA, METAL_ZSCORE)
+
+
+def candidate_rule(candidate):
+    return {METAL_SMA:SMA,METAL_ZSCORE:ZSCORE}.get(candidate,candidate)
 
 
 class ResearchH4State(BaseModel):
     model_config = ConfigDict(extra='forbid', frozen=True, allow_inf_nan=False)
     schema_version: Literal['forex-h4-research-candidate-v1'] = 'forex-h4-research-candidate-v1'
-    candidate: Literal['eurusd-h4-sma20-80-atr14-r025-v1', 'eurusd-h4-z20-2-atr14-time6-r025-v1']
+    candidate: Literal['eurusd-h4-sma20-80-atr14-r025-v1', 'eurusd-h4-z20-2-atr14-time6-r025-v1',
+                       'xauusd-h4-sma20-80-atr14-r025-v1', 'xauusd-h4-z20-2-atr14-time6-r025-v1']
     history: tuple[CandleState, ...] = Field(default=(), max_length=80)
     tr_seed: tuple[Decimal, ...] = Field(default=(), max_length=14)
     atr: Decimal | None = Field(default=None, ge=0)
@@ -29,18 +38,18 @@ class ResearchH4State(BaseModel):
     @model_validator(mode='after')
     def consistent(self):
         times = [bar.timestamp for bar in self.history]
-        limit = 80 if self.candidate == SMA else 20
+        limit = 80 if candidate_rule(self.candidate) == SMA else 20
         if (len(self.history) > limit or any(t % H4 for t in times)
                 or any(b <= a for a, b in zip(times, times[1:]))
                 or len(self.tr_seed) != min(len(self.history), 14)
                 or any(v < 0 for v in self.tr_seed)
                 or (self.atr is None) != (len(self.tr_seed) < 14)
-                or (self.previous_difference is not None) != (self.candidate == SMA and len(self.history) == 80)
+                or (self.previous_difference is not None) != (candidate_rule(self.candidate) == SMA and len(self.history) == 80)
                 or (self.position_id is None) != (self.position_side is None)
                 or (self.position_id is None and self.held_bars != 0)
                 or (self.position_id is not None and (not self.history or self.held_bars < 1 or not self.position_id.strip()))):
             raise ValueError('inconsistent research candidate state')
-        if self.candidate == SMA and len(self.history) == 80:
+        if candidate_rule(self.candidate) == SMA and len(self.history) == 80:
             closes = [bar.close for bar in self.history]
             expected = sum(closes[-20:], Decimal(0))/20 - sum(closes, Decimal(0))/80
             if self.previous_difference != expected:
@@ -50,10 +59,10 @@ class ResearchH4State(BaseModel):
 
 class ResearchH4Candidate:
     def __init__(self, candidate):
-        if candidate not in CANDIDATES:
+        if candidate not in (*CANDIDATES,METAL_SMA,METAL_ZSCORE):
             raise ValueError('unregistered research candidate')
         self.candidate = candidate
-        self.history = deque(maxlen=80 if candidate == SMA else 20)
+        self.history = deque(maxlen=80 if candidate_rule(candidate) == SMA else 20)
         self.tr_seed = []
         self.atr = None
         self.previous_difference = None
@@ -93,7 +102,7 @@ class ResearchH4Candidate:
         self.held_bars = (self.held_bars + 1 if position_id == self.position_id else 1) if position_id else 0
         self.position_id, self.position_side = position_id, side
         signal = None
-        if self.candidate == SMA:
+        if candidate_rule(self.candidate) == SMA:
             closes = [p.close for p in self.history] + [bar.close]
             if len(closes) >= 80:
                 difference = sum(closes[-20:], Decimal(0))/20 - sum(closes[-80:], Decimal(0))/80

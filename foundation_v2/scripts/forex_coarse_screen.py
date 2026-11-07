@@ -14,6 +14,8 @@ from forex_h4_pilot import (ALL_STUDY_CANDIDATES,H4_STUDY_CANDIDATES,STUDY_CANDI
     study_candidate,initial_state,financing_calendar,input_contract,observed_account_spec,write_json)
 from trading_workspace_v2.forex_intraday_candidates import INTRADAY_CANDIDATES
 from trading_workspace_v2.forex_ml_candidate import ML_CANDIDATES, MLH1Candidate
+from trading_workspace_v2.forex_h4_candidates import METAL_CANDIDATES,METAL_BASELINE
+from trading_workspace_v2.research_market import MetalStudyMarket,metal_candidate,size_for_market_stop
 from trading_workspace_v2.execution_semantics import protective_exit_for_bar
 from trading_workspace_v2.forex_coarse_input import CoarseHour,load_coarse_hours,prepare_coarse_hours
 from trading_workspace_v2.forex_h4 import CandleState,H4,HOUR,H4Builder,TICK,size_for_stop
@@ -32,10 +34,16 @@ def h4_from_hours(hours):
     return bars,list(builder.excluded)
 
 
-def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage,buy_debit,sell_debit,model_pack=None):
+def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage,buy_debit,sell_debit,
+                    model_pack=None,market_spec=None,input_basis='observed_bidask'):
     began=time.perf_counter();cpu=time.process_time()
-    if candidate not in (*ALL_STUDY_CANDIDATES,*ML_CANDIDATES):raise ValueError('unsupported coarse candidate')
+    if candidate not in (*ALL_STUDY_CANDIDATES,*ML_CANDIDATES,*METAL_CANDIDATES):raise ValueError('unsupported coarse candidate')
     if (candidate in ML_CANDIDATES)!=(model_pack is not None):raise ValueError('explicit ML pack required only for ML candidates')
+    if (candidate in METAL_CANDIDATES)!=(market_spec is not None):raise ValueError('explicit matching metal market required')
+    if market_spec is not None:
+        market_spec=MetalStudyMarket.model_validate(market_spec)
+        if input_basis!='bid_ohlc_declared_ask':raise ValueError('metal indicative source basis required')
+    elif input_basis!='observed_bidask':raise ValueError('legacy quote source basis changed')
     if (type(start) is not int or type(end) is not int or start>=end
             or start%(HOUR*1000) or end%(HOUR*1000)):
         raise ValueError('invalid coarse evaluation boundaries')
@@ -51,9 +59,11 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
             or any(b.mid.timestamp<=a.mid.timestamp or b.first_time_msc<a.last_time_msc
                 for a,b in zip(hours,hours[1:]))):
         raise ValueError('coarse hours outside ordered evaluation window')
-    base=initial_state(name,slippage,data_sha256,start=start).execution
+    base=(market_spec.execution(name,slippage,data_sha256,start) if market_spec else
+          initial_state(name,slippage,data_sha256,start=start).execution)
     model=CostModel.from_mapping(base.cost_model);instrument=InstrumentSpec.from_mapping(base.instrument_spec)
-    strategy=MLH1Candidate(candidate,model_pack) if model_pack is not None else study_candidate(candidate)
+    strategy=(metal_candidate(candidate) if market_spec else MLH1Candidate(candidate,model_pack)
+              if model_pack is not None else study_candidate(candidate))
     for candle in warmup:strategy.observe(candle)
     builder=H4Builder();position=None;pending=None;balance=base.starting_balance
     finance_total=Decimal(0);position_finance=Decimal(0);position_entry_msc=None;counter=0;rejections=0
@@ -85,7 +95,8 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
             reason=reason,entry_fill=str(position.entry_fill),exit_fill=str(price),
             price_net_usd=str(value),timed_financing_usd=str(position_finance),
             net_usd=str(value-position_finance),costs=costs,
-            exit_price_basis='observed_open_closeable_side' if at_open else 'modeled_stop_level_not_first_crossing_tick'))
+            exit_price_basis=('modeled_M1_open_declared_Ask_not_observed_quote' if market_spec else
+                'observed_open_closeable_side') if at_open else 'modeled_stop_level_not_first_crossing_tick'))
         position=None;position_finance=Decimal(0);position_entry_msc=None
     for index,hour in enumerate(hours,1):
         post_due(hour.mid.timestamp*1000+1)  # Fee at the boundary precedes its first quote.
@@ -94,7 +105,7 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
             opening=first_bid if position.side=='BUY' else first_ask
             gap=protective_exit_for_bar(side=position.side,
                 bar=dict(open=opening,high=opening,low=opening,close=opening),
-                stop_loss=position.stop_loss,take_profit=None,spread_price=0,tick_size=TICK,allow_open_gap=True)
+                stop_loss=position.stop_loss,take_profit=None,spread_price=0,tick_size=instrument.tick_size,allow_open_gap=True)
             if gap:close(hour,gap['exit_price'],gap['reason'],at_open=True)
         action,pending=pending,None
         if action is not None:
@@ -112,27 +123,28 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
                     counter+=1;position_entry_msc=hour.first_time_msc
                     position=ReplayOpenPosition(position_id=f'coarse-{counter}',source_operation_id=f'coarse-entry-{counter}',
                         side=side,quantity=quantity,entry_bid=first_bid,entry_ask=first_ask,entry_fill=entry,
-                        stop_loss=_stop_at_fill(side,entry,Decimal(action['stop_distance']),TICK),take_profit=None,
+                        stop_loss=_stop_at_fill(side,entry,Decimal(action['stop_distance']),instrument.tick_size),take_profit=None,
                         opened_cursor_index=index,opened_time_utc=hour.first_time_msc//1000)
         if position is not None:
             side_prices=hour.bid if position.side=='BUY' else hour.ask
             protection=protective_exit_for_bar(side=position.side,
                 bar=dict(zip(('open','high','low','close'),side_prices)),stop_loss=position.stop_loss,
-                take_profit=None,spread_price=0,tick_size=TICK,allow_open_gap=True)
+                take_profit=None,spread_price=0,tick_size=instrument.tick_size,allow_open_gap=True)
             if protection:
                 close(hour,protection['exit_price'],protection['reason'],at_open=protection['at_open'])
         complete_h4=builder.add(hour.mid.candle())
         candle=hour.mid.candle() if period==HOUR else complete_h4
         if candle is not None:
             kwargs=dict(side=position.side if position else None)
-            if candidate!=STUDY_CANDIDATES[0]:kwargs['position_id']=position.position_id if position else None
+            if candidate not in (STUDY_CANDIDATES[0],METAL_BASELINE):kwargs['position_id']=position.position_id if position else None
             if model_pack is not None:kwargs['spread']=hour.ask[3]-hour.bid[3]
             signal,distance=strategy.observe(candle,**kwargs)
             if signal:
                 decision=dict(time_msc=(candle.timestamp+period)*1000,signal=signal,
                     stop_distance=str(distance),status='queued')
                 if signal in ('BUY','SELL'):
-                    quantity=size_for_stop(distance,slippage=slippage)
+                    quantity=(size_for_market_stop(distance,instrument=instrument,model=model) if market_spec
+                              else size_for_stop(distance,slippage=slippage))
                     if quantity is not None and quantity>50:raise ValueError('coarse quantity exceeds account maximum')
                     decision['quantity']=str(quantity) if quantity else None
                     if quantity is None:decision['status']='skipped_minimum_lot'
@@ -144,7 +156,7 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         if position is not None else Decimal(0))
     expected=base.starting_balance+sum((Decimal(t['price_net_usd']) for t in trades),Decimal(0))-finance_total
     if balance!=expected:raise ValueError('coarse cash does not reconcile')
-    return dict(schema='forex-coarse-pnl-v1',candidate=candidate,scenario=name,
+    result=dict(schema='forex-coarse-pnl-v1',candidate=candidate,scenario=name,
         net_equity_usd=str(balance+floating-base.starting_balance),balance_usd=str(balance),floating_usd=str(floating),
         entry_fills=counter,closed_trades=len(trades),open_position=position.model_dump(mode='json') if position else None,
         pending_entry=bool(pending and pending['signal']!='EXIT'),pending_action=pending,
@@ -157,12 +169,19 @@ def simulate_coarse(candidate,warmup,hours,*,start,end,data_sha256,name,slippage
         internal_risk_and_prop='not_evaluated',intrabar_drawdown='not_evaluated',
         qualification='approximate_triage_only_tick_review_required',
         automatic_rejection_authorized=False,promotion_authorized=False,broker_calls=0,model_calls=0)
+    if market_spec:
+        result.update(research_market=market_spec.model_dump(mode='json'),input_basis=input_basis,
+            source_m1_rows=result.pop('source_ticks'),source_ticks=None,
+            execution_basis='M1_Bid_to_H1_declared_Ask_model_not_observed_bidask',
+            skipped_minimum_lot=sum(d['status']=='skipped_minimum_lot' for d in decisions),
+            broker_spec_verified=False)
+    return result
 
 
 def coarse_source_pins():
     files=[Path(__file__),V2/'scripts/forex_h4_pilot.py',*[V2/'trading_workspace_v2'/name for name in (
         'forex_coarse_input.py','forex_h4.py','forex_h4_candidates.py','forex_prop_candidates.py',
-        'forex_discovery_candidates.py','forex_intraday_candidates.py','forex_ml_candidate.py','forex_pilot_risk.py',
+        'forex_discovery_candidates.py','forex_intraday_candidates.py','forex_ml_candidate.py','research_market.py','forex_pilot_risk.py',
         'forex_financing.py','forex_qdm_inspection.py','forex_study_registration.py','execution_semantics.py',
         'semantics/data_costs.py','semantics/data_contracts.py','replay_execution.py','replay_tick_execution.py')]]
     return {str(p.relative_to(V2)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
