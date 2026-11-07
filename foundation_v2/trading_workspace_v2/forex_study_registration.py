@@ -13,6 +13,8 @@ import sys
 
 
 REGISTERED_STUDIES = {
+    '489a8feeff3252ed2327f38ab6f07ea252859787531bfdfc2bca090496fb8004':
+        'eurusd-h1-discovery4-2024-selection-v2',
     '8ee9aa764fa43904230c8dfae4c9d980c2e86fb0d124b3b064651a6f7e7d264b':
         'eurusd-h1-discovery4-2023-historical-screen-v1',
     'ddc56313f1656631bb418e0def6c90119e65e342ad87ae8156158ced09e2d8b6':
