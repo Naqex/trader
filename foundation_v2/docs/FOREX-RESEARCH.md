@@ -154,6 +154,14 @@ at their boundary. Quote-free cash events retain the last observed valuation;
 they do not create fills, ticks, candles or a forced close. A fee can trigger a
 risk halt and pending close; execution still needs a subsequent tradable quote.
 
+Holiday startup can precede the first quote. A new registration may opt into
+`pre_quote_flat_financing=explicit_not_applicable_v1`: only a pristine account
+without ledger, position, pending order or cash change records zero-debit
+non-applicability before its first quote. This creates no price or cash event.
+The horizon reader independently binds those exemptions to the declared calendar
+and the account's first observed hour; missing, duplicate or later exemptions
+fail. Existing anchored financing guards and legacy defaults remain unchanged.
+
 Historical execution with this runner requires a new registration declaring
 `calendar_accounting=exclusive_event_clock_v1` and pinning its numerical CLI.
 Legacy frozen registrations/artifacts remain readable but cannot execute against
