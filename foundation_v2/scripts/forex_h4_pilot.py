@@ -341,9 +341,27 @@ def reuse_scenario(source, output, manifest, scenario):
     return result
 
 
+def load_scenario_resume(source, manifest, name):
+    prior=json.loads((source/'manifest.json').read_bytes())
+    receipt=json.loads((source/'receipt.json').read_bytes())
+    terminal_path=source.parent/'terminal.json'
+    terminal=json.loads(terminal_path.read_bytes()) if terminal_path.is_file() else {}
+    if (receipt.get('run_id')!=prior.get('run_id') or scenario_binding(prior)!=scenario_binding(manifest)
+            or receipt.get('stage') not in {'failed','completed_declared_scenarios'}
+            and terminal.get('status') not in {'failed','cancelled','timed_out'}):
+        raise ValueError('reconcile prior attempt and matching source before checkpoint resume')
+    path=source/(name+'-resume.json')
+    if not path.is_file():
+        raise ValueError('complete resume packet missing; legacy checkpoints are not CLI resume')
+    packet=json.loads(path.read_bytes())
+    if packet.get('payload_sha256')!=content_hash(packet.get('payload',{})):
+        raise ValueError('scenario checkpoint checksum differs')
+    return packet
+
+
 def run_scenario(path, warmup, name, slippage, debit, output, progress, *, development=None, sell_debit=None,
                  research_candidate=None, tick_cache_dir=None, horizon_cutoffs=None, prop_profile=None,
-                 pre_quote_flat_financing=False):
+                 pre_quote_flat_financing=False, checkpoint_binding=None, resume_packet=None):
     if research_candidate is not None and research_candidate not in ALL_STUDY_CANDIDATES:
         raise ValueError('unregistered research candidate')
     digest, first, last = EXPECTED['development'] if development is None else tuple(
@@ -380,6 +398,69 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
     decisions = []
     horizons = []
     flat_calendar = []
+    resume_boundary=None
+    resume_cursor=None
+    context=content_hash(dict(binding=checkpoint_binding,scenario=name,candidate=research_candidate,
+        development=[digest,first,last],slippage=str(slippage),debit=str(debit),sell_debit=str(sell_debit),
+        warmup=[vars(bar) for bar in warmup],cutoffs=cutoffs,prop_profile=prop_profile,
+        pre_quote_flat_financing=pre_quote_flat_financing,runtime=runtime_binding()))
+    if resume_packet is not None:
+        packet=resume_packet.get('payload',{})
+        if (not checkpoint_binding or resume_packet.get('payload_sha256')!=content_hash(packet)
+                or packet.get('schema')!='forex-scenario-checkpoint-v1' or packet.get('context_sha256')!=context):
+            raise ValueError('scenario checkpoint binding/checksum differs')
+        restored=ForexPilotSnapshot.model_validate(packet['checkpoint'])
+        if not start<=restored.risk.start_time_msc<=packet['boundary_msc']:
+            raise ValueError('scenario checkpoint phase start differs')
+        expected_state=initial_state(name,slippage,digest,start=restored.risk.start_time_msc,
+                                    dataset=f'qdm-eurusd-development-{first}-{last}')
+        for field in ('dataset_id','dataset_sha256','instrument_spec','cost_model','spread_price',
+                      'timeframe_seconds','starting_balance','replay_session_id','branch_id',
+                      'research_margin','tick_snapshot_id','tick_snapshot_sha256'):
+            if getattr(restored.execution,field)!=getattr(expected_state.execution,field):
+                raise ValueError('scenario checkpoint account/input differs')
+        if restored.limits!=state.limits:
+            raise ValueError('scenario checkpoint risk limits differ')
+        state=restored
+        template=strategy.export_state()
+        strategy=type(strategy).from_state(type(template).model_validate(packet['candidate_state']))
+        template=builder.export_state()
+        builder=H4Builder.from_state(type(template).model_validate(packet['builder']))
+        decisions=packet['decisions'];horizons=packet['horizons'];flat_calendar=packet['flat_calendar']
+        phase_accounts=packet['phase_accounts']
+        resume_boundary=packet['boundary_msc'];resume_cursor=packet['input_cursor']
+        if (type(resume_boundary) is not int or not start<resume_boundary<=end
+                or resume_boundary%(HOUR*1000) or type(resume_cursor['ticks']) is not int
+                or resume_cursor['ticks']<=0
+                or (resume_cursor['last_tick']['time_msc']//(HOUR*1000)+1)*HOUR*1000!=resume_boundary):
+            raise ValueError('scenario checkpoint input cursor differs')
+        if observer is not None:
+            canonical_profile=observer.profile.model_dump(mode='json')
+            observer=type(observer).from_checkpoint(packet['observer'])
+            if (observer.profile.model_dump(mode='json')!=canonical_profile or observer.start!=start or observer.end!=end
+                    or observer.observed_ticks!=resume_cursor['ticks']
+                    or observer.last_balance!=state.execution.balance
+                    or observer.last_floating!=state.execution.floating_pl
+                    or observer.last_position!=(state.execution.position.position_id if state.execution.position else None)
+                    or observer.phase.phase_index!=len(phase_accounts)+1
+                    or observer.path['start_time_msc']!=state.risk.start_time_msc
+                    or observer.path['starting_tick_count']!=sum(p['checkpoint']['risk']['observed_ticks'] for p in phase_accounts)
+                    or state.risk.observed_ticks+sum(p['checkpoint']['risk']['observed_ticks'] for p in phase_accounts)
+                        !=observer.observed_ticks):
+                raise ValueError('scenario observer and execution checkpoint differ')
+        elif (packet['observer'] is not None or state.risk.observed_ticks!=resume_cursor['ticks']
+              or state.risk.start_time_msc!=start or phase_accounts):
+            raise ValueError('scenario checkpoint observer scope differs')
+        for index,record in enumerate(phase_accounts,1):
+            prior=ForexPilotSnapshot.model_validate(record['checkpoint'])
+            if (record['phase_index']!=index or record['accounting']!=reconcile(prior,slippage)
+                    or prior.execution.dataset_sha256!=digest or prior.execution.cost_model!=state.execution.cost_model
+                    or prior.limits!=state.limits or not start<=prior.risk.start_time_msc<state.risk.start_time_msc):
+                raise ValueError('scenario checkpoint phase accounting differs')
+        if [row['cutoff_msc'] for row in horizons]!=cutoffs[:len(horizons)]:
+            raise ValueError('scenario checkpoint horizons differ')
+        while upcoming is not None and upcoming.scheduled_time_msc<resume_boundary:
+            upcoming=next(calendar,None)
 
     def post_due(boundary, current, *, inclusive=True):
         nonlocal upcoming
@@ -432,7 +513,17 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
     else:
         from trading_workspace_v2.forex_qdm_ticks import read_prepared_ticks
         ticks = read_prepared_ticks(path, cache_dir=tick_cache_dir, sha256=digest, first_day=first, last_day=last)
+    skipped=0;last_skipped=None;prefix_verified=resume_boundary is None
+    def verify_prefix():
+        if resume_cursor is not None and (skipped!=resume_cursor['ticks']
+                or last_skipped!=resume_cursor['last_tick']):
+            raise ValueError('scenario checkpoint differs from validated input prefix')
     for hour, quotes in hourly_quotes(ticks):
+        if resume_boundary is not None and hour.timestamp*1000<resume_boundary:
+            skipped+=len(quotes);last_skipped=quotes[-1].model_dump(mode='json')
+            continue
+        if not prefix_verified:
+            verify_prefix();prefix_verified=True
         if cutoffs:
             capture_horizons(hour.timestamp*1000)
         state = post_due(hour.timestamp * 1000, state)
@@ -492,14 +583,25 @@ def run_scenario(path, warmup, name, slippage, debit, output, progress, *, devel
             elif research_candidate in INTRADAY_CANDIDATES:
                 strategy = IntradayH1Candidate.from_state(strategy.export_state().model_copy(update={
                     'position_id':None,'position_side':None,'held_bars':0,'last_entry_day':None}))
-        if observer is None:
-            progress(name,hour.timestamp+HOUR,state)
-        else:
-            progress(name,hour.timestamp+HOUR,state,observer)
         if state.execution.cursor_index % 24 == 0:
             write_json(output / (name + '-checkpoint.json'), state.model_dump(mode='json'))
             if observer is not None:
                 write_json(output/(name+'-prop-path.json'),dict(**observer.export(),completed_phase_accounts=phase_accounts))
+            if checkpoint_binding:
+                payload=dict(schema='forex-scenario-checkpoint-v1',context_sha256=context,
+                    boundary_msc=boundary,checkpoint=state.model_dump(mode='json'),
+                    candidate_state=strategy.export_state().model_dump(mode='json'),
+                    builder=builder.export_state().model_dump(mode='json'),decisions=list(decisions),
+                    horizons=list(horizons),phase_accounts=list(phase_accounts),flat_calendar=list(flat_calendar),
+                    observer=observer.checkpoint() if observer is not None else None,
+                    input_cursor=dict(ticks=observer.observed_ticks if observer else state.risk.observed_ticks,
+                        last_tick=quotes[-1].model_dump(mode='json')))
+                write_json(output/(name+'-resume.json'),dict(payload=payload,payload_sha256=content_hash(payload)))
+        if observer is None:
+            progress(name,hour.timestamp+HOUR,state)
+        else:
+            progress(name,hour.timestamp+HOUR,state,observer)
+    if not prefix_verified:verify_prefix()
     if cutoffs:
         capture_horizons(end)
     state = post_due(end, state, inclusive=False)
@@ -564,7 +666,11 @@ def main(argv=None, on_progress=None):
                         help='Validate registered inputs/spec/warmup without simulating trades')
     parser.add_argument('--reuse-scenarios-from', type=Path,
                         help='Read sealed completed scenarios from a stopped attempt; output must still be new')
+    parser.add_argument('--resume-scenarios-from', type=Path,
+                        help='Reuse seals and complete source-bound checkpoints from a stopped attempt')
     args = parser.parse_args(argv)
+    if args.reuse_scenarios_from and args.resume_scenarios_from:
+        parser.error('choose scenario reuse or checkpoint resume, not both')
     if bool(args.account_spec) != bool(args.account_spec_sha256):
         parser.error('--account-spec and --account-spec-sha256 must be supplied together')
     if bool(args.candidate) != bool(args.research_protocol):
@@ -575,7 +681,7 @@ def main(argv=None, on_progress=None):
         parser.error('study registration requires candidate, protocol, account spec and input manifest')
     if args.benchmark_only and not args.study_registration:
         parser.error('benchmark-only requires a registered study')
-    if args.preflight_only and args.reuse_scenarios_from:
+    if args.preflight_only and (args.reuse_scenarios_from or args.resume_scenarios_from):
         parser.error('preflight-only does not resume scenarios')
     if (args.candidate in INTRADAY_CANDIDATES) != (args.warmup_hours_cache_dir is not None):
         parser.error('H1 research requires its warmup-hours cache; H4 must not supply one')
@@ -718,16 +824,17 @@ def main(argv=None, on_progress=None):
                 manifest['horizon_cutoffs'] = registration['horizon_cutoffs']
             if registration.get('pre_quote_flat_financing'):
                 manifest['pre_quote_flat_financing'] = registration['pre_quote_flat_financing']
-        if args.reuse_scenarios_from:
-            source_bytes = (args.reuse_scenarios_from/'manifest.json').read_bytes()
-            manifest['scenario_reuse_source'] = dict(path=str(args.reuse_scenarios_from.resolve()),
+        recovery_source=args.resume_scenarios_from or args.reuse_scenarios_from
+        if recovery_source:
+            source_bytes = (recovery_source/'manifest.json').read_bytes()
+            manifest['scenario_reuse_source'] = dict(path=str(recovery_source.resolve()),
                 manifest_sha256=hashlib.sha256(source_bytes).hexdigest(), run_id=json.loads(source_bytes)['run_id'])
         write_json(args.output_dir / 'manifest.json', manifest)
-        if args.reuse_scenarios_from:
+        if recovery_source:
             prior = json.loads(source_bytes)
             if scenario_binding(prior) != scenario_binding(manifest):
                 raise ValueError('completed scenario bindings differ')
-            if not any((args.reuse_scenarios_from/(s['name']+'-completed.json')).is_file() for s in scenarios):
+            if not args.resume_scenarios_from and not any((recovery_source/(s['name']+'-completed.json')).is_file() for s in scenarios):
                 raise ValueError('no sealed completed scenario to reuse')
         quality = {}
         for name, item in inputs.items():
@@ -756,23 +863,28 @@ def main(argv=None, on_progress=None):
             progress('preflight_passed_no_simulation')
             return
         reused = {}
-        if args.reuse_scenarios_from:
+        if recovery_source:
             progress('verify_completed_scenarios')
-            reused = {s['name']: reuse_scenario(args.reuse_scenarios_from, args.output_dir, manifest, s)
+            reused = {s['name']: reuse_scenario(recovery_source, args.output_dir, manifest, s)
                       for s in scenarios}
-            if not any(value is not None for value in reused.values()):
+            if not args.resume_scenarios_from and not any(value is not None for value in reused.values()):
                 raise ValueError('no sealed completed scenario to reuse')
         results = []
         for scenario in scenarios:
             result = reused.get(scenario['name'])
             if result is None:
+                resume_packet=(load_scenario_resume(recovery_source,manifest,scenario['name'])
+                               if args.resume_scenarios_from else None)
+                if resume_packet is not None:
+                    receipt.setdefault('resumed_scenarios',[]).append(scenario['name'])
                 progress(scenario['name'])
                 result = run_scenario(paths['development'], warmup, scenario['name'], scenario['slippage'],
                     scenario['buy'], args.output_dir, progress,
                     development=inputs['development'], sell_debit=scenario['sell'], research_candidate=args.candidate,
                     tick_cache_dir=args.tick_cache_dir, horizon_cutoffs=manifest.get('horizon_cutoffs'),
                     prop_profile=manifest.get('prop_profile'),
-                    pre_quote_flat_financing=manifest.get('pre_quote_flat_financing')=='explicit_not_applicable_v1')
+                    pre_quote_flat_financing=manifest.get('pre_quote_flat_financing')=='explicit_not_applicable_v1',
+                    checkpoint_binding=scenario_binding(manifest),resume_packet=resume_packet)
             else:
                 receipt.setdefault('reused_scenarios', []).append(scenario['name'])
                 progress(scenario['name']+'_reused')

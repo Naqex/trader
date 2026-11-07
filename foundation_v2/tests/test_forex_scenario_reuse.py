@@ -68,6 +68,34 @@ class ScenarioReuseTests(unittest.TestCase):
         self.assertEqual((self.root/'h1-original/results.json').read_bytes(),
                          (self.root/'h1-reused/results.json').read_bytes())
 
+    def test_cli_resumes_complete_packet_without_rerunning_sealed_scenario(self):
+        def interrupt(stage):
+            if stage=='cost-stress' and (self.root/'partial/cost-stress-resume.json').exists():
+                raise RuntimeError('fixture interruption after complete packet')
+        with redirect_stdout(io.StringIO()),self.assertRaises(RuntimeError):
+            pilot.main(self.args('partial'),on_progress=interrupt)
+        self.assertTrue((self.root/'partial/reference-completed.json').exists())
+        self.assertFalse((self.root/'partial/cost-stress-completed.json').exists())
+        argv=self.args('resumed')+['--resume-scenarios-from',str(self.root/'partial')]
+        with patch.object(pilot,'run_scenario',wraps=pilot.run_scenario) as run,redirect_stdout(io.StringIO()):
+            pilot.main(argv)
+        self.assertEqual(run.call_count,1)
+        self.assertIsNotNone(run.call_args.kwargs['resume_packet'])
+        with redirect_stdout(io.StringIO()):pilot.main(self.args('fresh'))
+        for name in ('results.json','reference-checkpoint.json','cost-stress-checkpoint.json',
+                     'cost-stress-candidate.json','cost-stress-decisions.json'):
+            self.assertEqual((self.root/'resumed'/name).read_bytes(),(self.root/'fresh'/name).read_bytes(),name)
+        receipt=json.loads((self.root/'resumed/receipt.json').read_bytes())
+        self.assertEqual(receipt['reused_scenarios'],['reference'])
+        self.assertEqual(receipt['resumed_scenarios'],['cost-stress'])
+
+    def test_cli_resume_rejects_legacy_partial_instead_of_silently_restarting(self):
+        self.interrupted()
+        argv=self.args('legacy-resume')+['--resume-scenarios-from',str(self.root/'old')]
+        with patch.object(pilot,'run_scenario') as run,redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(ValueError,'complete resume packet missing'):pilot.main(argv)
+        run.assert_not_called()
+
     def test_h1_cli_rejects_missing_hourly_warmup_before_dispatch(self):
         from trading_workspace_v2.forex_intraday_candidates import RSI_REENTRY
         argv=self.args('no-h1-cache');argv[argv.index('--candidate')+1]=RSI_REENTRY

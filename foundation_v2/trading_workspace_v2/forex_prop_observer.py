@@ -231,3 +231,54 @@ class ForexPropObserver:
     def export(self):
         return dict(active=self.summary(),completed_phases=deepcopy(self.completed_phases),
             milestones=list(self.milestones),profile=self.profile.model_dump(mode='json'))
+
+    def checkpoint(self):
+        return dict(schema='forex-prop-observer-checkpoint-v1',start=self.start,end=self.end,
+            session=self.session.model_dump(mode='json'),observation=self.export(),
+            last_position=self.last_position,last_pending=self.last_pending,reset_msc=self.reset_msc)
+
+    @classmethod
+    def from_checkpoint(cls, packet):
+        if (set(packet)!={'schema','start','end','session','observation','last_position','last_pending','reset_msc'}
+                or packet['schema']!='forex-prop-observer-checkpoint-v1'
+                or any(type(packet[k]) is not int for k in ('start','end','last_pending','reset_msc'))
+                or not 0<=packet['start']<packet['end'] or packet['last_pending'] not in (0,1)
+                or packet['last_position'] is not None and not isinstance(packet['last_position'],str)):
+            raise ValueError('invalid observer checkpoint scope')
+        raw=packet['observation'];active=raw['active']
+        attempt=ChallengeAttemptSnapshot.model_validate(active['attempt'])
+        phase=PhaseStateSnapshot.model_validate(active['phase'])
+        result=cls(raw['profile'],start=packet['start'],end=packet['end'],identity=attempt.session_id)
+        result.session=PropSessionSnapshot.model_validate(packet['session'])
+        if (result.session.workspace_id!=attempt.workspace_id or phase.workspace_id!=attempt.workspace_id
+                or result.session.session_id!=attempt.session_id or phase.session_id!=attempt.session_id
+                or phase.attempt_id!=attempt.attempt_id or phase.profile_hash!=result.profile.profile_hash
+                or attempt.profile_hash!=result.profile.profile_hash
+                or attempt.virtual_start_utc!=utc(result.start) or attempt.virtual_cutoff_utc!=utc(result.end)):
+            raise ValueError('observer checkpoint identity differs')
+        result.attempt,result.phase=attempt,phase
+        if not 1<=phase.phase_index<=len(result.profile.phases) or set(active['path'])!=set(result.path):
+            raise ValueError('observer checkpoint phase/path scope differs')
+        result.resume=deepcopy(active['resume'])
+        result.last_time=active['last_observation_time_msc'];result.observed_ticks=active['observed_ticks']
+        if (any(type(v) is not int for v in (result.last_time,result.observed_ticks))
+                or not result.start<=result.last_time<=result.end or result.observed_ticks<0):
+            raise ValueError('observer checkpoint clock/count differs')
+        result.last_balance=Decimal(active['account_balance_usd'])
+        result.last_floating=Decimal(active['account_equity_usd'])-result.last_balance
+        result.last_position,result.last_pending=packet['last_position'],packet['last_pending']
+        if result.running and (phase.open_positions!=int(result.last_position is not None)
+                               or phase.pending_orders!=result.last_pending):
+            raise ValueError('observer checkpoint exposure differs')
+        result.path=deepcopy(active['path'])
+        for key in ('peak_equity','minimum_equity','maximum_drawdown','minimum_daily_headroom','minimum_overall_headroom'):
+            if result.path[key] is not None:result.path[key]=Decimal(result.path[key])
+        if any(not v.is_finite() for v in (result.last_balance,result.last_floating,
+                *[v for v in result.path.values() if isinstance(v,Decimal)])):
+            raise ValueError('observer checkpoint money must be finite')
+        result.milestones=deepcopy(raw['milestones']);result.completed_phases=deepcopy(raw['completed_phases'])
+        result._refresh_floors()
+        result._next_reset(max(result.last_time,int(phase.virtual_time_utc.timestamp()*1000)))
+        if result.reset_msc!=packet['reset_msc'] or result.export()!=raw:
+            raise ValueError('observer checkpoint does not roundtrip canonically')
+        return result
