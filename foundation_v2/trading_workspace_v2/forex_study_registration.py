@@ -13,6 +13,10 @@ import sys
 
 
 REGISTERED_STUDIES = {
+    '227e13f359d0e6344acadbd7f14eacc48ce1174f08e32b3ac917c2bddcdb6f42':
+        'eurusd-h1-survivors-2023-native-prop-v1',
+    '053383f823b8c66281a309b802faa9cce8817e758055abc03ef3fb7a3e36d2e0':
+        'eurusd-h1-survivors-2024-native-prop-v1',
     'd0a0d0d55ef4cd031ad56204da86b6ff8b3927dd3d03f883e0a9c75c3f6258a9':
         'eurusd-h1-discovery7-2023-opening-screen-v1',
     '07eab6597ae838c761276914e8421d16aaed5aba11bab9a3319942699a912bb2':
