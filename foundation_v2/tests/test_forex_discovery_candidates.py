@@ -24,6 +24,31 @@ def warm(kind):
 
 
 class DiscoveryTests(unittest.TestCase):
+    def test_native_prop_reset_keeps_discovery_state_and_reconciles_both_accounts(self):
+        from test_forex_prop_observer import profile
+        from trading_workspace_v2.prop_session import PropProfileSnapshot
+        declared=PropProfileSnapshot.model_validate(profile(targets=('1','1'))).model_dump(mode='json')
+        class FixtureStrategy(DiscoveryH4Candidate):
+            def observe(self,candle,**kwargs):
+                super().observe(candle,**kwargs)
+                return ('EXIT' if kwargs.get('side') else 'BUY'),D('.001')
+        ticks=[BrokerReplayTick(time_msc=pilot.START+h*3600000+1,sequence=h+1,
+            bid=str(D('1.102')+D('.002')*(h//5)),ask=str(D('1.1022')+D('.002')*(h//5))) for h in range(18)]
+        with tempfile.TemporaryDirectory() as directory,\
+             patch.object(pilot,'DiscoveryH4Candidate',FixtureStrategy),\
+             patch.object(pilot,'read_qdm_ticks',return_value=iter(ticks)):
+            root=Path(directory)
+            result=pilot.run_scenario(Path('unused'),[],'reference',D(0),D(0),root,lambda *args:None,
+                research_candidate=COMPRESSION,prop_profile=declared,
+                development=dict(sha256='a'*64,first_day='20220103',last_day='20220103'))
+            packet=json.loads((root/'reference-prop-path.json').read_bytes())
+            self.assertGreaterEqual(len(packet['completed_phase_accounts']),1)
+            self.assertEqual(packet['active']['phase_index'],2)
+            for account in packet['completed_phase_accounts']:
+                self.assertEqual(account['accounting']['independent_accounting'],'passed')
+                self.assertIsNone(account['checkpoint']['execution']['position'])
+            self.assertEqual(result['candidate_state_roundtrip'],'passed')
+
     def test_failed_level_rejection_both_sides_equality_and_double_sweep(self):
         for close,low,high,signal in [('1.0995','1.098','1.100','BUY'),('1.1005','1.100','1.102','SELL'),
                                     ('1.099','1.098','1.100',None),('1.100','1.098','1.102',None)]:

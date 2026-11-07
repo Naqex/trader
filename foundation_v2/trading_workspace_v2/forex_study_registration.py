@@ -23,6 +23,10 @@ REGISTERED_STUDIES = {
         'eurusd-h4-2023-prop-path-survivors-v1',
     '22a08798500af13137cd4203140511065f63ea59caf5668e3985d14264daa0d7':
         'eurusd-h4-2022-q2q3-period-robustness-v1',
+    '368aaaf3b9aaae6ef0cb301dac4f42ef4cfeec9e6f44493846805a1fd23158b5':
+        'eurusd-h4-utc-2024-historical-validation-v1',
+    '5d1c1c99a164ca45e39715d42b9b433f187d05a990efecfd07c4c7539fe27c64':
+        'eurusd-h4-compression-2023-robustness-v1',
 }
 HISTORICAL_SCHEMA = 'forex-h4-historical-robustness-v1'
 HISTORICAL_PURPOSE = 'registered_historical_robustness_not_qualification'
