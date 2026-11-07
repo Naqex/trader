@@ -396,11 +396,20 @@ def validate_pilot_entry(snapshot, tick, event):
     if decision is not None and (type(decision) is not int or tick.time_msc <= decision):
         raise ReplayExecutionError("pilot entry must fill strictly after its decision")
     if decision is not None:
-        source = next((raw for raw in reversed(snapshot.ledger)
+        checkpoints = [raw for raw in reversed(snapshot.ledger)
             if raw["sequence"] < event.sequence and raw["cursor_index"] == event.cursor_index - 1
-            and raw["kind"] in {"price_mark", "financing"}), None)
-        if source is None or source["virtual_time_utc"] * 1000 != decision:
+            and raw["kind"] in {"price_mark", "financing"}]
+        source = next((raw for raw in checkpoints if raw["virtual_time_utc"] * 1000 == decision), None)
+        if source is None:
             raise ReplayExecutionError("pilot entry decision must retain its canonical checkpoint")
+        # A quote gap can post cash events after a closed-bar intent was queued.
+        # They must preserve that same pending operation, not replace its decision.
+        for later in checkpoints:
+            if later['sequence'] <= source['sequence']:
+                break
+            pending = later['details'].get('pending_market_order') or {}
+            if later['kind'] != 'financing' or pending.get('operation_id') != event.details.get('operation_id'):
+                raise ReplayExecutionError('later cash checkpoint does not retain the queued entry')
     if proof.get("stop_distance") is not None and event.kind == "market_fill":
         distance = Decimal(proof["stop_distance"])
         if not distance.is_finite() or distance <= 0:

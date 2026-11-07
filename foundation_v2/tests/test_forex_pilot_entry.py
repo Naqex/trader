@@ -50,6 +50,38 @@ class PilotEntryTests(unittest.TestCase):
         self.assertEqual(result.risk.rejections[-1].reason, 'trade_risk')
         self.assertEqual(result.risk.rejections[-1].estimated_loss, Decimal('26.65'))
 
+    def test_queued_closed_bar_entry_survives_later_financing_during_quote_gap(self):
+        from test_forex_financing import terms
+        from trading_workspace_v2.forex_financing import apply_forex_financing
+        queued = queue_forex_pilot_order(self.initial(),operation_id='holiday-gap',side='BUY',
+            quantity='0.01',stop_loss='1.099',stop_distance='0.001',take_profit=None)
+        original_decision=queued.risk.entry_decision_time_msc
+        self.assertEqual(original_decision,ms()+60000)
+        charged=apply_forex_financing(queued,terms(ms()+120000,buy='100'))
+        self.assertEqual(charged.risk.entry_decision_time_msc,original_decision)
+        result=advance(charged,[tick(when=ms()+180001)])
+        self.assertIsNotNone(result.execution.position)
+        self.assertEqual(result.execution.balance,Decimal('10000'))
+        fill=next(event for event in result.execution.ledger if event['kind']=='market_fill')
+        self.assertEqual(fill['details']['pilot_entry']['decision_time_msc'],original_decision)
+        ForexPilotSnapshot.model_validate_json(result.model_dump_json())
+        bad=copy.deepcopy(result.execution.model_dump(mode='json'))
+        next(event for event in bad['ledger'] if event['kind']=='market_fill')[
+            'details']['pilot_entry']['decision_time_msc']+=1
+        with self.assertRaisesRegex(ValueError,'canonical checkpoint'):
+            ReplayTickExecutionSnapshot.model_validate(bad)
+        # A legitimate cash checkpoint before an order was queued must not let
+        # that later order forge an earlier closed-bar decision.
+        flat=apply_forex_financing(self.initial(),terms(ms()+120000,buy='100'))
+        later=queue_forex_pilot_order(flat,operation_id='after-fee',side='BUY',quantity='0.01',
+            stop_loss='1.099',stop_distance='0.001',take_profit=None)
+        later=advance(later,[tick(when=ms()+180001)])
+        bad=copy.deepcopy(later.execution.model_dump(mode='json'))
+        next(event for event in bad['ledger'] if event['kind']=='market_fill')[
+            'details']['pilot_entry']['decision_time_msc']=original_decision
+        with self.assertRaisesRegex(ValueError,'later cash checkpoint'):
+            ReplayTickExecutionSnapshot.model_validate(bad)
+
 
 if __name__ == '__main__':
     unittest.main()
