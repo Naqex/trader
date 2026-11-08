@@ -11,6 +11,7 @@ from .forex_h4 import Candle, CandleState, HOUR, advance_atr14
 RSI_REENTRY = 'eurusd-h1-rsi14-reentry-atr14x1p5-time12-r025-v1'
 SHOCK = 'eurusd-h1-shock2-reclaim-atr14x1p5-time12-r025-v1'
 DAY_BREAK = 'eurusd-h1-prior-day-break-atr14x1p5-close20-r025-v1'
+DAY_RETEST = 'eurusd-h1-prior-day-retest3-atr14x1p5-close20-r025-v1'
 DAY_FADE = 'eurusd-h1-prior-day-fade-atr14x1p5-close20-r025-v1'
 BB_REENTRY = 'eurusd-h1-bb20-reentry-atr14x1p5-time12-r025-v1'
 PULLBACK = 'eurusd-h1-pullback20-80-atr14x1p5-time24-r025-v1'
@@ -27,7 +28,7 @@ ASIA_ORB = 'eurusd-h1-asia09-15tokyo-london-break-atr14x1p5-r025-v1'
 BB_FLAT = 'eurusd-h1-bb20-reentry-flat80-atr14x1p5-time12-r025-v1'
 ORB_CANDIDATES = (LONDON_ORB, NY_ORB, ASIA_ORB)
 ROUND7_CANDIDATES = (*ORB_CANDIDATES, BB_FLAT)
-INTRADAY_CANDIDATES = (RSI_REENTRY, SHOCK, DAY_BREAK, DAY_FADE, BB_REENTRY,
+INTRADAY_CANDIDATES = (RSI_REENTRY, SHOCK, DAY_BREAK, DAY_RETEST, DAY_FADE, BB_REENTRY,
                        PULLBACK, EUROPE_AM, POSTFIX, *FIXING_CANDIDATES, *ROUND7_CANDIDATES)
 METAL_ASIA_ORB = 'xauusd-h1-asia09-15tokyo-london-break-atr14x1p5-r025-v1'
 METAL_RSI = 'xauusd-h1-rsi14-reentry-atr14x1p5-time12-r025-v1'
@@ -42,6 +43,7 @@ def intraday_recipe(candidate):
 
 
 def intraday_contract(candidate):
+    if candidate == DAY_RETEST:return 'PRIOR-DAY-RETEST-PROTOCOL-20261108.md'
     if candidate in FIXING_CANDIDATES:return 'SESSION-DISCOVERY6-20261108.md'
     if candidate in ROUND7_CANDIDATES:return 'ORB-DISCOVERY7-20261108.md'
     if candidate in INTRADAY_CANDIDATES:return 'CHALLENGE-DISCOVERY-ROUND4-20261108.md'
@@ -111,6 +113,10 @@ class IntradayH1State(BaseModel):
     range_high: Decimal | None = Field(default=None, gt=0)
     range_low: Decimal | None = Field(default=None, gt=0)
     scheduled_exit: int | None = Field(default=None, gt=0, strict=True)
+    retest_side: str | None = None
+    retest_level: Decimal | None = Field(default=None, gt=0)
+    retest_armed_at: int | None = Field(default=None, gt=0, strict=True)
+    retest_attempt_day: int | None = Field(default=None, ge=0, strict=True)
 
     @model_validator(mode='after')
     def consistent(self):
@@ -147,6 +153,23 @@ class IntradayH1State(BaseModel):
                 or (self.last_entry_day is not None and (not times
                     or self.last_entry_day > (times[-1]+HOUR)//DAY))):
             raise ValueError('inconsistent intraday daily range state')
+        pending=(self.retest_side,self.retest_level,self.retest_armed_at)
+        if ((recipe != DAY_RETEST and any(v is not None for v in (*pending,self.retest_attempt_day)))
+                or (any(v is not None for v in pending) and any(v is None for v in pending))
+                or (recipe == DAY_RETEST and self.last_entry_day is not None
+                    and (self.retest_attempt_day is None or self.last_entry_day>self.retest_attempt_day))
+                or (self.retest_attempt_day is not None and (not times
+                    or self.retest_attempt_day>(times[-1]+HOUR)//DAY))):
+            raise ValueError('inconsistent retest ownership/attempt state')
+        if self.retest_side is not None:
+            if (self.retest_side not in ('BUY','SELL') or not times or self.position_id is not None
+                    or self.retest_armed_at%HOUR or self.retest_armed_at//DAY!=self.day_index
+                    or not 8<=self.retest_armed_at%DAY//HOUR<16
+                    or self.retest_attempt_day!=self.day_index or self.range_day is None
+                    or not 0<self.day_index-self.range_day<=4
+                    or not self.retest_armed_at<=times[-1]+HOUR<self.retest_armed_at+3*HOUR
+                    or self.retest_level!=(self.range_high if self.retest_side=='BUY' else self.range_low)):
+                raise ValueError('inconsistent pending retest level/clock')
         return self
 
 
@@ -164,6 +187,32 @@ class IntradayH1Candidate:
         fields = {name:getattr(self,name) for name in IntradayH1State.model_fields
                   if name not in ('schema_version','history')}
         return IntradayH1State(**fields, history=tuple(CandleState(**vars(p)) for p in self.history))
+
+    def _clear_retest(self):
+        self.retest_side=self.retest_level=self.retest_armed_at=None
+
+    def _retest_signal(self,bar,previous,day,entry_day,hour,end):
+        if (not 8<=hour<=16 or self.last_entry_day==entry_day or self.range_day is None
+                or not 0<day-self.range_day<=4):
+            self._clear_retest();return None
+        if self.retest_side is not None:
+            if (self.retest_armed_at//DAY!=entry_day or previous is None
+                    or bar.timestamp!=previous.timestamp+HOUR or end>self.retest_armed_at+3*HOUR):
+                self._clear_retest();return None
+            # The confirmation is a later closed bar; the breakout bar's wick
+            # cannot be interpreted as a retest with an invented intrabar order.
+            side,level=self.retest_side,self.retest_level
+            invalid=bar.close<=level if side=='BUY' else bar.close>=level
+            touched=bar.low<=level if side=='BUY' else bar.high>=level
+            if invalid:self._clear_retest();return None
+            if touched:self._clear_retest();return side
+            if end>=self.retest_armed_at+3*HOUR:self._clear_retest()
+        elif hour<16 and self.retest_attempt_day!=entry_day:
+            side='BUY' if bar.close>self.range_high else 'SELL' if bar.close<self.range_low else None
+            if side:
+                self.retest_side=side;self.retest_level=self.range_high if side=='BUY' else self.range_low
+                self.retest_armed_at=end;self.retest_attempt_day=entry_day
+        return None
 
     @classmethod
     def from_state(cls, state):
@@ -238,14 +287,17 @@ class IntradayH1Candidate:
                         signal,self.scheduled_exit=fixing_entry(recipe,end)
                     elif self.last_entry_day != entry_day:
                         signal,self.scheduled_exit=opening_entry(recipe,self.history,candle)
-        elif recipe in (DAY_BREAK,DAY_FADE):
+        elif recipe in (DAY_BREAK,DAY_RETEST,DAY_FADE):
             if side is not None:
+                if recipe == DAY_RETEST:self._clear_retest()
                 if hour >= 20 or self.last_entry_day != entry_day:
                     signal='EXIT'
                 elif recipe == DAY_FADE and self.range_day is not None:
                     midpoint=(self.range_high+self.range_low)/2
                     if (side == 'BUY' and bar.close >= midpoint) or (side == 'SELL' and bar.close <= midpoint):
                         signal='EXIT'
+            elif recipe == DAY_RETEST:
+                signal=self._retest_signal(bar,previous,day,entry_day,hour,end)
             elif (8 <= hour <= 16 and self.last_entry_day != entry_day and self.range_day is not None
                     and 0 < day-self.range_day <= 4):
                 if recipe == DAY_BREAK:
@@ -292,7 +344,7 @@ class IntradayH1Candidate:
                 elif fast < slow and previous.close >= prior_fast and bar.close < fast:signal='SELL'
         if signal in ('BUY','SELL'):
             if distance is None or distance <= 0:signal=None
-            elif recipe in (DAY_BREAK,DAY_FADE,EUROPE_AM,POSTFIX,*ORB_CANDIDATES,METAL_AFTERNOON):self.last_entry_day=entry_day
+            elif recipe in (DAY_BREAK,DAY_RETEST,DAY_FADE,EUROPE_AM,POSTFIX,*ORB_CANDIDATES,METAL_AFTERNOON):self.last_entry_day=entry_day
         self.position_id,self.position_side=position_id,side
         self.history.append(candle)
         return signal,distance

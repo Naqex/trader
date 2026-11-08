@@ -88,6 +88,20 @@ rules; a different target firm is not selected by changing an output label.
 
 ## Evidence and interruption
 
+### Prior-day breakout retest
+
+The opt-in `eurusd-h1-prior-day-retest3-atr14x1p5-close20-r025-v1` hypothesis
+uses workspace `PRIOR-DAY-RETEST-PROTOCOL-20261108.md`. It arms on a prior-day
+range break at 08–15 UTC, then waits for a later contiguous H1 bar to touch
+the level and close on the breakout side within three hours and by 16 UTC.
+A close back through the level, a missing hour, or a day change cancels the
+attempt. There is one arm attempt per UTC day, including cancelled attempts.
+The existing ATR stop, sizing, next-quote execution and 20 UTC exit remain
+the execution owners. The state packet carries the pending level/side/time
+and attempt day; other candidates require these optional fields to be empty.
+This adds an offline research choice, not broker execution authority or
+evidence of an edge. The original prior-day breakout/fade rules are unchanged.
+
 ### Discovery candidates and feasibility probes
 
 The development CLI also accepts the three fixed hypotheses preregistered in
