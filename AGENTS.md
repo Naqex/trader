@@ -3,15 +3,18 @@
 When this repo is checked out inside the workspace, `../../AGENTS.md` also applies.
 A standalone checkout uses this file and the repository README; workspace planning is optional.
 
-## GitHub provenance
+## GitHub workflow
 
-Tracked issues live in `Naqex/workspace`; name this repo/module and link relevant
-PLAN/evidence. Small immediate edits need no issue. For meaningful AI contributions,
-keep normal commit titles and add `AI-Tool` + `AI-Model-Requested` Git trailers;
-use the raw configured ID or `unknown`, never infer it from a route alias. Human-only
-or purely mechanical commits need no attribution. PRs record implementer/reviewer
-identity and reviewed SHA using the repository template. In the workspace, use
-`../../tooling/github-workflow/README.md` for the full workflow.
+Use the workspace's `../../tooling/github-workflow/README.md` when available:
+small-team workflow, optional issues, one task branch/PR per coherent objective,
+not per chat or result. Standalone: small single-writer edits may use main only
+if repository policy allows; otherwise use a short task branch and PR. Keep
+required checks/protection; no admin bypass. PRs need change/reason, validation
+and material limits, not repeated agent identity tables. Substantive AI commits
+keep `AI-Tool` + `AI-Model-Requested` trailers (raw configured ID or `unknown`).
+Issues, when needed, live in `Naqex/workspace`; link existing PLAN/evidence.
+Preserve worktrees/WIP and publish child source before workspace pins. Archived
+instructions/template: `docs/archive/github-workflow-20261109/` (reference only).
 
 ## Authoritative context
 
