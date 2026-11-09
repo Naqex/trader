@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(ROOT.parent), str(ROOT)]
 
 from trading_workspace_v2.product import ProductService
-from ai_provider import OfflineProvider
-from ai_service import AIService
+from trading_workspace_v2.semantics.ai_provider import OfflineProvider
+from trading_workspace_v2.semantics.ai_service import AIService
 from trading_workspace_v2.connector_ledger import validate_connection_request, validate_intent_request, fingerprint
 
 

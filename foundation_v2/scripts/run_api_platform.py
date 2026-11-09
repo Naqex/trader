@@ -26,6 +26,31 @@ class PreflightError(RuntimeError):
     pass
 
 
+def local_capability_file(args):
+    selected = args.local_capability_file
+    if selected is None:
+        return None
+    if args.runtime_profile != "native":
+        raise PreflightError("Local owner capabilities require the explicit native runtime profile.")
+    from scripts.local_owner_access import require_local_tree
+    path = Path(os.path.abspath(selected))
+    try:
+        require_local_tree(path)
+        path = path.resolve(strict=True)
+        scope = PROJECT.resolve() / ".runtime/local-owner-access"
+        if not path.is_relative_to(scope) or not path.is_file() or not 0 < path.stat().st_size <= 64 * 1024:
+            raise ValueError()
+        # The supervisor owns its manifest/lock, never capability or nonce state.
+        if args.manifest is not None:
+            manifest = args.manifest.resolve()
+            protected = {path, path.with_name(path.name + ".bootstrap-spent.json")}
+            if protected & {manifest, args.manifest.with_suffix(".lock").resolve()}:
+                raise ValueError()
+    except (OSError, ValueError):
+        raise PreflightError("Local capability file must be a bounded regular file in the private project scope, without links or runtime-output collisions.") from None
+    return path
+
+
 def configuration(args):
     from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
@@ -40,6 +65,12 @@ def configuration(args):
                TW_V2_AUTH_MODE="local-trusted-identity", TW_V2_RUST_BIND=f"127.0.0.1:{args.port}",
                TW_V2_OPENAPI_PATH=str(FOUNDATION / "contracts/openapi.json"),
                PYTHONPATH=os.pathsep.join((str(FOUNDATION), str(PROJECT))))
+    # Authentication changes require this invocation's explicit selection;
+    # a shell's stale capability path must not silently enable another mode.
+    env.pop("TW_V2_LOCAL_CAPABILITY_FILE", None)
+    capability = local_capability_file(args)
+    if capability is not None:
+        env.update(TW_V2_AUTH_MODE="local-capability", TW_V2_LOCAL_CAPABILITY_FILE=str(capability))
     education_root = os.environ.get("TW_V2_EDUCATION_ROOT")
     workspace_education = PROJECT.parents[1] / "education"
     if not education_root and (workspace_education / "course.json").is_file():
@@ -443,6 +474,51 @@ def worker_ready(env):
                             (env["TW_V2_COMMAND_WORKER_PREFIX"] + "-%",)).fetchone()[0]
 
 
+def api_ready(args):
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{args.port}/health/ready", timeout=2) as response:
+            health = json.load(response)
+        return (isinstance(health, dict) and health.get("ok") is True
+                and (args.runtime_profile != "native" or health.get("command_worker") == "not_required"))
+    except (OSError, ValueError):
+        return False
+
+
+def monitor_owned_runtime(args, state, children, stop_file):
+    # A live process can hang. Observe readiness without restarting it or replaying
+    # broker work; three failed probes tolerate a brief API/DB interruption.
+    next_probe = time.monotonic() + 5
+    failures = 0
+    while not stop_file.exists():
+        if any(child.poll() is not None for child in children.values()):
+            raise PreflightError("A runtime child exited; stopping only this owned runtime.")
+        if time.monotonic() >= next_probe:
+            healthy = api_ready(args)
+            next_probe = time.monotonic() + 5
+            # A stop or child exit during the bounded HTTP read must never publish
+            # a new healthy state after shutdown has already been requested.
+            if stop_file.exists():
+                break
+            if any(child.poll() is not None for child in children.values()):
+                raise PreflightError("A runtime child exited; stopping only this owned runtime.")
+            failures = 0 if healthy else min(failures + 1, 3)
+            ready = state["ready"]
+            if healthy:
+                ready = True
+            elif failures == 3:
+                ready = False
+            if ready != state["ready"]:
+                state["ready"] = ready
+                if ready:
+                    state.pop("readiness_reason", None)
+                else:
+                    state["readiness_reason"] = "api_readiness_unavailable"
+                manifest_write(args.manifest, state)
+                print("Owned runtime readiness recovered." if ready else
+                      "Owned runtime readiness degraded; processes retained, no work retried.", flush=True)
+        time.sleep(0.25)
+
+
 def supervise(args, env):
     if not port_is_free(args.port):
         raise PreflightError("Loopback API port is occupied. Use the guarded restart script; no process was stopped.")
@@ -467,9 +543,12 @@ def supervise(args, env):
                    TW_V2_WORKER_STARTUP_TOKEN=startup_token, TW_V2_WORKER_ID=worker_id)
     state = {"schema": "api-platform-runtime-v2", "runtime_profile": args.runtime_profile,
              "replay_storage_profile": args.replay_storage_profile,
+             "auth_mode": env.get("TW_V2_AUTH_MODE", "local-trusted-identity"),
              "run_id": run_id, "project": str(PROJECT.resolve()), "port": args.port,
              "stop_file": str(stop_file.resolve()), "ready": False,
              "processes": {"supervisor": process_identity(os.getpid())}, "executable_sha256": {}}
+    if env.get("TW_V2_LOCAL_CAPABILITY_FILE"):
+        state["local_capability_file"] = env["TW_V2_LOCAL_CAPABILITY_FILE"]
     state["executable_sha256"]["supervisor"] = binary_digest(Path(state["processes"]["supervisor"]["executable"]))
     commands = child_commands(args, env)
     children, logs, log_threads = {}, [], []
@@ -508,27 +587,32 @@ def supervise(args, env):
             manifest_write(args.manifest, state)
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
+            if stop_file.exists():
+                raise PreflightError("Runtime shutdown requested during startup.")
             if any(p.poll() is not None for p in children.values()):
                 raise PreflightError("A runtime child exited during startup; inspect sanitized role logs.")
-            try:
-                with urllib.request.urlopen(f"http://127.0.0.1:{args.port}/health/ready", timeout=2) as response:
-                    health = json.load(response)
-                    if health.get("ok") and (args.runtime_profile != "native" or health.get("command_worker") == "not_required"):
-                        state["ready"] = True
-                        manifest_write(args.manifest, state)
-                        break
-            except (OSError, ValueError):
-                pass
+            if api_ready(args):
+                if stop_file.exists():
+                    raise PreflightError("Runtime shutdown requested during startup.")
+                if any(p.poll() is not None for p in children.values()):
+                    raise PreflightError("A runtime child exited during startup; inspect sanitized role logs.")
+                state["ready"] = True
+                manifest_write(args.manifest, state)
+                break
             time.sleep(0.25)
         if not state["ready"]:
             raise PreflightError("Rust API readiness deadline exceeded.")
         print(f"Rust offline API ready on loopback port {args.port}; {args.runtime_profile} profile supervised.", flush=True)
-        while not stop_file.exists():
-            if any(p.poll() is not None for p in children.values()):
-                raise PreflightError("A runtime child exited; stopping only this owned runtime.")
-            time.sleep(0.25)
+        monitor_owned_runtime(args, state, children, stop_file)
     finally:
         stop_file.write_text("stop\n", encoding="ascii")
+        state["ready"] = False
+        state["stopping"] = True
+        try:
+            manifest_write(args.manifest, state)
+        except OSError:
+            # A diagnostic write failure must not skip owned-process cleanup.
+            print("Could not record stopping state; owned shutdown continues.", flush=True)
         deadline = time.monotonic() + 45
         while any(p.poll() is None for p in children.values()) and time.monotonic() < deadline:
             time.sleep(0.25)
@@ -543,6 +627,7 @@ def supervise(args, env):
         for log in logs:
             log.close()
         state["ready"] = False
+        state["stopping"] = False
         state["stopped"] = True
         manifest_write(args.manifest, state)
         worker_ready_file.unlink(missing_ok=True)
@@ -557,6 +642,8 @@ def parser():
     result.add_argument("--download-engine", choices=("qdm", "dukascopy", "none"), default="qdm")
     result.add_argument("--runtime-profile", choices=("compatibility", "native"), default="compatibility",
                         help="Compatibility remains rollback/default; native uses separate candidate binaries and no Python domain/research service.")
+    result.add_argument("--local-capability-file", type=Path,
+                        help="Opt in to native owner capabilities using an existing private project config; never provision secrets here.")
     result.add_argument("--replay-storage-profile", choices=("full", "compact"), default="full",
                         help="Explicit replay write format; compact requires native. Overrides any inherited storage environment setting.")
     result.add_argument("--scientific-capability", type=Path, help="Existing Nautilus capability; installed bytes verified before worker/API readiness.")
@@ -582,6 +669,8 @@ def main(argv=None):
     args = resolve_profile_paths(parser().parse_args(argv))
     if not 1024 <= args.port <= 65535:
         raise PreflightError("Port must be between 1024 and 65535.")
+    if args.local_capability_file is not None and args.runtime_profile != "native":
+        raise PreflightError("Local owner capabilities require the explicit native runtime profile.")
     if args.runtime_profile != "native" and args.replay_storage_profile != "full":
         raise PreflightError("Compact replay storage requires the explicit native runtime profile.")
     if args.build_only:

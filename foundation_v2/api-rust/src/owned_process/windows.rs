@@ -30,6 +30,10 @@ use windows_sys::Win32::{
             TerminateJobObject,
         },
         Pipes::CreatePipe,
+        StationsAndDesktops::{
+            CloseDesktop, CreateDesktopW, DESKTOP_CREATEMENU, DESKTOP_CREATEWINDOW,
+            DESKTOP_ENUMERATE, DESKTOP_READOBJECTS, DESKTOP_WRITEOBJECTS,
+        },
         Threading::{
             CREATE_NO_WINDOW, CREATE_UNICODE_ENVIRONMENT, CreateProcessW,
             DeleteProcThreadAttributeList, EXTENDED_STARTUPINFO_PRESENT, GetExitCodeProcess,
@@ -54,6 +58,42 @@ pub struct Child {
     pub stdout: Option<tokio::process::ChildStdout>,
     pub stdin: Option<tokio::process::ChildStdin>,
     pub stderr: Option<tokio::process::ChildStderr>,
+    _desktop: Option<BackgroundDesktop>,
+}
+
+// MT5 can show a window again after startup/LiveUpdate. SW_HIDE only controls
+// the first show, so keep the worker and all its SDK-launched descendants on a
+// noninteractive desktop for their entire owned lifetime. Never SwitchDesktop.
+struct BackgroundDesktop(isize);
+impl BackgroundDesktop {
+    fn create(name: &[u16]) -> io::Result<Self> {
+        let desktop = unsafe {
+            CreateDesktopW(
+                name.as_ptr(),
+                null(),
+                null(),
+                0,
+                DESKTOP_CREATEMENU
+                    | DESKTOP_CREATEWINDOW
+                    | DESKTOP_ENUMERATE
+                    | DESKTOP_READOBJECTS
+                    | DESKTOP_WRITEOBJECTS,
+                null(),
+            )
+        };
+        if desktop.is_null() {
+            Err(io::Error::last_os_error())
+        } else {
+            Ok(Self(desktop as isize))
+        }
+    }
+}
+impl Drop for BackgroundDesktop {
+    fn drop(&mut self) {
+        unsafe {
+            CloseDesktop(self.0 as _);
+        }
+    }
 }
 
 fn invalid(message: &str) -> io::Error {
@@ -227,6 +267,7 @@ pub fn spawn(
         capture_stderr,
         false,
         true,
+        false,
     )
 }
 
@@ -248,6 +289,7 @@ pub fn spawn_with_stdin(
         capture_stderr,
         true,
         true,
+        false,
     )
 }
 
@@ -269,6 +311,28 @@ pub fn spawn_isolated_with_stdin(
         capture_stderr,
         true,
         false,
+        false,
+    )
+}
+
+pub fn spawn_background_with_stdin(
+    executable: &Path,
+    args: &[String],
+    cwd: Option<&Path>,
+    environment: &[(&str, &str)],
+    limits: Limits,
+    capture_stderr: bool,
+) -> io::Result<Child> {
+    spawn_inner(
+        executable,
+        args,
+        cwd,
+        environment,
+        limits,
+        capture_stderr,
+        true,
+        true,
+        true,
     )
 }
 
@@ -281,6 +345,7 @@ fn spawn_inner(
     capture_stderr: bool,
     piped_input: bool,
     inherit_environment: bool,
+    background_desktop: bool,
 ) -> io::Result<Child> {
     if !executable.is_absolute()
         || !executable
@@ -299,6 +364,13 @@ fn spawn_inner(
     let mut command = command_line(executable, args)?;
     let cwd = cwd.map(|p| wide(p.as_os_str())).transpose()?;
     let environment = environment(overrides, inherit_environment)?;
+    let desktop_name = background_desktop
+        .then(|| wide(OsStr::new(&format!("Naqex-MT5-{}", uuid::Uuid::new_v4()))))
+        .transpose()?;
+    let desktop = desktop_name
+        .as_deref()
+        .map(BackgroundDesktop::create)
+        .transpose()?;
     let security = SECURITY_ATTRIBUTES {
         nLength: size_of::<SECURITY_ATTRIBUTES>() as u32,
         lpSecurityDescriptor: null_mut(),
@@ -372,6 +444,9 @@ fn spawn_inner(
         startup.StartupInfo.hStdInput = raw(&input);
         startup.StartupInfo.hStdOutput = raw(&output);
         startup.StartupInfo.hStdError = raw(&error);
+        if let Some(name) = &desktop_name {
+            startup.StartupInfo.lpDesktop = name.as_ptr().cast_mut();
+        }
         startup.lpAttributeList = attributes.list;
         let mut info: PROCESS_INFORMATION = zeroed();
         checked(CreateProcessW(
@@ -396,6 +471,7 @@ fn spawn_inner(
             stdout: None,
             stdin: None,
             stderr: None,
+            _desktop: desktop,
         };
         child.stdout = Some(tokio::process::ChildStdout::from_std(stdout.into())?);
         child.stdin = stdin
@@ -469,4 +545,5 @@ impl Child {
 }
 
 #[cfg(test)]
+#[path = "windows/tests.rs"]
 mod tests;

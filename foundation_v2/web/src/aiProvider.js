@@ -1,4 +1,6 @@
 const errors = {
+  owner_login_required: ['Phiên làm việc đã hết hạn. Đăng nhập lại để tiếp tục.', 'Your session expired. Sign in again to continue.'],
+  local_auth_unavailable: ['Chưa xác minh được phiên làm việc. Kiểm tra kết nối rồi thử lại.', 'Your session could not be verified. Check the connection and try again.'],
   demo_catalog_too_large: ['Danh mục broker quá lớn để đính kèm. Chưa dùng dữ liệu này.', 'The broker catalog is too large to attach. Its data was not used.'],
   mt5_mcp_not_configured: ['Chưa cấu hình MCP cho tài khoản MT5 này.', 'MCP is not configured for this MT5 account.'],
   mt5_mcp_key_missing: ['Thiếu khóa kết nối MCP trên máy chủ.', 'The server is missing the MCP connection key.'],

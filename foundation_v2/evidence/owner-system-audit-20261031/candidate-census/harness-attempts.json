@@ -1,0 +1,20 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "result": "FAIL_HARNESS_STATIC_ALLOWLIST",
+      "observedCases": 76,
+      "routeFailures": 0,
+      "pageErrors": 0,
+      "overflowCases": 0,
+      "blockedWrites": 0,
+      "blockedExternal": 0,
+      "blockedUnexpected": 152,
+      "distinctBlockedStatic": [
+        {"path": "/project-palette.css", "type": "stylesheet"},
+        {"path": "/assets/naqex-B0iIAgfH.svg", "type": "other"}
+      ],
+      "resolution": "Allow the explicit project palette stylesheet and known static SVG assets including browser icon resource type other. Preserve all API/integration/health fixtures and mutation/network guards. Rerun all four configurations; initial screenshots are superseded."
+    }
+  ]
+}

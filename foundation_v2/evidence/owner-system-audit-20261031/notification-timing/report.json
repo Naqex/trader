@@ -1,0 +1,43 @@
+{
+  "fixture": true,
+  "brokerCalls": 0,
+  "cases": [
+    {
+      "tone": "success",
+      "duration": 5000,
+      "passed": true
+    },
+    {
+      "tone": "info",
+      "duration": 7000,
+      "passed": true
+    },
+    {
+      "tone": "warning",
+      "duration": 8000,
+      "passed": true
+    },
+    {
+      "tone": "error",
+      "duration": 10000,
+      "passed": true
+    },
+    {
+      "hoverPreservesRemaining": true
+    },
+    {
+      "focusPreservesRemaining": true
+    },
+    {
+      "hiddenTabPreservesRemaining": true
+    },
+    {
+      "rerendersDoNotReset": true
+    },
+    {
+      "criticalPersistentButDismissible": true
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

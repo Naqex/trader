@@ -16,6 +16,18 @@ except ImportError:
 
 @unittest.skipIf(np is None, 'Run collector tests in the isolated MT5 SDK environment')
 class MT5ReadWorkerTests(unittest.TestCase):
+    def test_native_clock_handles_sdk_numpy_timestamps_without_integer_overflow(self):
+        path = Path(__file__).resolve().parents[1] / 'scripts/mt5_clock.py'
+        spec = importlib.util.spec_from_file_location('clock_numpy_test', path)
+        clock = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(clock)
+        raw = np.array([(1793756800,)], dtype=[('time', 'i8')])[0]['time']
+        for server, offset in (('Exness-MT5Trial17', 0), ('FTMO-Demo', 7200)):
+            self.assertEqual(clock.utc_seconds(raw, server), int(raw)-offset)
+        self.assertEqual(clock.utc_seconds(np.int64(10**17), 'Exness-MT5Trial17'), 10**17)
+        with self.assertRaisesRegex(RuntimeError, 'mt5_clock_unavailable'):
+            clock.utc_msc(np.int64(-1), 'Exness-MT5Trial17')
+
     def setUp(self):
         self.sdk = Mock()
         path = Path(__file__).resolve().parents[1] / 'scripts/mt5_read_worker.py'
@@ -58,6 +70,16 @@ class MT5ReadWorkerTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'snapshot_incomplete'):
                     self.worker.collect(self.args)
                 read.return_value = saved
+
+    def test_legacy_export_does_not_label_ftmo_broker_wall_time_as_utc(self):
+        self.args.server = self.account.server = 'FTMO-Demo'
+        for command in ('history','ticks'):
+            self.args.command = command
+            with self.subTest(command=command),self.assertRaisesRegex(RuntimeError,'mt5_export_clock_not_supported'):
+                self.worker.collect(self.args)
+        self.sdk.copy_ticks_range.assert_not_called()
+        self.sdk.copy_rates_range.assert_not_called()
+        self.sdk.order_send.assert_not_called()
 
     def test_scope_and_identity_rechecked_after_read(self):
         self.account.trade_mode = 2

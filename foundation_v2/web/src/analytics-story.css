@@ -113,6 +113,10 @@
 .as-provenance-list { margin: 0; padding: 0 17px; }
 .as-limit-note { margin: 14px 17px; padding-top: 12px; border-top: 1px solid var(--as-border-soft); }
 .as-inspector-actions { padding: 0 17px 17px; }
+.fx-trade-drawer-placeholder { display:grid; gap:14px; padding:4px 0 18px; }
+.fx-trade-note-link { color:var(--wm-content); text-underline-offset:3px; }
+.fx-trade-drawer-placeholder h3 { margin:0; font-size:15px; }
+.fx-trade-drawer-placeholder p,.fx-trade-note-draft p { margin:0; color:var(--wm-content-muted); font-size:12px; line-height:1.5; }
 .as-raw-details { margin-top: 13px; }
 .as-raw-details summary { color: #b6c2c9; cursor: pointer; font-size: 11px; }
 .as-raw-details pre { max-height: 220px; overflow: auto; margin: 9px 0 0; padding: 10px; background: #0c1113; color: #9ba8af; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }

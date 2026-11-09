@@ -1,0 +1,83 @@
+{
+  "scope": "Production UI; synthetic GET-only fixtures; prerequisite response gated",
+  "mode": "baseline",
+  "cases": [
+    {
+      "journey": "live",
+      "overlaps": false,
+      "prerequisiteGatePreserved": true,
+      "requests": [
+        {
+          "path": "/api/v2/events",
+          "startedMs": 370,
+          "beforeRelease": true
+        },
+        {
+          "path": "/api/v2/live/status",
+          "startedMs": 633,
+          "beforeRelease": true
+        },
+        {
+          "path": "/api/v2/events",
+          "startedMs": 1156,
+          "beforeRelease": true
+        },
+        {
+          "path": "/api/v2/trade-labels",
+          "startedMs": 2504,
+          "beforeRelease": false
+        },
+        {
+          "path": "/api/v2/journal",
+          "startedMs": 2505,
+          "beforeRelease": false
+        },
+        {
+          "path": "/api/v2/live/records",
+          "startedMs": 2505,
+          "beforeRelease": false
+        }
+      ]
+    },
+    {
+      "journey": "ledger",
+      "overlaps": false,
+      "prerequisiteGatePreserved": false,
+      "requests": [
+        {
+          "path": "/api/v2/events",
+          "startedMs": 250,
+          "beforeRelease": true
+        },
+        {
+          "path": "/api/v2/replay/sessions",
+          "startedMs": 506,
+          "beforeRelease": true
+        },
+        {
+          "path": "/api/v2/events",
+          "startedMs": 1055,
+          "beforeRelease": true
+        },
+        {
+          "path": "/api/v2/trade-groups",
+          "startedMs": 2056,
+          "beforeRelease": false
+        },
+        {
+          "path": "/api/v2/trade-labels",
+          "startedMs": 2057,
+          "beforeRelease": false
+        },
+        {
+          "path": "/api/v2/replay/trades",
+          "startedMs": 2057,
+          "beforeRelease": false
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "passed": true
+}

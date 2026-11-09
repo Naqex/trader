@@ -1,0 +1,48 @@
+{
+  "scope": "Offline Node synthetic note-presence lookup, includes preparation and 500 lookups per sample; not app navigation latency",
+  "runtime": "v24.19.0",
+  "notes": 2000,
+  "lookups": 500,
+  "warmups": 3,
+  "samples": [
+    {
+      "baselineMs": 19.982399999999984,
+      "candidateMs": 0.887500000000017
+    },
+    {
+      "baselineMs": 19.50460000000001,
+      "candidateMs": 1.008499999999998
+    },
+    {
+      "baselineMs": 19.69890000000001,
+      "candidateMs": 0.8104999999999905
+    },
+    {
+      "baselineMs": 19.952600000000018,
+      "candidateMs": 0.8655999999999722
+    },
+    {
+      "baselineMs": 19.803499999999985,
+      "candidateMs": 0.8783999999999992
+    },
+    {
+      "baselineMs": 20.07140000000004,
+      "candidateMs": 0.6860000000000355
+    },
+    {
+      "baselineMs": 19.935299999999984,
+      "candidateMs": 0.5604000000000156
+    },
+    {
+      "baselineMs": 20.185299999999984,
+      "candidateMs": 0.7214999999999918
+    },
+    {
+      "baselineMs": 19.78800000000001,
+      "candidateMs": 0.5430999999999813
+    }
+  ],
+  "medianBaselineMs": 19.935299999999984,
+  "medianCandidateMs": 0.8104999999999905,
+  "parity": true
+}

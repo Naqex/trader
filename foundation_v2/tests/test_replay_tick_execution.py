@@ -118,6 +118,17 @@ class TickExecutionTests(unittest.TestCase):
             self.advance(state, [tick("1.1030", "1.1032")])
         self.assertEqual(state.model_dump(mode="json"), before)
 
+    def test_restored_tick_snapshot_rejects_forged_frozen_margin_calculation(self):
+        state = self.advance(queued(), [tick()]).snapshot
+        original = state.model_dump(mode="json")
+        for field in ("required_account", "available_account", "leverage"):
+            raw = copy.deepcopy(original)
+            fill = next(event for event in raw["ledger"] if event["kind"] == "market_fill")
+            admission = fill["details"]["margin_admission"]
+            admission[field] = str(Decimal(admission[field]) + 1)
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                ReplayTickExecutionSnapshot.model_validate(raw)
+
     def test_empty_ticks_fail_closed_without_using_ohlc(self):
         with self.assertRaisesRegex(ReplayExecutionError, "OHLC fallback"):
             self.advance(queued(), [])

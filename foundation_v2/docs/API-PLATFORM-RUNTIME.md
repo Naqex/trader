@@ -59,6 +59,15 @@ runtime. Ownership records contain PID, kernel creation time and executable,
 never a DSN. Logs live under `.runtime/api-platform`; each run has separate
 stdout/stderr files.
 
+After startup, the supervisor probes `/health/ready` every 5 seconds with a
+2-second HTTP timeout. Three consecutive failed probes set manifest `ready=false`
+and `readiness_reason=api_readiness_unavailable`; the next healthy probe clears
+that reason and restores readiness. The manifest is rewritten on transitions.
+Health failure alone does not restart/kill children or retry broker work. This
+observes API readiness, not a separate heartbeat proving a native research worker
+is making progress. Shutdown records `ready=false, stopping=true` before cleanup,
+then `stopping=false, stopped=true`; stop/child exit wins over an in-flight probe.
+
 Shutdown writes a run-specific marker, allowing API requests and workers to
 drain. After 45 seconds the supervisor can terminate only the process handles it
 created. It never uses tree-wide termination or kills a process merely because

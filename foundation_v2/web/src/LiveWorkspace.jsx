@@ -6,7 +6,8 @@ import './live-workspace.css'
 
 import { readLiveStatus } from './liveStatusApi.js'
 const LiveTradingWorkspace = lazy(() => import('./LiveTradingWorkspace.jsx'))
-const LiveSurfaces = lazy(() => import('./LiveSurfaces.jsx'))
+const loadLiveSurfaces = () => import('./LiveSurfaces.jsx')
+const LiveSurfaces = lazy(loadLiveSurfaces)
 const LIVE_SECTIONS = Object.freeze({ terminal:'Giao dịch MT5', calendar: 'Calendar', trades: 'Trades', notes: 'Notes', 'tag-analytics': 'Tag analytics', analytics: 'Analytics', 'trading-accounts': 'Trading accounts' })
 
 
@@ -37,6 +38,8 @@ function LiveJournalWorkspace({ workspace, query, preview }) {
   const state = preview ? { status: 'ready', payload: preview } : snapshot.workspace === scopeKey ? snapshot : { status: 'loading', payload: null }
   useEffect(() => {
     if (preview) return
+    // Code and the account snapshot can load together; the data gate stays below.
+    void loadLiveSurfaces().catch(() => {})
     const controller = new AbortController()
     setState(previous => previous.workspace === scopeKey && previous.status !== 'loading' ? previous : { workspace:scopeKey, status: 'loading', payload: null })
     const readCache = {}
@@ -59,7 +62,7 @@ function LiveJournalWorkspace({ workspace, query, preview }) {
     return () => { controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange',visibleRefresh) }
   }, [reloadToken, workspace, scopeKey, connectionId, summary, preview])
   const copy = statusCopy(state)
-  return <section className={`live-workspace wm-page${section === 'trading-accounts' ? ' is-accounts' : section === 'calendar' ? ' is-calendar' : section === 'trades' ? ' is-trades' : section === 'notes' ? ' is-notes' : ''}`} data-testid="live-workspace" aria-label={t('Live')}>
+  return <section className={`live-workspace wm-page${section === 'trading-accounts' ? ' is-accounts' : section === 'calendar' ? ' is-calendar' : section === 'trades' ? ' is-trades' : section === 'notes' ? ' is-notes' : section === 'tag-analytics' ? ' is-tag-analytics' : ''}`} data-testid="live-workspace" aria-label={t('Live')}>
     {!preview && !(summary && state.status === 'ready') && copy.tone !== 'ready' && state.status !== 'unavailable' && <div className={`live-status live-status-${copy.tone}`} data-testid="live-status" role={copy.tone === 'error' ? 'alert' : 'status'}>
       <span className="live-status-dot" aria-hidden="true" /><span>{t(copy.title)}</span>
       {!preview && ['error', 'denied'].includes(state.status) && <button type="button" className="fxa-button live-retry" onClick={() => setReloadToken(value => value + 1)}>{t('Thử lại')}</button>}

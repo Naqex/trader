@@ -1,6 +1,7 @@
 import { displayDate } from './dateFormat.js'
 import { useEffect, useState } from 'react'
 import FxSelect from './FxSelect.jsx'
+import AppIcon from './AppIcon.jsx'
 import { aiErrorCopy } from './aiProvider.js'
 import './ai-workspace.css'
 
@@ -20,7 +21,7 @@ export default function AiSourcePicker({ workspace, value, onChange, en, disable
   if (value && !items.some(item => key(item) === key(value))) options.push({ value: key(value), label: value.id, detail: say('Chưa xác minh nguồn', 'Source not verified'), localize: false })
   return <div className="ai-source-picker">
     <FxSelect label={say('Nguồn dữ liệu chỉ đọc', 'Read-only data source')} value={value ? key(value) : ''} options={options} searchable disabled={disabled} onChange={selected => { const item = items.find(item => key(item) === selected); onChange(item ? { kind: item.kind, id: item.id } : null) }} />
-    <button className="wm-button" type="button" disabled={disabled} onClick={() => refresh(n => n + 1)} aria-label={say('Tải lại nguồn dữ liệu', 'Refresh data sources')}>↻</button>
+    <button className="wm-button is-icon" type="button" disabled={disabled} onClick={() => refresh(n => n + 1)} aria-label={say('Tải lại nguồn dữ liệu', 'Refresh data sources')} data-tooltip={say('Tải lại nguồn dữ liệu', 'Refresh data sources')}><AppIcon name="refresh" size={16} /></button>
     {error && <p className="ai-inline-error" role="alert">{error}</p>}
     {value && <small>{value.kind.startsWith('mt5_') ? say('Chỉ đọc · dữ liệu có thể lưu đệm tối đa 60 giây', 'Read only · data may be cached for up to 60 seconds') : say('Chụp dữ liệu khi gửi · chỉ đọc', 'Snapshot on send · read only')}</small>}
   </div>

@@ -1,0 +1,70 @@
+{
+  "scope": "Trader production UI with native Paperclip source/API on an isolated database; no trading engine or provider jobs.",
+  "cases": [
+    {
+      "name": "native dialog open/Escape",
+      "width": 1920,
+      "focusAfterClose": "BODY",
+      "result": "pass"
+    },
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "frame": {
+        "x": 74,
+        "y": 117,
+        "width": 1846,
+        "height": 823
+      },
+      "result": "pass"
+    },
+    {
+      "name": "native document and navigation preference survive route changes",
+      "result": "pass"
+    },
+    {
+      "name": "unavailable state and explicit retry recover the real native UI",
+      "result": "pass"
+    },
+    {
+      "name": "native dialog open/Escape",
+      "width": 1440,
+      "focusAfterClose": "BODY",
+      "result": "pass"
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "frame": {
+        "x": 74,
+        "y": 117,
+        "width": 1366,
+        "height": 823
+      },
+      "result": "pass"
+    },
+    {
+      "name": "native dialog open/Escape",
+      "width": 390,
+      "focusAfterClose": "BODY",
+      "result": "pass"
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "lang": "vi",
+      "frame": {
+        "x": 0,
+        "y": 117,
+        "width": 390,
+        "height": 823
+      },
+      "result": "pass"
+    }
+  ],
+  "errors": [],
+  "external": [],
+  "writes": []
+}

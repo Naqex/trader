@@ -51,6 +51,10 @@ try {
     const request = route.request(), url = new URL(request.url())
     if (url.origin !== origin) { report.blocked.push(request.url()); return route.abort() }
     if (!url.pathname.startsWith('/api/')) return route.continue()
+    if (request.method() === 'POST' && url.pathname === '/api/v2/auth/local/session') {
+      assert.equal(request.postData(), '{}')
+      return route.fulfill({ json: { mode: 'local-trusted-identity' } })
+    }
     if (request.method() === 'POST' && url.pathname === `/api/v2/replay/sessions/${fixture.session}/step`) {
       const command = request.postDataJSON()
       assert.equal(command.expected_revision, revision)
@@ -113,6 +117,14 @@ try {
   assert.equal(report.blocked.filter(path => !path.endsWith('/activity')).length, 0)
   await page.screenshot({ path: `${output}/after.png` })
   report.steps = steps; report.result = 'PASS'
-} catch (error) { report.result = 'FAIL'; report.failure = error.stack; throw error }
+} catch (error) {
+  report.result = 'FAIL'; report.failure = error.stack
+  const page = browser.contexts()[0]?.pages()[0]
+  if (page) {
+    report.rendered = (await page.locator('body').innerText().catch(() => '')).slice(0, 2000)
+    await page.screenshot({ path: `${output}/failure.png` }).catch(() => {})
+  }
+  throw error
+}
 finally { await writeFile(`${output}/browser.json`, JSON.stringify(report, null, 2)); await browser.close() }
 console.log(JSON.stringify(report))

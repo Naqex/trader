@@ -1,0 +1,21 @@
+.trade-label-settings { min-width:0; }
+.trade-label-settings-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+.trade-label-settings-toolbar h2 { margin:0 12px 0 0; }
+.trade-label-settings > input { width: min(100%,320px); }
+.trade-label-groups { margin-top:24px; }
+.trade-label-group { border-top:1px solid var(--wm-border); padding:16px 0; }
+.trade-label-group header { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.trade-label-group header h3 { margin:0; font-size:15px; overflow-wrap:anywhere; min-width:0; }
+.trade-label-group header > div { display:flex; gap:8px; flex-shrink:0; }
+.trade-label-group ul { list-style:none; margin:12px 0 0; padding:0; }
+.trade-label-group li { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:8px 0; border-bottom:1px solid var(--wm-border); }
+.trade-label-group p { color:var(--wm-content-muted); font-size:13px; }
+.trade-label-settings-dialog { width: min(440px,calc(100vw - 32px)); }
+.trade-label-settings-dialog form { display:grid; gap:20px; padding:24px; }
+.trade-label-settings-dialog form > label { display:grid; gap:8px; font-size:13px; }
+.trade-label-settings-dialog :is(input,select) { width:100%; box-sizing:border-box; min-height:36px; background:var(--wm-surface); color:var(--wm-content); border:1px solid var(--wm-border); padding:8px 10px; border-radius:4px; }
+.trade-label-settings-dialog form > .wm-trade-label { justify-self:start; }
+.trade-label-settings-actions { display:flex; flex-wrap:wrap; gap:12px; }
+.trade-label-settings-dialog > p[role=alert],.trade-label-settings-dialog > button { margin:0 24px 24px; }
+.trade-label-settings-archive { padding:24px; }
+.trade-label-settings-archive p { margin:0 0 20px; }

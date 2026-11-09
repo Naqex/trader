@@ -52,3 +52,10 @@ Report source/fixture/deployed/broker evidence separately, including failed
 attempts and recovery. A recovered `connected` state does not prove the root cause
 was fixed or long-duration stability. Link the receipt to existing runtime docs;
 do not create a new plan/ledger.
+
+For strategy evidence or promotion proposals, use workspace
+`tooling/ai-engines/STRATEGY-WORKFLOW.md` and `strategy-qualification` when
+available. Runtime health does not qualify edge. Research/read-only sessions may
+run concurrently; execution on one workspace/server/login retains one existing
+grant owner and account-wide reservations, including unknown submissions.
+Do not create another grant or independent risk guard to multiply that budget.

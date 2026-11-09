@@ -2,7 +2,7 @@ import { navigate } from './clientNavigation.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import TestingReadState from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton, TestingResourceStatus } from './TestingPageState.jsx'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AnalyticsWorkspace, { analyticsQuery, buildAnalyticsModel, ProvenanceInspector, readAnalyticsFilters } from './AnalyticsWorkspace.jsx'
 import { FxAnalyticsFilters } from './FxAnalytics.jsx'
 import FxTradeLedger, { TradeInspector } from './FxTradeLedger.jsx'
@@ -13,6 +13,7 @@ import useReadRefresh from './useReadRefresh.js'
 import { scopedRead } from './scopedRead.js'
 import { readJson } from './researchDataApi.js'
 import { ledgerFilterUrl } from './ledgerFilterModel.js'
+import { TradeDetailHeading } from './TradeDetailContent.jsx'
 
 function AggregateTrades({ workspace, ids, query, sessionControl, onClearSessions, catalogStatus, sessionAssets }) {
   const { t, timezone } = useTestingLocale()
@@ -22,6 +23,7 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
   const extra = useMemo(() => ({ ...readAnalyticsExtraFilters(query), days: '', weekday: 'all', types: '', notes: '', timezone }), [query, timezone])
   const [readState, setState] = useState({ status: 'loading', payload: null })
   const [reload, setReload] = useState(0), [selected, setSelected] = useState(''), [paging, setPaging] = useState({ page: 1, pageSize: 10, sorts: [] })
+  const navigation=useRef(null),[navigationError,setNavigationError]=useState('')
   const params = useMemo(() => {
     const params = analyticsQuery(filters, timezone, timeBasis)
     if (ids !== null) params.set('sessions', ids.join(','))
@@ -44,7 +46,7 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
     }).catch(error => { if (!controller.signal.aborted) setState(current => current.params === params && current.workspace === workspace && current.payload && ![401,403].includes(error.status) ? { ...current, status: 'stale', refreshing: false, pending: false, error: error.message, readError: error } : { status: 'error', pending: false, error: error.message, readError: error, payload: null, params, workspace, denied: [401,403].includes(error.status) }) })
     return () => controller.abort()
   }, [workspace, params, reload])
-  useEffect(() => { setSelected('') }, [workspace, params])
+  useEffect(() => { if(navigation.current===params)navigation.current=null;else setSelected('');setNavigationError('') }, [workspace, params])
   const readTimeFacets = useCallback(async (basis, signal) => {
     const next = new URLSearchParams(params)
     next.set('time_basis', basis)
@@ -65,6 +67,29 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
     return { ...base, ledger: base.ledger.map(row => ({ ...row, tradeId: JSON.stringify([row.session_id, row.trade_id]) })) }
   }, [state.payload, t, timezone])
   const row = model.ledger.find(row => row.tradeId === selected)
+  const rowIndex=model.ledger.findIndex(row=>row.tradeId===selected)
+  const navigateTrade=async offset=>{
+    setNavigationError('')
+    try{
+      // Saving a note changes snapshot_key and can change note-presence filters.
+      // Re-read this page after the autosave gate before choosing a neighbor.
+      const current=await scopedRead(`/api/v2/replay/trades?${params}`,workspace).then(readJson)
+      validateTradesPagePayload(current)
+      const index=current.ledger.findIndex(item=>JSON.stringify([item.session_id,item.trade_id])===selected)
+      if(index<0)throw new Error('trade_selection_changed')
+      const neighbor=current.ledger[index+offset]
+      if(neighbor){setState(previous=>({...previous,payload:current,status:current.status}));setSelected(JSON.stringify([neighbor.session_id,neighbor.trade_id]));return}
+      const nextPage=paging.page+offset,nextParams=new URLSearchParams(params)
+      nextParams.set('page',nextPage)
+      const payload=await scopedRead(`/api/v2/replay/trades?${nextParams}`,workspace).then(readJson)
+      validateTradesPagePayload(payload)
+      if(payload.snapshot_key!==current.snapshot_key || !payload.ledger.length)throw new Error('trade_snapshot_changed')
+      const next=offset>0?payload.ledger[0]:payload.ledger.at(-1)
+      navigation.current=nextParams.toString()
+      setState({status:payload.status,payload,params:nextParams.toString(),workspace,basis:timeBasis,pending:false,readError:null})
+      setPaging(current=>({...current,page:nextPage}));setSelected(JSON.stringify([next.session_id,next.trade_id]))
+    }catch{setNavigationError(t('Không đọc được giao dịch kế tiếp hoặc danh sách đã thay đổi. Thử lại hoặc đọc lại bảng.'))}
+  }
   useEffect(() => { if (selected && !row) setSelected('') }, [row, selected])
   const detailModel = useMemo(() => buildAnalyticsModel({ ...row?.source_provenance, ledger: row ? [row] : [], metrics: {} }, 'app', timezone), [row, timezone])
   const link = view => {
@@ -82,9 +107,9 @@ function AggregateTrades({ workspace, ids, query, sessionControl, onClearSession
   const readNotice = state.status === 'error' ? <TestingReadState error message={t('Không đọc được giao dịch: {error}', { error: state.error })} recovery={recovery} /> : null
   if (state.denied) return <TestingEmptyState kind="denied" viewport />
   return <section className="as-page fxa-page wm-page" aria-label={t("Trades")} data-testid="aggregate-trades">
-    <FxTradeLedger workspace={workspace} onLabelsChanged={()=>setReload(value=>value+1)} readNotice={readNotice} hidden={state.status === 'error' && !state.payload} emptyScopeKnown={state.payload?.pagination.filtered_count === 0 && state.payload.status !== 'partial' && !Object.values(filters).some(value => value && value !== 'all') && Object.entries(extra).every(([key, value]) => key === 'timezone' || value === DEFAULT_EXTRA_FILTERS[key])} model={model} extra={extra} selected={selected} onSelect={setSelected} remotePage={{ selectionKey: JSON.stringify([workspace, ids, filters, extra]), page: state.payload?.pagination.page || paging.page, pageSize: paging.pageSize, sorts: paging.sorts, totalCount: state.payload?.pagination.filtered_count ?? null, pending: state.status === 'loading', onChange: patch => setPaging(current => ({ ...current, ...patch })) }} renderFilters={columnControl => <FxAnalyticsFilters timeBasis={timeBasis} readTimeFacets={readTimeFacets} onApply={applyFilters} statusControl={statusControl} filters={filters} onChange={changeFilters} extra={extra} onExtra={changeExtra} rows={model.ledger} facets={{ ...(state.payload?.facets || state.facets), assets: [...new Set([...(state.payload?.facets?.assets || state.facets?.assets || []), ...sessionAssets])] }} sessionControl={sessionControl} onClearSessions={onClearSessions} pending={!state.payload} columnControl={columnControl} ledgerOnly />} />
+    <FxTradeLedger workspace={workspace} onLabelsChanged={()=>setReload(value=>value+1)} readNotice={readNotice} hidden={state.status === 'error' && !state.payload} emptyScopeKnown={state.payload?.pagination.filtered_count === 0 && state.payload.status !== 'partial' && !Object.values(filters).some(value => value && value !== 'all') && Object.entries(extra).every(([key, value]) => key === 'timezone' || value === DEFAULT_EXTRA_FILTERS[key])} model={model} extra={extra} selected={selected} onSelect={setSelected} remotePage={{ selectionKey: JSON.stringify([workspace, ids, filters, extra]), page: state.payload?.pagination.page || paging.page, pageSize: paging.pageSize, sorts: paging.sorts, totalCount: state.payload?.pagination.filtered_count ?? null, pending: state.status === 'loading', onChange: patch => setPaging(current => ({ ...current, ...patch })) }} renderFilters={(columnControl,journalControl) => <FxAnalyticsFilters timeBasis={timeBasis} readTimeFacets={readTimeFacets} onApply={applyFilters} statusControl={statusControl} filters={filters} onChange={changeFilters} extra={extra} onExtra={changeExtra} rows={model.ledger} facets={{ ...(state.payload?.facets || state.facets), assets: [...new Set([...(state.payload?.facets?.assets || state.facets?.assets || []), ...sessionAssets])] }} sessionControl={<>{sessionControl}{journalControl}</>} onClearSessions={onClearSessions} pending={!state.payload} columnControl={columnControl} ledgerOnly />} />
     {state.payload && <>
-      {row && <TradeInspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{t("Trade detail ·")} {row.session_name}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><ProvenanceInspector model={detailModel} selectedTrade={{ ...row, tradeId: row.trade_id }} journalCount={null} links={{ replay: link('replay'), journal: link('journal') }} /></TradeInspector>}
+      {row && <TradeInspector onPrevious={rowIndex>0 || paging.page>1?()=>navigateTrade(-1):undefined} onNext={rowIndex<model.ledger.length-1 || paging.page*paging.pageSize<(state.payload?.pagination.filtered_count || 0)?()=>navigateTrade(1):undefined} navigationError={navigationError} onClose={() => setSelected('')} heading={<TradeDetailHeading title={`${row.symbol || row.session_name}, ${t(String(row.side).toLowerCase() === 'buy' ? 'Buy' : String(row.side).toLowerCase() === 'sell' ? 'Sell' : '-')}`} entryAt={row.open_time_utc} exitAt={row.close_time_utc} subtitle={row.session_name} net={row.status === 'open' ? null : row.net_pnl} currency={row.account_currency}/>} aria-label={t("Chi tiết giao dịch")}><ProvenanceInspector workspace={workspace} onLabelsChanged={()=>setReload(value=>value+1)} model={detailModel} selectedTrade={{ ...row, tradeId: row.trade_id }} journalCount={null} links={{ replay: link('replay'), journal: link('journal') }} /></TradeInspector>}
     </>}
   </section>
 }
@@ -120,13 +145,14 @@ export default function SessionReports({ workspace, query, ledgerOnly = false })
     if (ledgerOnly || !scope || query.get('session') || query.get('replay_session')) return
     const url = new URL(window.location.href); url.searchParams.set('session', scope); navigate(url, { replace: true })
   }, [scope, ledgerOnly])
-  // An explicit report scope is already authorized by its own API read; the
-  // catalog supplies picker metadata and need not serialize that read.
+  // Report endpoints authorize their own scope. The catalog supplies picker
+  // metadata, so independent ledger reads need not wait for that request.
   const explicitReport = !ledgerOnly && Boolean(queryScope) && scope === queryScope
-  if (catalog.status === 'loading' && !explicitReport) return <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải danh mục phiên…" />
+  const directLedger = ledgerOnly && JSON.stringify(scope) === queryScope
+  if (catalog.status === 'loading' && !explicitReport && !directLedger) return <TestingPageSkeleton view={ledgerOnly ? 'trade' : 'analytics'} label="Đang tải danh mục phiên…" />
   if (catalog.denied) return <TestingEmptyState kind="denied" viewport />
   if (catalog.status === 'error') return <section className="as-page fxa-page wm-page" aria-label={ledgerOnly ? t('Trades') : t('Analytics')} data-testid="session-catalog-error"><FxAnalyticsFilters ledgerOnly={ledgerOnly} sourceType="Backtesting" disabled pending filters={readAnalyticsFilters(query)} extra={readAnalyticsExtraFilters(query)} rows={[]} onChange={() => {}} onExtra={() => {}} sessionControl={control} statusControl={<TestingResourceStatus />} /><TestingReadState error message={t('Không tải được danh mục phiên:') + ' ' + t(catalog.error)} recovery={recovery} /></section>
-  if (!catalog.items.length && !query.get('session') && !query.get('replay_session')) return <TestingEmptyState viewport />
+  if (catalog.status !== 'loading' && !catalog.items.length && !query.get('session') && !query.get('replay_session')) return <TestingEmptyState viewport />
   const sessionAssets = [...new Set(catalog.items.filter(entry => scope === null || (Array.isArray(scope) ? scope : [scope]).includes(entry.record_id)).flatMap(entry => entry.instrument_ids || (entry.instrument_id ? [entry.instrument_id] : [])))]
   const catalogStatus = { state: catalog.refreshing || catalog.status === 'loading' ? 'refreshing' : catalog.status === 'stale' ? 'stale' : undefined, recovery }
   return <>

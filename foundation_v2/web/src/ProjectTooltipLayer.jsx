@@ -63,7 +63,10 @@ export default function ProjectTooltipLayer({ targetDocument = document, theme: 
     const scroll = event => { if (!inTooltip(event.target)) hide() }
     const key = event => {
       if (event.key === 'Escape' && (current.current || timers.current.anchor)) {
-        event.preventDefault(); event.stopPropagation(); dismissed = current.current?.anchor || timers.current.anchor; hide()
+        const visible=current.current?.anchor.isConnected && doc.getElementById(id)?.getClientRects().length
+        // A queued or detached hint must not swallow the dialog's Escape.
+        if(visible){event.preventDefault();event.stopPropagation()}
+        dismissed = current.current?.anchor || timers.current.anchor; hide()
       }
     }
     doc.addEventListener('pointerover', over)

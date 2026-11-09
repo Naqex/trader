@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from export_api_command_contracts import export_contracts
+from note_library_openapi import extend_note_library
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -137,7 +138,104 @@ def platform_contract():
         "name": "dashboard_source", "in": "query", "required": False,
         "schema": {"enum": ["backtest", "prop", "all"], "default": "all"},
         "description": "Native Performance source scope; intersects selected sessions and retains ancestry for fill deduplication."})
+    extend_note_library(schema)
+    extend_local_capabilities(schema, operation, json_response)
     return schema
+
+
+def extend_local_capabilities(schema, operation, json_response):
+    """Native-only auth/admission, separate from frozen Python command shapes."""
+    uid = {'type': 'string', 'format': 'uuid'}
+    sha = {'type': 'string', 'pattern': '^[0-9a-f]{64}$'}
+    decimal = {'type': 'string', 'maxLength': 48, 'pattern': '^[0-9]+(\\.[0-9]+)?$'}
+    policy = dict(type='object', additionalProperties=False, properties={
+        'connection_id': uid, 'connection_generation': {'type': 'integer', 'minimum': 1},
+        'login': {'type': 'string'}, 'server': {'type': 'string'}, 'environment': {'const': 'demo'},
+        'account_currency': {'type': 'string'}, 'artifact_sha256': sha,
+        'symbols': {'type': 'array', 'minItems': 1, 'maxItems': 32, 'uniqueItems': True, 'items': {'type': 'string'}},
+        'actions': {'type': 'array', 'minItems': 1, 'uniqueItems': True, 'items': {'enum': ['place', 'close']}},
+        'expires_at': {'type': 'string', 'format': 'date-time'},
+        **{key: decimal for key in ('max_risk_amount', 'max_risk_pct', 'max_aggregate_risk_amount',
+            'max_volume', 'session_equity_floor', 'free_margin_floor', 'cost_buffer_per_lot', 'max_spread_points')},
+        **{key: {'type': 'integer', 'minimum': 1} for key in ('max_positions', 'max_attempts', 'max_quote_age_ms')},
+        'deviation_points': {'type': 'integer', 'minimum': 0},
+    })
+    policy['required'] = list(policy['properties'])
+    command = dict(type='object', additionalProperties=False,
+        required=['request_id','connection_id','mode','account_id','server','action','symbol'], properties={
+            'request_id': uid, 'connection_id': uid, 'mode': {'const':'demo'},
+            'account_id': {'type':'string'}, 'server': {'type':'string'}, 'action': {'enum':['place','close']},
+            'symbol': {'type':'string'}, 'side': {'enum':['BUY','SELL',None]},
+            'order_type': {'enum':['market',None]},
+            **{key:{'type':['number','null']} for key in ('volume','entry_price','stop_loss','take_profit')},
+            'ticket': {'type':['integer','null'], 'minimum':1},
+        })
+    schemas=schema['components']['schemas']
+    schemas['AutomationGrantPolicy']=policy
+    schemas['AutomationDemoCommand']=command
+    schemes=schema['components'].setdefault('securitySchemes',{})
+    schemes.update(OwnerBearer={'type':'http','scheme':'bearer'},
+        OwnerCookie={'type':'apiKey','in':'cookie','name':'naqex_owner_session'},
+        AutomationBearer={'type':'http','scheme':'bearer'})
+    schema['info']['description'] += (' Opt-in local-capability mode replaces local trust with owner '
+        'bearer/HttpOnly cookie authentication; cookie mutations require exact Origin and x-naqex-csrf. '
+        'Automation has a separate credential and default-deny routes. This remains a local-only trust boundary.')
+
+    def native(identifier, *, scoped=True, body=None, description='', security=None):
+        value=operation(identifier,json_response(description,{'type':'object'}),scoped=scoped)
+        value['description']=description
+        value['responses'].update({'401':{'description':'Missing, invalid or expired capability'},
+            '403':{'description':'Actor, origin, CSRF or scope denied'},
+            '409':{'description':'Idempotency or immutable binding conflict'},
+            '423':{'description':'Grant, connection, budget or unknown-outcome gate locked'}})
+        if body is not None:
+            value['requestBody']={'required':True,'content':{'application/json':{'schema':body}}}
+        if security is not None: value['security']=security
+        return value
+
+    owner=[{'OwnerBearer':[]},{'OwnerCookie':[]}]
+    automation=[{'AutomationBearer':[]}]
+    schema['paths']['/api/v2/automation/grants']={'post':native('automation_grant_create',
+        body={'$ref':'#/components/schemas/AutomationGrantPolicy'},security=owner,
+        description='Authenticated Owner in native capability mode approves one immutable bounded Demo grant. Returns a random bearer credential once; never logged. No order is sent.')}
+    revoke=native('automation_grant_revoke',security=owner,
+        description='Owner revokes new sends under the same terminal lock. Does not close positions, erase receipts or resend uncertain commands.')
+    revoke['parameters'].append({'name':'grant_id','in':'path','required':True,'schema':uid})
+    schema['paths']['/api/v2/automation/grants/{grant_id}/revoke']={'post':revoke}
+    schema['paths']['/api/v2/automation/trading/commands']={'post':native('automation_demo_command',
+        body={'type':'object','additionalProperties':False,'required':['artifact_sha256','command'],
+            'properties':{'artifact_sha256':sha,'command':{'$ref':'#/components/schemas/AutomationDemoCommand'}}},
+        security=automation,description='Exactly one native Demo submission after durable request/reservation commit and final fresh SDK risk/grant checks. UUID/fingerprint duplicates return the receipt; unknown outcomes never resend.')}
+    receipt=native('automation_demo_receipt',security=automation+owner,
+        description='Only this grant/credential/workspace request receipt; still available after revocation/expiry.')
+    receipt['parameters'].append({'name':'request_id','in':'path','required':True,'schema':uid})
+    schema['paths']['/api/v2/automation/trading/requests/{request_id}']={'get':receipt}
+    schema['paths']['/api/v2/automation/trading/reconcile']={'post':native('automation_demo_reconcile',
+        body={'type':'object','additionalProperties':False,'required':['request_id'],
+            'properties':{'request_id':uid,'connection_id':uid}},security=automation+owner,
+        description='Native read-only reconciliation for a request owned by this grant; no order_send. Does not restore send rights after expiry or reconnect.')}
+    schema['paths']['/api/v2/automation/trading/snapshot']={'get':{
+        'summary':'Read the grant-bound Demo account snapshot and closed-bar inputs',
+        'operationId':'automation_trading_snapshot',
+        'description':'Automation credential only. Fixed H1 and at most 300 native Bid bars. Account/generation/symbol fenced; no grant renewal or send authority. Reads remain available after expiry/revocation. Other-symbol exposure is represented by a flag. Forming bars are not qualified as closed inputs.',
+        'parameters':[{'name':'symbol','in':'query','required':True,
+            'schema':{'type':'string','maxLength':64}}],
+        'responses':{
+            '200':{'description':'Native broker snapshot with grant and source binding'},
+            '403':{'description':'Automation credential or scope denied'},
+            '423':{'description':'Account/generation no longer matches'},
+            '503':{'description':'Broker snapshot unavailable'},
+        },
+    }}
+    schema['paths']['/api/v2/auth/local/bootstrap']={'post':native('local_owner_bootstrap',scoped=False,
+        body={'type':'object','additionalProperties':False,'required':['nonce'],
+            'properties':{'nonce':{'type':'string','minLength':43,'maxLength':256}}},
+        description='Exchange private one-time bootstrap nonce with exact allowed Origin for HttpOnly SameSite=Strict owner cookie and CSRF token. No workspace header required; durable claim prevents restart replay.')}
+    schema['paths']['/api/v2/auth/local/session']={'post':native('local_owner_session',scoped=False,
+        description='Read owner session/CSRF with cookie and exact Origin; POST supplies browser Origin automatically. Legacy mode returns its mode only. No session renewal or grant creation.')}
+    schema['paths']['/api/v2/auth/local/login']={'get':{'operationId':'local_owner_login',
+        'responses':{'200':{'description':'Local owner sign-in form; no secrets in URL/logs',
+            'content':{'text/html':{'schema':{'type':'string'}}}}}}}
 
 
 def main():

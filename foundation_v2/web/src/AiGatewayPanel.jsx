@@ -1,8 +1,9 @@
+import { ownerFetch } from './ownerSession.js'
 import { useEffect, useRef, useState } from 'react'
 import { useFxReplayContext } from './FxReplayShell.jsx'
 import { aiErrorCopy } from './aiProvider.js'
-
-const managementUrl = 'http://127.0.0.1:17852/management.html'
+import { AiPanelState } from './AiStudio.jsx'
+import { GATEWAY_HEALTH_PATH, GATEWAY_MANAGEMENT_URL as managementUrl } from '../cliProxyBridge.mjs'
 
 export default function AiGatewayPanel({ workspace, language, active, chatOpen }) {
   const { buildHref } = useFxReplayContext()
@@ -15,7 +16,7 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
   useEffect(() => {
     const leaving = previous.current.active && (!active || (chatOpen && !previous.current.chatOpen))
     previous.current = { active, chatOpen }
-    if (!leaving) return
+    if (!leaving || !state?.value || state.preview) return
     refreshRequest.current?.abort()
     const controller = new AbortController()
     refreshRequest.current = controller
@@ -23,7 +24,7 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
     async function refresh() {
       let error
       try {
-        const response = await fetch('/api/v2/ai/assistant/connections/local-gateway/refresh', {
+        const response = await ownerFetch('/api/v2/ai/assistant/connections/local-gateway/refresh', {
           method: 'POST', headers: { 'X-Workspace-Id': workspace, 'Content-Type': 'application/json' }, body: '{}',
           signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
         })
@@ -35,23 +36,32 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
       }))
     }
     void refresh()
-  }, [active, chatOpen, workspace])
+  }, [active, chatOpen, workspace, state?.preview])
   useEffect(() => {
     if (!active) return
     const controller = new AbortController()
     async function read() {
+      let preview = false
       try {
         const response = await fetch('/api/v2/ai/assistant/connections/local-gateway', {
           headers: { 'X-Workspace-Id': workspace }, signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
         })
-        const value = await response.json()
-        if (!response.ok) throw new Error(typeof value.detail === 'string' ? value.detail : '')
+        let value = await response.json()
+        preview = response.status === 503 && value.detail === 'ui_preview_services_not_connected'
+        if (preview) {
+          const panel = await fetch(GATEWAY_HEALTH_PATH, {
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]), cache: 'no-store',
+          })
+          const health = await panel.json()
+          if (!panel.ok || health.status !== 'ok') throw new Error('ai_gateway_unavailable')
+          value = { runtime: { management_url: managementUrl } }
+        } else if (!response.ok) throw new Error(typeof value.detail === 'string' ? value.detail : '')
         if (!controller.signal.aborted) {
-          setState({ value })
+          setState({ value, preview })
           if (value.runtime?.management_url === managementUrl) setDocumentVersion(attempt)
         }
       } catch (error) {
-        if (!controller.signal.aborted) setState({ error: error.message || 'ai_gateway_unavailable' })
+        if (!controller.signal.aborted) setState({ preview, error: error.message || 'ai_gateway_unavailable' })
       }
     }
     void read()
@@ -64,16 +74,15 @@ export default function AiGatewayPanel({ workspace, language, active, chatOpen }
     {documentVersion !== null && <iframe key={documentVersion} className="ai-gateway-frame" hidden={!available} title={say('Trang quản trị CLIProxyAPI', 'CLIProxyAPI management')}
       src={managementUrl} referrerPolicy="no-referrer" allow="clipboard-write"
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads" />}
-    {!available && <section className="ai-gateway-state" role={state?.error ? 'alert' : 'status'} aria-busy={!state}>
-    <h1>CLIProxyAPI</h1>
-    <p>{!state ? say('Đang mở trang quản trị…', 'Opening management…')
+    {!available && <AiPanelState icon="layers" title="CLIProxyAPI" alert={!!state?.error} busy={!state}
+      message={!state ? say('Đang mở trang quản trị…', 'Opening management…')
       : state.error ? aiErrorCopy(state.error, en)
         : runtime?.management_available && !runtime.running ? say('Bật kết nối để mở trang quản trị.', 'Start the connection to open management.')
-          : say('Trang quản trị chưa sẵn sàng.', 'Management is not available yet.')}</p>
-    {state && <div>
-      <a className="wm-button" href={buildHref('ai', { area: 'ai', section: 'connections' })}>{say('Kết nối', 'Connections')}</a>
-      <button className="wm-button" type="button" onClick={() => setAttempt(value => value + 1)}>{say('Thử lại', 'Retry')}</button>
-    </div>}
-    </section>}
+          : say('Trang quản trị chưa sẵn sàng.', 'Management is not available yet.')}>
+      {state && <>
+        <button className="wm-button is-primary" type="button" onClick={() => setAttempt(value => value + 1)}>{say('Thử lại', 'Retry')}</button>
+        <a className="wm-button" href={buildHref('ai', { area: 'ai', section: 'connections' })}>{say('Về Kết nối', 'Back to Connections')}</a>
+      </>}
+    </AiPanelState>}
   </>
 }

@@ -1,0 +1,117 @@
+// Production UI with synthetic note timestamps; all API writes are blocked.
+import assert from 'node:assert/strict'
+import { chromium } from 'playwright'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { journalRecords, brokerSnapshot, fixtureAccount } from './liveJournal.fixture.mjs'
+
+const [origin,out] = process.argv.slice(2)
+assert.equal(new URL(origin).hostname,'127.0.0.1')
+await mkdir(out,{recursive:true})
+const report={cases:[],errors:[],writes:[],scope:'Five Notes filters, real timestamp semantics in synthetic data; shared trade drawer regression'}
+const browser=await chromium.launch()
+let activePage
+try {
+  for (const [width,theme,lang] of [[1920,'dark','en'],[1440,'light','en'],[390,'dark','vi']]) {
+    const context=await browser.newContext({viewport:{width,height:940},reducedMotion:'reduce'})
+    await context.addInitScript(theme=>{localStorage.setItem('tw-theme',theme);localStorage.setItem('tw-timezone','Asia/Ho_Chi_Minh')},theme)
+    const base=journalRecords().filter(record=>record.kind!=='note'), broker=brokerSnapshot()
+    let notes=[]
+    await context.routeWebSocket('**/*',socket=>socket.close())
+    await context.route('**/*',route=>{
+      const req=route.request(),url=new URL(req.url())
+      if(url.origin!==origin)return route.abort()
+      if(!['GET','HEAD','OPTIONS'].includes(req.method())){report.writes.push(url.pathname);return route.abort()}
+      if(!url.pathname.startsWith('/api/'))return route.continue()
+      if(url.pathname==='/api/v2/live/records')return route.fulfill({json:{version:'live-records-v1',items:[...base,...notes]}})
+      if(url.pathname==='/api/v2/live/note-folders')return route.fulfill({json:{version:'live-note-folders-v1',items:[]}})
+      if(url.pathname==='/api/v2/live/status')return route.fulfill({json:broker})
+      if(url.pathname==='/api/v2/live/connections')return route.fulfill({json:{items:broker.connections}})
+      return route.fulfill({json:{items:[],available:false}})
+    })
+    const page=await context.newPage();activePage=page;page.setDefaultTimeout(10000)
+    page.on('console',message=>{if(message.type()==='error')report.lastConsoleError=message.text()})
+    page.on('pageerror',error=>report.errors.push(error.message))
+    const url=`${origin}/?workspace=fixture&view=live&area=live&section=notes&lang=${lang}&live_account=${fixtureAccount}`
+    await page.goto(url)
+    const surface=page.locator('.live-notes'),drawer=page.locator('.fxl-filter-drawer')
+    const open=()=>surface.getByRole('button',{name:lang==='vi'?'Bộ lọc ghi chú':'Note filters',exact:true}).click()
+    const section=index=>drawer.locator('details').nth(index)
+    const expand=async index=>{if(!await section(index).getAttribute('open').then(value=>value!==null))await section(index).locator('summary').click()}
+    const select=async(index,name)=>{await expand(index);await section(index).locator('.fx-select-trigger').click();await section(index).getByRole('option',{name,exact:true}).click();await page.keyboard.press('Escape')}
+    await surface.locator('.live-notes-empty-art').waitFor()
+    await open()
+    assert.equal(await drawer.getByRole('tablist').count(),0)
+    assert.equal(await drawer.locator('details').count(),5)
+    if(lang==='en')assert.deepEqual(await drawer.locator('summary').allTextContents(),['Note type','Date range','Days of the week','Month','Year'])
+    await expand(4);await section(4).locator('.fx-select-trigger').click()
+    const currentYear=new Intl.DateTimeFormat('en',{year:'numeric',timeZone:'Asia/Ho_Chi_Minh'}).format(new Date())
+    assert.deepEqual(await section(4).getByRole('option').allTextContents(),[currentYear])
+    await page.keyboard.press('Escape')
+    await expand(0);await section(0).locator('.fx-select-trigger').click()
+    assert.equal(await section(0).getByRole('option').count(),4)
+    await page.screenshot({path:`${out}/types-${width}-${theme}.png`})
+    await page.keyboard.press('Escape')
+    for(const [index,count] of [[2,7],[3,12]]) {
+      await expand(index);await section(index).locator('.fx-select-trigger').click()
+      assert.equal(await section(index).getByRole('option').count(),count)
+      await page.screenshot({path:`${out}/options-${index}-${width}-${theme}.png`})
+      await page.keyboard.press('Escape')
+    }
+    await expand(1)
+    const date=section(1).locator('.project-date-input'),range=date.getByRole('textbox'),trigger=date.locator('.project-date-picker')
+    const field=await date.evaluate(el=>{const s=getComputedStyle(el);return{background:s.backgroundColor,radius:s.borderRadius,border:s.borderTopStyle}})
+    assert.equal(field.background,'rgba(0, 0, 0, 0)')
+    assert.equal(field.border,'solid')
+    assert.notEqual(field.radius,'999px','Range uses field shape rather than toolbar pill')
+    await range.fill('30/10/2026 – 29/10/2026')
+    assert(await drawer.locator('footer > .is-primary').isDisabled(),'Reversed date range cannot apply')
+    await range.fill('30/10/2026 – 30/10/2026')
+    assert(await drawer.locator('footer > .is-primary').isEnabled())
+    await trigger.click()
+    const calendar=page.locator('.project-date-popover:popover-open')
+    await calendar.waitFor()
+    await page.screenshot({path:`${out}/calendar-${width}-${theme}.png`})
+    await page.setViewportSize({width:width-10,height:900})
+    assert.equal(await calendar.evaluate(el=>getComputedStyle(el).position),'fixed','Shared calendar uses the top layer')
+    const bounds=await drawer.evaluate(el=>{const r=el.getBoundingClientRect(),f=el.querySelector('footer').getBoundingClientRect();return{left:r.left,right:r.right,bottom:f.bottom,viewport:innerWidth,height:innerHeight,overflow:el.querySelector('.fxl-drawer-body').scrollWidth-el.querySelector('.fxl-drawer-body').clientWidth}})
+    assert(bounds.left>=0&&bounds.right<=bounds.viewport&&bounds.bottom<=bounds.height&&bounds.overflow<=1)
+    await page.keyboard.press('Escape')
+    assert.equal(await calendar.count(),0)
+    assert.equal(await drawer.count(),1,'Escape closes calendar before drawer')
+    await page.keyboard.press('Escape');assert.equal(await drawer.count(),0)
+    report.cases.push({width,theme,lang,name:'five-sections-empty-year-options-calendar-resize-keyboard',bounds})
+    if(width===1920) {
+      const template=journalRecords().find(record=>record.kind==='note')
+      notes=[['today','2026-10-29T18:00:00Z'],['yesterday','2026-10-29T10:00:00Z'],['old','2025-10-30T10:00:00Z']].map(([id,stamp])=>({...template,record_id:id,updated_at_utc:stamp,payload:{...template.payload,title:id}}))
+      await page.reload();await surface.locator('.live-note-row').first().waitFor()
+      assert.equal(await surface.locator('.live-note-row').count(),3)
+      await open();await select(0,'General');await select(2,'Friday');await select(3,'October');await select(4,'2026')
+      await drawer.locator('footer > .is-primary').click()
+      assert.equal(await surface.locator('.live-note-row').count(),1)
+      assert.match(await surface.locator('.live-note-row').innerText(),/today/,'UTC Thursday instant becomes Friday in selected timezone')
+      await open();await drawer.locator('footer > .fxl-clear').click();await page.keyboard.press('Escape')
+      assert.equal(await surface.locator('.live-note-row').count(),1,'Cancel discards draft reset')
+      await open();await drawer.locator('footer > .fxl-clear').click();await drawer.locator('footer > .is-primary').click()
+      assert.equal(await surface.locator('.live-note-row').count(),3)
+      await open();await expand(1);await range.fill('30/10/2026 – 30/10/2026');await trigger.click()
+      await calendar.getByRole('gridcell',{name:'30/10/2026',exact:true}).click()
+      await calendar.getByRole('gridcell',{name:'30/10/2026',exact:true}).click()
+      await drawer.locator('footer > .is-primary').click()
+      assert.equal(await surface.locator('.live-note-row').count(),1)
+      assert.match(await surface.locator('.live-note-row').innerText(),/today/)
+      report.cases.push({name:'combined-local-day-month-year-type-and-calendar-range-apply-reset-cancel'})
+      await page.goto(url.replace('section=notes','section=trades'))
+      await page.getByRole('button',{name:'Basic',exact:true}).click()
+      assert.equal(await drawer.getByRole('tab').count(),2,'Shared trade drawer retains Basic/Tags tabs')
+      await drawer.getByRole('tab',{name:'Tags',exact:true}).click()
+      assert.equal(await drawer.getByRole('tab',{name:'Tags',exact:true}).getAttribute('aria-selected'),'true')
+      await page.keyboard.press('Escape')
+      report.cases.push({name:'shared-trade-drawer-tabs-preserved'})
+    }
+    await context.close()
+  }
+  assert.deepEqual(report.errors,[]);assert.deepEqual(report.writes,[])
+  report.status='PASS'
+} catch(error) {report.status='FAIL';report.failure=error.stack;if(activePage){report.snapshot=await activePage.locator('body').innerText().catch(()=>null);await activePage.screenshot({path:`${out}/failure.png`}).catch(()=>{})}process.exitCode=1}
+finally {await browser.close();await writeFile(`${out}/browser.json`,JSON.stringify(report,null,2))}
+console.log(JSON.stringify({status:report.status,cases:report.cases.length,errors:report.errors,writes:report.writes,failure:report.failure}))

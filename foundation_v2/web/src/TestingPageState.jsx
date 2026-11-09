@@ -19,7 +19,7 @@ export function TestingWelcome({ onBacktest, propHref, backtestHref, preview = f
   </section>
 }
 
-export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear }) {
+export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear, children }) {
   const { t } = useTestingLocale()
   const states = {
     datasets: ['ledger', 'Chưa có dữ liệu đã tải', 'Nhập CSV hoặc chọn nguồn dữ liệu để bắt đầu tải lịch sử.'],
@@ -46,6 +46,7 @@ export function TestingEmptyState({ kind = 'sessions', viewport = false, onClear
     <h2>{t(title)}</h2>
     <p>{t(detail)}</p>
     {onClear && <button className="fxa-button" type="button" onClick={onClear}>{t('Xóa bộ lọc')}</button>}
+    {children}
   </section>
 }
 

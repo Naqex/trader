@@ -9,7 +9,7 @@ From the TradingWorkspace root, using the already installed pinned Playwright 1.
 ```powershell
 $env:TW_VISUAL_ORIGIN='http://127.0.0.1:5180'
 $env:TW_VISUAL_CANDIDATE='1'
-node tooling/ui-qa/node_modules/@playwright/test/cli.js test --config projects/mt5-tradingview-backtester/foundation_v2/web/tests/visual/playwright.config.mjs
+node tooling/ui-qa/node_modules/@playwright/test/cli.js test --config projects/trader/foundation_v2/web/tests/visual/playwright.config.mjs
 ```
 
 Candidate mode defaults to `.artifacts/wm-visual-comparison/candidate/` and marks every capture `CANDIDATE_NOT_APPROVED`. Set `TW_VISUAL_CANDIDATE_ROOT` and `TW_VISUAL_OUTPUT_ROOT` to new attempt directories when recapturing after a repair, so previous candidates and failed reports remain intact. Ledger captures align the actual table inside the content viewport and verify the first row and numeric-column alignment before taking the screenshot. Repeated byte equality is determinism evidence only. Before promotion, freeze the integrated source, inspect all representative candidate images at their exact viewport, compare to prior same-contract baselines if present, review behavior/quality evidence, and record agent delegated approval with the fixture/source hashes and approved image hashes. The old W8 candidate uses different fixtures/selectors and is historical reference, not a pixel oracle for this session-first fixture.
@@ -20,7 +20,7 @@ Comparison command:
 
 ```powershell
 Remove-Item Env:TW_VISUAL_CANDIDATE -ErrorAction SilentlyContinue
-node tooling/ui-qa/node_modules/@playwright/test/cli.js test --config projects/mt5-tradingview-backtester/foundation_v2/web/tests/visual/playwright.config.mjs
+node tooling/ui-qa/node_modules/@playwright/test/cli.js test --config projects/trader/foundation_v2/web/tests/visual/playwright.config.mjs
 ```
 
 This uses `expect(page).toHaveScreenshot()` against the reviewed baselines, fails when missing, and saves actual/expected/diff plus a trace on failure. No masks are applied. `maxDiffPixels: 0` intentionally requires the same pinned Windows/browser/fonts/DPR1/reduced-motion environment; do not raise tolerance to conceal changes. Cross-machine raster changes require a reviewed environment update. Never interpret a pixel match as independent product acceptance.

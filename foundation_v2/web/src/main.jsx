@@ -1,13 +1,17 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { installChunkRecovery } from './chunkRecovery.js'
+import { initializeOwnerSession } from './ownerSession.js'
 const removeChunkRecovery = installChunkRecovery(import.meta.url)
+// Reads can render immediately; mutations await discovery and fail closed if
+// owner authentication cannot be established. Nothing retries a submitted action.
+void initializeOwnerSession().catch(() => {})
 const LearnWorkspace = lazy(() => import('./LearnWorkspace.jsx'))
 const PropAnalytics = lazy(() => import('./PropAnalytics.jsx'))
 const ReplayWorkspace = lazy(() => import('./ReplayWorkspace.jsx'))
 import FxReplayShell from './FxReplayShell.jsx'
 const AnalyticsWorkspace = lazy(() => import('./AnalyticsWorkspace.jsx'))
-const JournalWorkspace = lazy(() => import('./JournalWorkspace.jsx'))
+const TradeNoteRoute = lazy(() => import('./TradeNoteRoute.jsx'))
 const SettingsWorkspace = lazy(() => import('./SettingsWorkspace.jsx'))
 const AiWorkspace = lazy(() => import('./AiWorkspace.jsx'))
 const DataDeskWorkspace = lazy(() => import('./DataDeskWorkspace.jsx'))
@@ -31,6 +35,7 @@ import './page-layout.css'
 import './component-interactions.css'
 import './testing-standard.css'
 import './compact-system.css'
+import './product-ui-profile.css'
 import WorkspaceQueryProvider from './WorkspaceQueryProvider.jsx'
 import WorkspaceConnectionNote from './WorkspaceConnectionNote.jsx'
 import { startFrontendPerformance } from './frontendPerformance.js'
@@ -67,14 +72,20 @@ function App() {
   }, [performanceEnabled])
   const workspace = query.get('workspace') || 'tenant-a'
   const requestedView = query.get('view')
+  // Bots left the Studio nav; old links land on the AI team page.
+  const retiredSection = requestedView === 'ai' && query.get('section') === 'automation'
   useLayoutEffect(() => {
     if (requestedView === 'testing' || requestedView === 'prop') navigate(buildWorkspaceHref('overview', workspace, query, { create: 'prop', session: null, dataset: null, cursor: null, cutoff: null }), { replace: true })
   }, [requestedView, workspace])
+  useLayoutEffect(() => {
+    if (retiredSection) navigate(buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'paperclip' }), { replace: true })
+  }, [retiredSection, workspace])
   // Preserve deep links emitted by the research/learn flows while keeping a bare root on the overview.
-  const activeView = requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
+  const activeView = requestedView === 'journal' ? 'trade' : requestedView === 'data' ? 'market-data' : requestedView || (query.has('job') ? 'research' : query.has('session') || query.has('dataset') ? 'replay' : 'overview')
+  if (requestedView === 'journal') { query.set('area', 'testing'); query.set('section', 'trades') }
   if (activeView === 'ai') {
     query.set('area', 'ai')
-    if (!['assistant', 'connections', 'gateway', 'models', 'workflows', 'automation'].includes(query.get('section'))) query.set('section', 'connections')
+    if (!['assistant', 'connections', 'gateway', 'paperclip', 'models', 'workflows', 'research'].includes(query.get('section'))) query.set('section', 'paperclip')
   }
   if (activeView === 'market-data') {
     query.set('area', 'testing')
@@ -111,9 +122,9 @@ function App() {
     mode = 'Data'
   } else if (activeView === 'overview') {
     content = <WorkspaceOverview workspace={workspace} query={query} />
-  } else if (activeView === 'journal') {
-    content = <JournalWorkspace workspace={workspace} query={query} />
-    mode = 'Journal'
+  } else if (requestedView === 'journal') {
+    content = <TradeNoteRoute workspace={workspace} query={query} />
+    mode = 'Practice'
   } else if (activeView === 'analytics') {
     content = query.get('analytics_source') === 'prop' ? <PropAnalytics workspace={workspace} query={query} /> : showSessionAnalytics ? <SessionReports workspace={workspace} query={query} /> : <AnalyticsWorkspace workspace={workspace} query={query} />
     mode = 'Analytics'
@@ -147,15 +158,17 @@ function App() {
   const demoAvailable = canPreviewDemo(activeView, query)
   const visualMode = previewMode(query, activeView)
   const gatewayPage = activeView === 'ai' && query.get('section') === 'gateway' && visualMode === 'real' && query.get('ui_reference') !== '1'
-  if (gatewayPage) content = null
+  const paperclipPage = activeView === 'ai' && query.get('section') === 'paperclip' && visualMode === 'real' && query.get('ui_reference') !== '1'
+  if (gatewayPage || paperclipPage) content = null
   const changePreview = value => {
     navigate(previewStateHref(window.location.href, value))
   }
   // Unmount real data readers during preview; fixtures never reach mutation handlers.
   if (visualMode !== 'real') content = <ViewStatePreview key={`${activeView}:${query.get('analytics_source')}:${query.get('section')}:${visualMode}`} state={visualMode} view={activeView} workspace={workspace} query={query} onChange={changePreview} />
   if (query.get('ui_reference') === '1') content = <TestingComponentReference />
-  const topbarAction = query.get('ui_reference') !== '1' && <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} disabled={!demoAvailable} onChange={changePreview} /></>
-  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction} gatewayPage={gatewayPage}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
+  const researchPreview = activeView === 'ai' && query.get('section') === 'research'
+  const topbarAction = query.get('ui_reference') !== '1' && !paperclipPage && (researchPreview ? <span className="air-shell-preview">{query.get('lang') === 'en' ? 'UI preview' : 'Bản mẫu UI'}</span> : <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} disabled={!demoAvailable} onChange={changePreview} /></>)
+  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction} gatewayPage={gatewayPage} paperclipPage={paperclipPage}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && !researchPreview && !paperclipPage && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
 }
 
 const rootElement = document.getElementById('root')

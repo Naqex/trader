@@ -1,0 +1,54 @@
+{
+  "scope": "Synthetic GET fixtures on vite preview; writes aborted",
+  "shots": [
+    "account-selection-1440-dark.png",
+    "trade-selection-1440-dark.png",
+    "bulk-tags-empty-1440-dark.png",
+    "bulk-tags-rows-1440-dark.png",
+    "template-footer-1440-dark.png",
+    "account-selection-1440-light.png",
+    "trade-selection-1440-light.png",
+    "bulk-tags-empty-1440-light.png",
+    "bulk-tags-rows-1440-light.png",
+    "template-footer-1440-light.png",
+    "account-selection-390-dark.png",
+    "trade-selection-390-dark.png",
+    "bulk-tags-empty-390-dark.png",
+    "bulk-tags-rows-390-dark.png",
+    "template-footer-390-dark.png",
+    "account-selection-390-light.png",
+    "trade-selection-390-light.png",
+    "bulk-tags-empty-390-light.png",
+    "bulk-tags-rows-390-light.png",
+    "template-footer-390-light.png"
+  ],
+  "errors": [],
+  "writes": [],
+  "bulkRows": {
+    "width": 390,
+    "theme": "light",
+    "rows": [
+      [
+        400,
+        400,
+        400
+      ],
+      [
+        482,
+        482,
+        482
+      ]
+    ],
+    "rowBorders": "0px"
+  },
+  "templateFooter": {
+    "width": 390,
+    "theme": "light",
+    "apply": {
+      "tag": "BUTTON",
+      "parent": "FOOTER",
+      "text": "Áp dụng"
+    }
+  },
+  "status": "PASS"
+}

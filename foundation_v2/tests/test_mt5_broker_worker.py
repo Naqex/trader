@@ -1,11 +1,17 @@
 """Worker authority and session protocol using synthetic SDK/DB only."""
 import importlib.util
+import copy
+import hashlib
+import io
+import json
 import os
 from pathlib import Path
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import Mock, patch
 import uuid
+from datetime import datetime,timezone,timedelta
+from decimal import Decimal
 
 spec = importlib.util.spec_from_file_location('broker_worker', Path(__file__).parents[1]/'scripts/mt5_broker_worker.py')
 worker = importlib.util.module_from_spec(spec)
@@ -41,7 +47,9 @@ class WorkerTests(unittest.TestCase):
         session.guard=Mock()
         session.check_identity=Mock(return_value=NS(trade_mode=0))
         session.sdk=Mock()
+        session.sdk.__version__='fixture-sdk'
         session.sdk.symbols_get.return_value=(NS(name='EURUSD',trade_mode=4,visible=True),)
+        session.sdk.symbol_info_tick.return_value=NS(bid=1.1,ask=1.1001)
         session.secret={'login':'123','server':'Fixture','password':'fixture-only'}
         session.terminal=Path('C:/owned/terminal64.exe')
         return session
@@ -57,6 +65,7 @@ class WorkerTests(unittest.TestCase):
             worker.fence(request,'collect')
             worker.fence(request,'health')
             worker.fence(request,'snapshot')
+            worker.fence(request,'ticks')
             for operation in ('preview','command','reconcile'):
                 with self.subTest(operation=operation),self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
                     worker.fence(request,operation)
@@ -72,7 +81,11 @@ class WorkerTests(unittest.TestCase):
         sdk.account_info.return_value=NS(login=123,server='Fixture',trade_allowed=False,trade_expert=False)
         sdk.terminal_info.return_value=NS(connected=True,path=str(terminal.parent),data_path=str(terminal.parent),trade_allowed=False,tradeapi_disabled=True)
         secret=b'{"login":"123","server":"Fixture","password":"fixture-only"}'
-        with patch.object(worker.connector,'protect',return_value=secret),patch.object(worker.connector,'prepare_terminal',return_value=(terminal,Path('C:/owned/connector.ini'))) as prepare,patch.object(worker.subprocess,'Popen') as process,patch.object(worker.connector,'snapshot',return_value={'verified_permissions':{'read':True,'trade':False}}) as snapshot:
+        with patch.object(worker.connector,'protect',return_value=secret),patch.object(worker.connector,'prepare_terminal',return_value=(terminal,Path('C:/owned/connector.ini'))) as prepare,patch.object(worker.subprocess,'Popen') as process,patch.object(worker,'wait_for_terminal') as wait,patch.object(worker.connector,'snapshot',return_value={'verified_permissions':{'read':True,'trade':False}}) as snapshot:
+            def initialize(*args,**kwargs):
+                wait.assert_called_once_with(process.return_value)
+                return True
+            sdk.initialize.side_effect=initialize
             session=worker.Session(request,guard=Mock(),sdk_loader=lambda:sdk)
             self.assertFalse(session.handle(request)['verified_permissions']['trade'])
             session.handle(request)
@@ -89,6 +102,74 @@ class WorkerTests(unittest.TestCase):
             sdk.shutdown.assert_not_called()
             process.return_value.terminate.assert_not_called()
 
+    def test_tick_capture_is_fenced_read_only_and_rechecks_identity(self):
+        session = self.session()
+        session.context['requested_mode'] = 'read_only'
+        request = {**self.request,'requested_mode':'read_only','operation':'ticks',
+                   'symbol':'EURUSD','from_msc':100000,'to_msc':110000}
+        with patch.object(worker.mt5_tick_capture,'capture',return_value={'status':'ready'}) as capture:
+            self.assertEqual(session.handle(request),{'status':'ready'})
+            capture.assert_called_once_with(session.sdk,'Fixture','EURUSD',100000,110000)
+        self.assertEqual(session.guard.call_count,2)
+        self.assertEqual(session.check_identity.call_count,2)
+        session.sdk.symbols_get.assert_not_called()
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
+        session.context['generation'] = 4
+        with self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+            session.handle(request)
+
+    def test_startup_wait_is_bounded_and_closes_its_handle_on_failure(self):
+        import ctypes
+        process=Mock(pid=123)
+        kernel,user=Mock(),Mock()
+        kernel.OpenProcess.return_value=456
+        for result,exit_code,expected in ((0,None,None),(258,None,'mt5_sync_timeout'),
+                                          (0xffffffff,None,'mt5_terminal_unavailable'),
+                                          (0,0,'mt5_terminal_stopped')):
+            kernel.reset_mock()
+            user.reset_mock()
+            with self.subTest(result=result,exit_code=exit_code),patch.object(ctypes,'WinDLL',side_effect=[kernel,user]):
+                user.WaitForInputIdle.return_value=result
+                process.poll.return_value=exit_code
+                if expected:
+                    with self.assertRaisesRegex(RuntimeError,'^'+expected+'$'):
+                        worker.wait_for_terminal(process)
+                else:
+                    worker.wait_for_terminal(process)
+                user.WaitForInputIdle.assert_called_once_with(456,10000)
+                kernel.CloseHandle.assert_called_once_with(456)
+        kernel.reset_mock()
+        kernel.OpenProcess.return_value=None
+        with patch.object(ctypes,'WinDLL',side_effect=[kernel,user]),self.assertRaisesRegex(RuntimeError,'mt5_terminal_unavailable'):
+            worker.wait_for_terminal(process)
+        kernel.CloseHandle.assert_not_called()
+
+    def test_failed_startup_preserves_reason_without_cleaning_live_descendant_files(self):
+        request={**self.request,'credential':'e30='}
+        terminal=Path('C:/owned/terminal64.exe')
+        secret=b'{"login":"123","server":"Fixture","password":"fixture-only"}'
+        for wait_error,expected in ((RuntimeError('mt5_sync_timeout'),'mt5_sync_timeout'),(None,'mt5_auth_failed')):
+            with self.subTest(expected=expected),patch.object(worker.connector,'protect',return_value=secret), \
+                    patch.object(worker.connector,'prepare_terminal',return_value=(terminal,Path('C:/owned/connector.ini'))), \
+                    patch.object(worker.subprocess,'Popen') as spawn, \
+                    patch.object(worker,'wait_for_terminal',side_effect=wait_error), \
+                    patch.object(worker.connector,'clean_terminal',side_effect=PermissionError('locked descendant fixture')) as clean:
+                sdk=Mock()
+                sdk.initialize.return_value=False
+                sdk.last_error.return_value=(-6,'sensitive broker message')
+                with self.assertRaisesRegex(RuntimeError,'^'+expected+'$'):
+                    worker.Session(request,guard=Mock(),sdk_loader=lambda:sdk)
+                clean.assert_not_called()
+                spawn.return_value.wait.assert_called_once_with(timeout=5)
+                sdk.shutdown.assert_called_once()
+                sdk.order_check.assert_not_called()
+                sdk.order_send.assert_not_called()
+                if wait_error:
+                    sdk.initialize.assert_not_called()
+                else:
+                    sdk.initialize.assert_called_once()
+
     def test_read_only_chart_snapshot_keeps_execution_disabled(self):
         session=self.session()
         session.context['requested_mode']='read_only'
@@ -101,8 +182,58 @@ class WorkerTests(unittest.TestCase):
             result=session.handle(request)
         self.assertFalse(result['execution_enabled'])
         self.assertEqual(result['verified_permissions'],{'read':True,'trade':False})
+        self.assertEqual(result['sdk_version'],'fixture-sdk')
+        self.assertEqual(result['source_sha256'],worker.SNAPSHOT_SOURCES)
         session.sdk.order_check.assert_not_called()
         session.sdk.order_send.assert_not_called()
+
+    def test_default_chart_uses_quoted_broker_variant(self):
+        session=self.session()
+        session.sdk.symbols_get.return_value=(NS(name='EURUSD',trade_mode=4,visible=False),NS(name='EURUSDm',trade_mode=4,visible=True))
+        session.sdk.symbol_info_tick.side_effect=lambda symbol: NS(bid=0.0,ask=0.0) if symbol=='EURUSD' else NS(bid=1.1,ask=1.1001)
+        with patch.object(worker.trading,'snapshot',return_value={'account':{}}) as snapshot:
+            session.handle({**self.request,'operation':'snapshot'})
+        self.assertEqual(snapshot.call_args.args[2],'EURUSDm')
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
+
+    def test_changed_snapshot_source_is_rejected_before_sdk_snapshot(self):
+        session=self.session()
+        with patch.dict(worker.SNAPSHOT_SOURCES,{'mt5_clock.py':'0'*64}), \
+                patch.object(worker.trading,'snapshot') as snapshot, \
+                self.assertRaisesRegex(worker.trading.Denied,'demo_snapshot_source_changed'):
+            session.handle({**self.request,'operation':'snapshot','symbol':'EURUSD'})
+        snapshot.assert_not_called()
+        session.sdk.order_check.assert_not_called()
+        session.sdk.order_send.assert_not_called()
+
+    def test_explicit_chart_symbol_is_not_substituted(self):
+        session=self.session()
+        with patch.object(worker.trading,'snapshot',return_value={'account':{}}) as snapshot:
+            session.handle({**self.request,'operation':'snapshot','symbol':'EURUSD'})
+        self.assertEqual(snapshot.call_args.args[2],'EURUSD')
+        session.sdk.symbol_info_tick.assert_not_called()
+
+    def test_default_chart_without_valid_quotes_is_unavailable(self):
+        for quote in (None,NS(bid=0.0,ask=0.0),NS(bid=float('nan'),ask=1.1),NS(bid=1.2,ask=1.1)):
+            with self.subTest(quote=quote):
+                session=self.session()
+                session.sdk.symbol_info_tick.return_value=quote
+                with patch.object(worker.trading,'snapshot') as snapshot,self.assertRaisesRegex(worker.trading.Denied,'demo_quote_unavailable'):
+                    session.handle({**self.request,'operation':'snapshot'})
+                snapshot.assert_not_called()
+                session.sdk.order_check.assert_not_called()
+                session.sdk.order_send.assert_not_called()
+
+    def test_default_chart_subscribes_preferred_symbols_without_switching_asset(self):
+        session=self.session()
+        session.sdk.symbols_get.return_value=(NS(name='EURUSDm',trade_mode=4,visible=False),NS(name='BTCJPYm',trade_mode=4,visible=True))
+        session.sdk.symbol_info_tick.side_effect=lambda symbol: None if symbol=='EURUSDm' else NS(bid=100.0,ask=101.0)
+        with patch.object(worker.trading,'snapshot') as snapshot,self.assertRaisesRegex(worker.trading.Denied,'demo_quote_unavailable'):
+            session.handle({**self.request,'operation':'snapshot'})
+        session.sdk.symbol_select.assert_called_once_with('EURUSDm',True)
+        session.sdk.symbol_info_tick.assert_called_once_with('EURUSDm')
+        snapshot.assert_not_called()
 
     def test_catalog_is_read_only_preserves_broker_metadata_and_checks_revocation(self):
         session=self.session()
@@ -171,6 +302,118 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(snapshot.call_count,2)
         self.assertEqual(snapshot.call_args.args[-2:],('trading',3))
         session.sdk.initialize.assert_not_called()
+
+
+    def grant_fixture(self):
+        expiry=datetime.now(timezone.utc)+timedelta(minutes=5)
+        policy=dict(connection_id=self.request['connection_id'],connection_generation=3,
+            login='123',server='Fixture',environment='demo',account_currency='USD',artifact_sha256='a'*64,
+            symbols=['EURUSD'],actions=['place','close'],expires_at=expiry.isoformat(),
+            max_risk_amount='25',max_risk_pct='2',max_aggregate_risk_amount='100',max_volume='0.5',
+            max_positions=3,max_attempts=10,session_equity_floor='9500',free_margin_floor='100',
+            cost_buffer_per_lot='10',max_quote_age_ms=2000,max_spread_points='10',deviation_points=5)
+        digest=hashlib.sha256(json.dumps(policy,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+        credential_id=uuid.uuid4()
+        context=dict(grant_id=str(uuid.uuid4()),credential_id=str(credential_id),policy_sha256=digest,artifact_sha256='a'*64)
+        command=dict(request_id=str(uuid.uuid4()),action='place',mode='demo',account_id='123',server='Fixture',
+            symbol='EURUSD',side='BUY',order_type='market',volume=.1,stop_loss=1.099)
+        request={**self.request,'operation':'command','automation':context,'command':command}
+        row=dict(policy_sha256=digest,policy=policy,status='active',expires_at=expiry,
+            approved_at=datetime.now(timezone.utc)-timedelta(minutes=1),approved_by='owner-fixture',
+            terminal_key=hashlib.sha256(f"mt5-managed:{self.request['workspace']}:{self.request['connection_id']}".encode()).hexdigest(),
+            grant_credential_id=credential_id,request_credential_id=credential_id,request_policy_sha256=digest,
+            risk_reserved=Decimal('25'),reserved_total=Decimal('25'),command_body=command,request_status='unknown',
+            attempts=1,paused=False,unresolved=False)
+        row.update(request_terminal_key=row['terminal_key'],request_fingerprint='f'*64,receipt_fingerprint='f'*64)
+        return request,row
+
+    def grant_db(self,row):
+        db=Mock()
+        db.__enter__=Mock(return_value=db);db.__exit__=Mock(return_value=False)
+        db.execute.return_value.fetchone.return_value=row
+        db.execute.return_value.fetchall.return_value=[{'opening_order':'17'}]
+        return db
+
+    def test_native_grant_reader_binds_receipt_scope_hash_counters_and_unknown_state(self):
+        import psycopg
+        request,row=self.grant_fixture()
+        db=self.grant_db(row)
+        secret={'login':'123','server':'Fixture'}
+        with patch.dict(os.environ,TW_V2_DATABASE_URL='fixture-not-real'),patch.object(psycopg,'connect',return_value=db):
+            self.assertEqual(worker.automation_grant(request,secret)['owned_order_ids'],[17])
+            self.assertEqual(db.execute.call_args_list[0].args[1],
+                ('fixture',uuid.UUID(request['automation']['grant_id']),uuid.UUID(request['command']['request_id'])))
+            mutations=[None,{'status':'revoked'},{'paused':True},{'paused':None},{'unresolved':True},
+                {'attempts':11},{'reserved_total':Decimal('101')},{'risk_reserved':Decimal(0)},
+                {'request_status':'filled'},{'request_credential_id':uuid.uuid4()},
+                {'grant_credential_id':uuid.uuid4()},{'request_policy_sha256':'0'*64},
+                {'terminal_key':'wrong-terminal'}, {'command_body':{**request['command'],'volume':.2}},
+                {'request_terminal_key':'other-receipt-terminal'},{'receipt_fingerprint':'e'*64},
+                {'approved_at':datetime.now(timezone.utc)+timedelta(hours=1)}]
+            for changes in mutations:
+                db.execute.return_value.fetchone.return_value=None if changes is None else {**row,**changes}
+                with self.subTest(changes=changes),self.assertRaisesRegex(worker.trading.Denied,'grant_denied'):
+                    worker.automation_grant(request,secret)
+            db.execute.return_value.fetchone.return_value=row
+            for changes in ({'workspace':'other'},{'generation':4},
+                {'automation':{**request['automation'],'artifact_sha256':'0'*64}},
+                {'automation':{**request['automation'],'policy_sha256':'0'*64}},
+                {'automation':{}}, {'operation':'snapshot'}):
+                with self.subTest(request_changes=changes),self.assertRaisesRegex(worker.trading.Denied,'grant_denied'):
+                    worker.automation_grant({**request,**changes},secret)
+            changed=copy.deepcopy(row);changed['policy']['max_volume']='1'
+            db.execute.return_value.fetchone.return_value=changed
+            with self.assertRaisesRegex(worker.trading.Denied,'grant_denied'):
+                worker.automation_grant(request,secret)
+
+    def test_revoked_expired_grant_can_only_reconcile_and_never_reopen_admission(self):
+        import psycopg
+        request,row=self.grant_fixture()
+        row['expires_at']=datetime.now(timezone.utc)-timedelta(seconds=1)
+        row['policy']['expires_at']=row['expires_at'].isoformat()
+        digest=hashlib.sha256(json.dumps(row['policy'],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+        request['automation']['policy_sha256']=digest
+        row.update(policy_sha256=digest,request_policy_sha256=digest,status='revoked',request_status='filled')
+        db=self.grant_db(row)
+        with patch.dict(os.environ,TW_V2_DATABASE_URL='fixture-not-real'),patch.object(psycopg,'connect',return_value=db):
+            with self.assertRaises(worker.trading.Denied):
+                worker.automation_grant(request,{'login':'123','server':'Fixture'})
+            result=worker.automation_grant({**request,'operation':'reconcile'},{'login':'123','server':'Fixture'})
+            self.assertEqual(result['owned_order_ids'],[17])
+
+    def test_worker_constructs_native_automation_policy_and_rechecks_grant_at_send_fence(self):
+        request,row=self.grant_fixture()
+        session=self.session()
+        evidence=dict(policy=row['policy'],owned_order_ids=[17],risk_reserved=Decimal('25'))
+        def execute(sdk,policy,command,before_send):
+            self.assertIsInstance(policy,worker.trading.AutomationBrokerPolicy)
+            self.assertEqual(policy['max_risk_amount'],25)
+            self.assertEqual(policy['owned_order_ids'],frozenset({17}))
+            before_send()
+            return {'status':'filled','order':17}
+        with patch.object(worker,'automation_grant',side_effect=[evidence,worker.trading.Denied('demo_automation_grant_denied')]) as grant,patch.object(worker.trading,'execute',side_effect=execute):
+            with self.assertRaisesRegex(worker.trading.Denied,'grant_denied'):
+                session.handle(request)
+            self.assertEqual(grant.call_count,2)
+        session.sdk.order_send.assert_not_called()
+        session.sdk.order_check.assert_not_called()
+        with patch.object(worker,'automation_grant',return_value=evidence),patch.object(worker.trading,'execute',side_effect=execute):
+            self.assertEqual(session.handle(request),{'status':'filled','order':17})
+
+    def test_worker_preserves_quote_rejection_timestamps_in_native_receipt(self):
+        output = io.StringIO()
+        quality = dict(quote_time_msc=1000, observed_at_msc=9000,
+                       quote_age_ms=8000, max_quote_age_ms=5000, clock='host_utc')
+        with patch.object(worker, 'Session') as session, \
+                patch.object(worker.sys, 'stdin', NS(buffer=io.BytesIO(b'{}\n'))), \
+                patch.object(worker.sys, 'stdout', output):
+            session.return_value.handle.side_effect = worker.trading.Denied('demo_quote_stale', data_quality=quality)
+            worker.main()
+        response = json.loads(output.getvalue())
+        self.assertEqual(response['status'], 'rejected')
+        self.assertEqual(response['reason'], 'demo_quote_stale')
+        self.assertEqual(response['data_quality'], quality)
+        session.return_value.close.assert_called_once()
 
 
 if __name__=='__main__':

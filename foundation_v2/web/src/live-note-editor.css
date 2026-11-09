@@ -1,0 +1,100 @@
+.legacy-modal.live-record-dialog.is-drawer.is-note-editor { width:min(1440px,70vw); max-width:100vw; height:100dvh; max-height:100dvh; overflow:hidden; border-radius:0; }
+.legacy-modal.is-note-editor.is-expanded { width:100vw; }
+.is-note-editor > header { min-height:56px; box-sizing:border-box; padding:10px 20px; gap:8px; border-bottom:0; }
+.is-note-editor > header h2 { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.is-note-editor > header .wm-dialog-close { order:-2; }
+.wm-review-navigation { display:flex; gap:4px; margin-left:auto; }
+.wm-review-icon { flex:none; width:32px; height:32px; border:0; padding:7px; display:inline-grid; place-items:center; background:transparent; color:var(--wm-content-muted); border-radius:4px; cursor:pointer; }
+.wm-review-icon svg { width:18px; height:18px; }
+.wm-review-icon:hover:not(:disabled) { background:var(--wm-hover); color:var(--wm-content); }
+.wm-live-review-workspace { display:flex; flex-direction:column; flex:1; min-height:0; }
+.wm-live-note-title { display:flex; align-items:center; gap:24px; flex-wrap:wrap; padding:4px 28px 20px; flex:none; border-bottom:1px solid var(--wm-border); }
+.wm-live-note-title > input { box-sizing:border-box; flex:1; width:0; min-width:140px; padding:0; min-height:40px; border:0; border-radius:0; background:transparent; color:var(--wm-content); font-family:inherit; font-size:26px; font-style:italic; line-height:1.3; font-weight:600; }
+.wm-live-note-title > input::placeholder { color:var(--wm-content-muted); font-style:italic; font-weight:500; }
+.wm-live-note-title .wm-autosave-status { font-size:12px; min-height:16px; margin:0 0 0 auto; }
+.wm-live-note-title .wm-autosave-status time { white-space:nowrap; }
+.wm-live-note-title .wm-autosave-status:is([data-state=error],[data-state=conflict],[data-state=invalid]) { flex-basis:100%; margin-left:0; }
+.wm-live-note-editor-layout { display:grid; grid-template-columns:minmax(300px,.9fr) minmax(0,1.1fr); flex:1; min-height:0; }
+.wm-live-note-context { --review-inset:20px; display:flex; flex-direction:column; gap:20px; min-width:0; min-height:0; padding:20px 0; border-right:1px solid var(--wm-border); overflow-y:auto; }
+.wm-review-fields { display:grid; gap:16px; padding-inline:var(--review-inset); }
+.wm-review-fields > div { display:grid; gap:8px; }
+.wm-review-field-label { display:flex; align-items:center; gap:8px; color:var(--wm-content-muted); font-size:12px; }
+.wm-review-field-label > svg { width:16px; height:16px; color:var(--wm-content-muted); }
+.wm-review-fields small { font-size:10px; color:var(--wm-content-muted); }
+.wm-review-summary { padding:20px var(--review-inset); border-block:1px solid var(--wm-border); }
+.wm-review-summary dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px 16px; margin:0; }
+.wm-review-summary dl > div { display:flex; flex-direction:column-reverse; align-items:flex-start; gap:4px; min-width:0; }
+.wm-review-summary .wm-review-kpi-primary { grid-column:1/-1; }
+.wm-review-summary dt { color:var(--wm-content-muted); font-size:12px; }
+.wm-review-summary dd { margin:0; font-size:20px; line-height:1.2; font-weight:600; overflow-wrap:anywhere; }
+.wm-review-summary .wm-review-kpi-primary dd { font-size:28px; }
+.wm-review-summary .fxa-viz { margin:16px 0 0; }
+.wm-review-summary .is-positive,.wm-review-trade-row .is-positive { color:var(--project-positive); }
+.wm-review-summary .is-negative,.wm-review-trade-row .is-negative { color:var(--project-negative); }
+.wm-review-linked { padding-inline:var(--review-inset); }
+.wm-review-linked > header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+.wm-review-linked > header > span { color:var(--wm-content-muted); font-size:11px; }
+.wm-review-linked > header > .wm-review-icon { margin-left:auto; }
+.wm-review-add-trades { display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:0; border:0; background:transparent; color:var(--wm-content); font:inherit; cursor:pointer; }
+.wm-review-add-trades:hover:not(:disabled) { color:var(--project-primary); }
+/* Context rows share compact controls with trade notes. */
+.wm-review-fields > div { display:grid; grid-template-columns:minmax(110px,1fr) minmax(0,auto); align-items:center; gap:8px 16px; }
+.wm-review-fields > div > small { grid-column:2; text-align:right; }
+.wm-review-fields .project-date-range-filter { width:250px; max-width:100%; }
+.wm-review-fields .project-date-input { border:0; border-radius:8px; background:var(--project-control); }
+.wm-review-fields .project-date-input > input[type=text] { font-size:12px; }
+.wm-note-type-trigger { justify-self:end; display:inline-flex; align-items:center; max-width:100%; min-height:32px; border:0; padding:0; background:transparent; cursor:pointer; }
+.wm-note-type-trigger > .wm-trade-label { min-height:28px; padding:6px 10px; }
+.wm-note-type-menu { width:360px; }
+.wm-note-type-menu .wm-label-choice { flex:1; }
+@media(max-width:1200px){.wm-review-fields > div { grid-template-columns:1fr; }.wm-review-fields .project-date-range-filter { justify-self:start; width:100%; }.wm-review-fields > div > small { grid-column:1;text-align:left; }.wm-note-type-trigger { justify-self:start; }}
+.wm-review-trade-row { display:flex; align-items:center; gap:10px; min-width:0; padding:14px 0; border-bottom:1px solid var(--wm-border); }
+.wm-review-trade-row > div { flex:1; min-width:0; }
+.wm-review-trade-row strong { font-size:12px; font-weight:500; display:block; }
+.wm-review-trade-row small { display:block; color:var(--wm-content-muted); font-size:10px; overflow-wrap:anywhere; }
+.wm-review-trade-row > span { font-size:12px; text-align:right; }
+.wm-review-trade-row > time { flex:none; font-size:11px; color:var(--wm-content-muted); }
+.wm-review-trade-row.is-compact { position:relative; padding:8px 0 8px 12px; border:0; }
+.wm-review-trade-row.is-compact::before { content:''; position:absolute; left:0; top:16px; height:20px; width:2px; background:var(--wm-content-muted); }
+.wm-review-trade-row.is-compact.is-positive::before { background:var(--project-positive); }
+.wm-review-trade-row.is-compact.is-negative::before { background:var(--project-negative); }
+.wm-review-trade-inline { display:flex; flex-wrap:wrap; align-items:baseline; gap:2px 5px; font-size:12px; }
+.wm-review-trade-inline time { font-size:11px; }
+.wm-review-trade-inline small { flex-basis:100%; }
+.wm-review-empty { padding:28px 0; text-align:center; color:var(--wm-content-muted); font-size:12px; }
+.wm-review-empty > svg { width:28px; height:28px; }
+.wm-review-issue { font-size:12px; color:var(--wm-content-muted); margin:12px 0 0; }
+.wm-live-note-editor-main { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:auto; padding:24px 24px 16px 8px; }
+.wm-live-note-editor-main .wm-note-block-editor { min-height:100%; flex:1 0 auto; }
+.wm-live-note-editor-main .wm-note-template-shortcut { padding-left:48px; }
+.wm-ui-portal .wm-live-note-editor-main .wm-note-template-shortcut .fxa-button { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--wm-border); border-radius:16px; background:transparent; color:var(--wm-content-muted); padding:4px 12px; font:inherit; font-size:12px; cursor:pointer; }
+.wm-live-note-editor-main .bn-editor:focus-visible { outline:0; }
+.legacy-modal.wm-review-trade-picker { display:flex; flex-direction:column; width:min(560px,calc(100vw - 32px)); height:min(680px,calc(100dvh - 32px)); }
+.wm-review-picker-search { padding:16px 24px 12px; }
+.wm-review-picker-search > input { box-sizing:border-box; width:100%; }
+.wm-review-picker-filters { display:flex; align-items:flex-start; flex-wrap:wrap; gap:12px; padding:0 24px 8px; }
+.wm-review-picker-filters .project-date-range-filter { flex:1; min-width:220px; }
+.wm-review-picker-count { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 24px; font-size:11px; color:var(--wm-content-muted); }
+.wm-review-picker-count label { display:flex; align-items:center; gap:8px; }
+.wm-review-picker-list { flex:1; min-height:0; overflow:auto; padding:0 24px; }
+.wm-review-picker-row { display:flex; align-items:center; gap:12px; cursor:pointer; }
+.wm-review-picker-row .wm-review-trade-row { flex:1; border:0; }
+.wm-review-picker-row:hover { background:var(--wm-hover); }
+.wm-review-trade-picker > footer { display:flex; justify-content:flex-end; gap:12px; padding:16px 24px; border-top:1px solid var(--wm-border); }
+.wm-review-trade-picker > .wm-review-issue { padding:0 24px 12px; }
+@media(max-width:1000px) {
+  .legacy-modal.live-record-dialog.is-drawer.is-note-editor { width:100vw; }
+}
+@media(max-width:680px) {
+  .wm-live-note-editor-layout { grid-template-columns:minmax(0,1fr); display:flex; flex-direction:column; overflow:auto; }
+  .wm-live-note-context { --review-inset:16px; flex:none; overflow:visible; padding-block:16px; border-right:0; border-bottom:1px solid var(--wm-border); }
+  .wm-live-note-editor-main { flex:1 0 420px; overflow:visible; padding:20px 16px 16px 0; }
+  .wm-live-note-title { padding:8px 20px 16px; gap:4px 16px; }
+  .wm-live-note-title > input { font-size:24px; }
+  .wm-review-picker-filters { padding-inline:16px; }
+  .wm-review-picker-search,.wm-review-picker-count,.wm-review-picker-list { padding-inline:16px; }
+  .wm-review-trade-row > time { font-size:10px; }
+}
+@media(max-width:480px),(pointer:coarse) {
+  .wm-review-icon,.wm-review-add-trades { min-width:44px; min-height:44px; }
+}

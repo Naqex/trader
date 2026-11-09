@@ -1,4 +1,5 @@
 import { invalidateWorkspaceMetadata } from './workspaceQuery.js'
+import { ownerFetch } from './ownerSession.js'
 
 const unresolved = new Map()
 const METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
@@ -82,7 +83,7 @@ async function execute(path, workspace, options, entry, timeoutMs, pollMs, fetch
       persistReceipt(entry)
       let response
       try {
-        const received = await fetchImpl(path, { ...options, headers: entry.headers, signal: controller.signal })
+        const received = await ownerFetch(path, { ...options, headers: entry.headers, signal: controller.signal }, fetchImpl)
         // Keep the key if the connection dies after headers but before the body.
         const body = await received.arrayBuffer()
         response = new Response([204, 205, 304].includes(received.status) ? null : body,
@@ -120,6 +121,7 @@ async function execute(path, workspace, options, entry, timeoutMs, pollMs, fetch
     }
     throw controller.signal.reason
   } catch (error) {
+    if (error?.outcomeKnown === true) throw error
     throw error instanceof CommandOutcomeUnknownError ? error : new CommandOutcomeUnknownError(entry, error)
   } finally {
     clearTimeout(timer)
@@ -158,6 +160,10 @@ export async function scopedMutation(path, workspace, options = {}, { timeoutMs 
         unresolved.delete(key); persistReceipt(entry, true)
         if (response.ok && /^\/api\/v2\/(?:data|market-data)(?:\/|\?|$)/.test(String(path))) invalidateWorkspaceMetadata(workspace)
         return response
+      })
+      .catch(error => {
+        if (error?.outcomeKnown === true) { unresolved.delete(key); persistReceipt(entry, true) }
+        throw error
       })
       .finally(() => { entry.promise = null })
   }

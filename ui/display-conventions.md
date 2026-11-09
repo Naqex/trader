@@ -17,6 +17,15 @@ fills reach the available scroll viewport edge. Full-bleed tables inside an inse
 parent may exceed its content width by the declared gutter; do not cap them back
 to that content width. On desktop, the Trades pane constrains the broker table's
 flex height so only its data viewport scrolls and pagination stays at the pane bottom.
+Market Data uses the same full-width boundary. Its centered sortable columns
+reserve room for label, indicator, priority and clear action; smaller panes scroll
+the table horizontally. The action column also fits the 44px touch menu target.
+Dropdown menu shells use background and shadow without an outer border; preserve
+search separators, keyboard focus and tooltip boundaries. Centered sortable
+columns center the header text itself, reserving equal space for sort/clear
+actions from the initial state so sorting does not move the column.
+The Live Calendar owns its right separator: weekly gain/loss edges replace the
+neutral seam on the same pixel, with no second sidebar border beside them.
 
 Remove secondary text that does not help an immediate decision or action.
 Healthy reports must not show implementation explanations, generic legacy-data
@@ -25,12 +34,69 @@ missing values, units, input labels, actionable loading/error/recovery and
 consequential partial/stale/permission states. Diagnostics belong in existing
 details only when useful; do not replace every removed sentence with a tooltip.
 
-Live Notes uses one toolbar for account context, creation and note actions,
+Live Notes uses one toolbar for creation and note actions,
 followed by the view selector. Its empty state has a compact decorative
 illustration, one title and one creation action; omit pagination and helper copy
-when there are no results. Edit/group controls remain disabled until their
+when there are no results. The active view uses the neutral shared control border,
+transparent background and no orange underline. Edit/group controls remain disabled until their
 behavior is defined. Existing search, tag filtering and write permissions remain
 owned by the journal; the demo never gains write access for visual parity.
+Practice and broker trade details share `TradeDetailContent` inside the existing
+right drawer. On desktop it occupies 70% of the viewport (up to 1440px): trade
+information/tabs occupy the left third and the note editor the right two thirds.
+Each pane owns its scroll; narrower screens use full width and stack the panes
+below 640px. Header actions close, hide/show details and expand the drawer.
+Details, tag groups and media retain the same tab/focus behavior;
+the note editor stays mounted across tabs, with state isolated by workspace/session/trade identity.
+Clicking an ordinary ledger cell or pressing Enter/Space on its focused row opens
+the same drawer as the detail icon. Checkbox, label, links and embedded controls
+retain their own action; selecting text does not open a drawer. Trade notes and standalone Live Notes use the shared [autosave contract](autosave.md).
+Standalone Live Notes uses a 70vw drawer (up to 1440px), a full-width title,
+and independent scrolling review/editor panes. The right pane reuses `NoteBlockEditor`
+with the `live-notes` template context. The left pane edits a calendar date range
+with its saved IANA timezone, one of four built-in review types, and explicit trade
+links. The date range filters the trade picker; changing dates does not silently
+remove existing links. Summary and cumulative realized PnL use linked closed trades,
+not fills or the current account balance. Missing/stale rows propagate N/A;
+different currencies are never summed. Empty links have count 0 and N/A financial
+metrics. Rich document, plain-text projection, review metadata and trade links save
+in the same CAS revision; legacy plain-text notes remain editable. Existing account
+and strategy fields are in Additional details. This does not alter broker trades.
+Attachments support scoped image upload/preview/removal through the shared media API.
+Trade headers show opening time and closed holding
+duration in the correct Chart/Realtime basis; save time is a separate server fact.
+The detail sidebar groups two identity facts, eight execution facts and three PnL
+facts, with one full-width separator between groups. Live adds the account name,
+holding duration and the actual entry/exit fills. Session scope stays in the
+header tooltip; omit the provenance accordion from the trade drawer.
+Missing detail values use a normal hyphen. The three PnL values omit currency
+glyphs, retaining currency in their tooltip and icons beside their labels.
+The shared block editor serves both trade drawers: hover/focus exposes block
+insertion and drag controls; slash opens the same block menu. Templates insert
+without replacing existing text unless replacement is explicitly selected.
+The bottom template shortcut opens a centered preview dialog. Template catalog
+management persists private templates, favorites and independent context defaults.
+Favorites appear once, outside All templates. Apply to opens This trade (or This
+note), inserting without silently replacing existing content.
+Previous/next follow the filtered/sorted trades, including aggregate table pages;
+flush the current note and prevent edits during the transition. A failed save or
+changed list retains the current selection with a recovery state. Testing has a
+disabled vertical ellipsis. Live adds comments and a Delete trade popup; broker
+trade removal remains visibly unavailable and must not call broker order APIs.
+Comments are workspace journal records with kind `trade-comment`, unique IDs and
+`parent_session_id`/`parent_trade_id`; they do not enter trade-note matching or note
+presence. Unknown save receipts retry/reconcile the same comment identity.
+Grid note icons distinguish confirmed presence/absence, with unknown preserved on
+read failure. The Live note-presence filter consumes the same journal facts.
+Tag group names open shared catalog management. Renaming Ungrouped captures its
+existing catalog labels in a real group; the fallback itself cannot be deleted.
+Duplication atomically clones group/label definitions with unique names and no
+trade assignments. Delete archives choices while preserving historical assignments.
+Pointer/keyboard reordering is a browser display preference, shared across modes.
+Live return parts reuse the grid's capital and original-stop R semantics; absent
+denominators/stop facts stay N/A. Save/modified times come from server receipts,
+separate from entry time and holding duration.
+Historical Journal links keep their source session/trade and open this drawer.
 Closing a transient search with Escape returns focus to its trigger. Journal
 lists and label reports show an empty state only after a successful read; a
 failed first read keeps the existing error/retry state without claiming there
@@ -701,6 +767,15 @@ Last sync is the last successful data observation, not a connection expiry date.
   Missing broker notes remain unknown; do not treat missing metadata as no notes.
   Apply commits the local clock/filter scope atomically; account/workspace changes
   reset it, polling retains it, and Clear filters retains account/strategy context.
+  Live Tag Analytics reuses the ledger filter drawer. Basic has Assets, Side,
+  Outcome, Date range, Year, Month, Weekday and Hour; Advanced reuses shared
+  Include/Exclude with AND/OR. Only completed lifecycles enter reports. Dates use
+  closing execution time (manual trades use their entered close time) in Settings
+  timezone, without a Chart/Realtime toggle. Account/workspace changes reset this
+  scope; timezone changes update it. Missing money propagates unknown; a curve
+  with missing timestamps is unavailable, while totals retain all scoped trades.
+  The chart is cumulative scoped PnL, not account Equity. Menu section titles use
+  13px, weight 500 and secondary text color, including Notes Group by.
   Return info controls sit beside sort controls, with independent focus/touch
   behavior and VI/EN definitions. A read error must not also show a false empty
   ledger; native hidden state takes precedence over table layout styles.
@@ -729,20 +804,27 @@ Primary references: [PostgreSQL datetime](https://www.postgresql.org/docs/curren
 
 Live Trades defaults to ten rows. Sidebar balance and completed-trade count have
 separate labels and values; omit the redundant curve subtitle. Win/loss/breakeven
-legends show category names without repeated counts. Live expectancy comparison
+legends show category names without repeated counts, grouped with the title and
+percentage on the left of the ring chart. Gross and net PnL cells use the same
+signed return badge. Live expectancy comparison
 uses signed contributions (group total net PnL divided by all completed trades),
 whose sum equals expectancy; other analytics retain their average-win/loss basis.
 Weekly calendar summaries share daily gain/loss colors and the same single-owner
 separators. Zero/unknown summaries stay neutral. Live broker tags reuse the shared
-label presentation and hover/focus reveal; assignment remains unavailable until
-broker metadata has a persisted assignment contract, never a replay session ID.
+label picker and hover/focus reveal. Broker assignments are separate workspace
+metadata keyed by connection and position, never a replay session ID; selecting
+multiple accounts retains each trade's source identity. Preserve the current
+empty-label display. Settings > Nhãn giao dịch manages the same catalog used by
+Practice and Live: groups, names, colors and archive. Archive hides choices while
+preserving historical assignments. Revision conflicts require a fresh read and
+reopening the editor; do not silently overwrite another edit.
 
 Live sidebar controls precede the balance row. Profit unit switches the headline
 and curve between account-currency balance / scoped PnL and scoped net return
 against known positive opening capital; missing capital stays N/A. Expectancy
 remains money. The eye button masks only the headline, matching the reference.
 Trades alone adds a flat tag overview using the Practice label catalog and
-closed-trade statistics. Settings is an inert scaffold. Do not invent tag groups
+closed-trade statistics. Its settings icon remains an inert scaffold. Do not invent tag groups
 or assignments absent from the shared catalog; no broker writes from this panel.
 
 UI builds retain previous hashed assets (`emptyOutDir: false`), so tabs opened
@@ -750,3 +832,99 @@ before a promotion can still load their lazy pages. Promote the index atomically
 after copying assets. Never run cleanup against assets still referenced by open
 versions. A failed Vite chunk import may reload once per build/tab; offline or
 storage-denied sessions and repeated failures must not enter a reload loop.
+
+Live Tag Analytics places Overall below the chart title on the left, with the
+tag-list visibility action above the chart. The picker uses shared SearchInput,
+real catalog groups and label colors. Its selections add chart series; they do
+not change Overall. Overall includes tagged completed trades matching the basic
+filters. Group totals count each trade once even when it has multiple tags in
+that group. The table has an index, multi-sort and expandable Overall/group/tag
+hierarchy, without pagination; sort applies within each sibling level. Missing
+catalog data must not be presented as Ungrouped, and errors remain visible with
+the picker hidden. Chart axes/tooltips use actual execution dates and Settings
+timezone. Missing amounts/timestamps remain unavailable.
+
+Live detail values share a consistent starting column; Practice retains its
+existing alignment. The fills action opens Entries/Exits with actual fill facts
+and aggregate values. This preview is read-only until the journal edit contract
+is approved: Add/Save remain disabled. Execution and broker data are not mutated
+by this UI. The vertical ellipsis stays visible in both modes, enabled for Live
+and disabled for Practice. The extra R info icon is omitted.
+
+Trade journal UI uses the same controls in Practice, broker-synced Live and
+manual Live trades. The dataset selector names the source currently rendered;
+Journal and Research remain disabled until their data contracts exist. Journal
+status offers Active, Deleted and All as a UI preview; changing it clears checked
+rows. The journal controls share the account/session selector row. Selecting
+trades opens a two-row bottom toolbar; Add/remove tags appears from two selections.
+Templates reuses the note library. Bulk template apply and delete remain hidden
+until their data contracts are implemented. The library remains available for managing
+templates. Row delete icons are omitted. The shared selection toolbar also serves
+Trading Accounts, preserving its real sync/delete handlers and permission/uncertain/
+busy gates. One header action switches from Select all to Deselect all once its
+scope is fully selected. Select all adds the current trade page or filtered
+accounts; Deselect all and the close icon clear the entire selection, including
+other pages. Icon, count and controls share a vertical center on desktop;
+small screens move the controls to a second row and retain touch targets.
+The owning ledger/account pane reserves the floating toolbar's measured height
+so its pagination remains clickable while rows are selected.
+The bulk tag preview uses catalog group IDs, stacked group/tag fields,
+a flat add-group divider and stable row keys; it never edits the catalog or trade
+assignments. The unavailable apply action is hidden. These journal previews must
+not change broker state, notes, tags, media, PnL or analytics.
+
+Live and Testing support reversible journal groups of 2–500 completed trades
+from the same source account/session, symbol and direction. The native catalog
+validates authoritative stored source data; its workspace revision and command
+receipt protect concurrent edits and retries. A merge requires confirmation and
+creates a collapsed group header. Expand reveals the original rows; Split
+requires confirmation and removes only the grouping. Filters, pagination, CSV,
+notes, fills and analytics continue to use original trades. A partial group
+shows visible/total membership; changed source facts mark the group for review.
+Group controls stay within the horizontal grid viewport on narrow panes.
+Delete remains deferred in both modes. Group persistence requires migration0020;
+do not expose it through a UI-only promotion against an older API/schema.
+
+Analytics and Smart Picks side panels share the mirrored collapse control. The
+panel rail is the default for Smart Picks, while Analytics preserves the
+existing expanded view. At narrow widths the rail stacks below the main view.
+
+Date, wall date/time, time and date-range controls share ProjectDateInput.
+DateFilter is an adapter to that control, not a second calendar. The calendar
+uses the top layer so drawers and scrolling forms cannot clip it. Civil date
+ranges stay ISO dates; instant conversion remains in InstantDateInput. Typed
+invalid values remain visible with an error and do not overwrite the last valid
+value. Range selection publishes once after both endpoints are selected; closing
+after the first selection cancels that partial range. Existing seconds survive
+hour/minute changes. Keyboard arrows, Home/End and PageUp/PageDown navigate days;
+Escape closes the picker first. Desktop stays compact, touch targets stay 44px.
+Forms use an editable textbox; filter toolbars use a compact dropdown trigger
+with the same editable field inside its calendar popup. Invalid text remains
+visible as an error on the trigger after closing the popup, and blocks Apply
+until corrected. Analytics receives the actual SessionFilter element so its
+compact presentation and staged selection share the toolbar's Apply boundary.
+
+Notes context uses one date-range field and the shared tag-picker presentation
+for note types. The workspace catalog owns type names/colors and archived state;
+its revision and idempotency protect concurrent edits. Four built-in identities
+are permanent. Custom types can be archived; existing notes keep their identity
+and can still be edited and filtered. Reordering is a browser display preference.
+
+The Notes drawer keeps previous/next and the contextual menu at the top right;
+saved time shares the title row. Navigation drains autosave before changing notes.
+Its summary is flat, bounded by full-width horizontal rules in the context pane.
+Linked trades use compact rows with PnL-colored accents. Add/search opens the same
+centered picker; account/date/search filters change its candidates, while Apply
+commits the selection and Cancel/Escape keeps existing links unchanged. The picker
+date range is independent of the note's review range. Its count shows selected
+visible candidates / all visible candidates, not the 500-selection limit. Selected
+links outside the filters remain selected and have a separate contextual count;
+the limit appears only when reached. Hidden account/strategy
+metadata is preserved when saving; the extra metadata section is not displayed.
+New notes default to all available completed trades in their review date range,
+up to 500. The initial account reads settle before editing is enabled; incomplete
+sources remain visible as an issue. Displaying these defaults does not dirty an
+untouched blank note. Actual edits materialize the selected IDs into autosave.
+Saved/recovered notes and explicit picker choices, including an empty selection,
+retain their links; polling never reselects them. The review timezone remains in
+the payload but is not repeated as text below the range control.

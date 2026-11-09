@@ -2,6 +2,7 @@
 name = "trading-workspace-api"
 version = "0.1.0-alpha.1"
 edition = "2024"
+default-run = "trading-workspace-api"
 publish = false
 license-file = "../../LICENSE"
 
@@ -39,7 +40,7 @@ rmcp = { version = "=3.8.0", default-features = false, features = ["client", "tr
 reqwest-mcp = { package = "reqwest", version = "=0.13.2", default-features = false, features = ["json", "stream"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_JobObjects", "Win32_System_Pipes", "Win32_System_Threading"] }
+windows-sys = { version = "=0.61.2", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Security", "Win32_Storage_FileSystem", "Win32_System_JobObjects", "Win32_System_Pipes", "Win32_System_StationsAndDesktops", "Win32_System_Threading"] }
 
 [dev-dependencies]
 http-body-util = "0.1"

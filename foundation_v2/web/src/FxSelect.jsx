@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { matchesSearch } from './searchText.js'
 import SearchInput from './SearchInput.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -6,11 +7,11 @@ import './fx-select.css'
 import TestingIcon from './TestingIcon.jsx'
 
 export function FilterIcon({ kind }) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind === 'calendar' ? <><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4m8-4v4M4 10h16" /></> : kind === 'sort' ? <><path d="M7 4v16m-3-3 3 3 3-3M17 20V4m-3 3 3-3 3 3" /></> : kind === 'filter' ? <path d="M3 4h18l-7 8v7l-4 2v-9Z" /> : kind === 'edit' ? <><path d="m16 3 5 5-12 12H4v-5ZM13 6l5 5" /></> : <><path d="M4 20h16M7 16v-5m5 5V5m5 11V9" /></>}</svg>
+  return <AppIcon name={['calendar','sort','filter','edit'].includes(kind) ? kind : 'analytics'} size={16} />
 }
 
 export function SelectChevron() {
-  return <svg className="fx-select-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 8 5 5 5-5" /></svg>
+  return <AppIcon name="down" size={16} className="fx-select-chevron" />
 }
 
 export default function FxSelect({ label, value, options: inputOptions, onChange, icon, searchable = false, placeholder = 'Tìm…', emptyLabel = 'Không có lựa chọn phù hợp.', disabled = false, triggerContent, className = '', multiple = false, multipleStyle = 'checkbox', closeOnSelect = false, selectedTags, iconOnly = false, selectAllLabel = 'Chọn tất cả', showSelectAll = true, menuTitle, menuHeader, renderOption, filterOption, selectionField = false, emptySelectionLabel = 'None', clearValue, localizeOptions = true, ...triggerProps }) {
@@ -92,7 +93,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
     </Field>
     {open && !disabled && <div id={id} className="fx-select-menu" role={searchable ? 'dialog' : 'presentation'} aria-label={searchable ? t(label) : undefined}>
       {menuTitle && <h3 className="fx-filter-title">{t(menuTitle)}</h3>}
-      {selectionField && <div className="fx-filter-selection"><span>{multiple ? allSelected ? t("All") : options.filter(isSelected).map(option => option.label).join(', ') || t(emptySelectionLabel) : selected?.label}</span>{clearValue !== undefined && <button type="button" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => onChange(clearValue)}>×</button>}<SelectChevron /></div>}
+      {selectionField && <div className="fx-filter-selection"><span>{multiple ? allSelected ? t("All") : options.filter(isSelected).map(option => option.label).join(', ') || t(emptySelectionLabel) : selected?.label}</span>{clearValue !== undefined && <button type="button" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => onChange(clearValue)}><AppIcon name="close" size={16} /></button>}<SelectChevron /></div>}
       {searchable && <SearchInput ref={input} type="search" aria-label={t('Tìm {label}', { label: t(label) })} placeholder={t(placeholder)} value={search} onChange={event => setSearch(event.target.value)} />}
       {menuHeader}
       {multiple && showSelectAll && multipleStyle === 'checkbox' && <button type="button" role="checkbox" disabled={!available.length} aria-checked={allSelected ? true : selectedCount > 0 ? 'mixed' : false} className="fx-select-all" onClick={() => {
@@ -104,7 +105,7 @@ export default function FxSelect({ label, value, options: inputOptions, onChange
         const content = entries.map(option => <button type="button" role="option" tabIndex={-1} key={option.value} aria-selected={isSelected(option)} disabled={option.disabled} data-tooltip={renderOption || option.disabled ? option.detail : undefined} onClick={() => {
         if (multiple) { onChange(isSelected(option) ? value.filter(item => item !== option.value) : [...value, option.value]); if (closeOnSelect) close() }
         else { onChange(option.value); close() }
-      }}>{multiple && multipleStyle === 'checkbox' && <span className={`fx-select-checkbox${isSelected(option) ? ' is-checked' : ''}`} aria-hidden="true" />}{renderOption ? renderOption(option) : <span className="fx-select-option-label">{option.label}{option.detail && <small>{option.detail}</small>}</span>}{(multiple && multipleStyle === 'check' || !multiple && isSelected(option)) && <span className="fx-select-check" aria-hidden="true">{isSelected(option) ? '✓' : ''}</span>}</button>)
+      }}>{multiple && multipleStyle === 'checkbox' && <span className={`fx-select-checkbox${isSelected(option) ? ' is-checked' : ''}`} aria-hidden="true" />}{renderOption ? renderOption(option) : <span className="fx-select-option-label">{option.label}{option.detail && <small>{option.detail}</small>}</span>}{(multiple && multipleStyle === 'check' || !multiple && isSelected(option)) && <span className="fx-select-check" aria-hidden="true">{isSelected(option) && <AppIcon name="check" size={16} />}</span>}</button>)
         return group ? <div key={group} role="group" aria-label={t(group)}><div className="fx-select-group-title" aria-hidden="true">{t(group)}</div>{content}</div> : <Fragment key={group}>{content}</Fragment>
       })}</div>
       {!visible.length && <p role="status">{t(emptyLabel)}</p>}

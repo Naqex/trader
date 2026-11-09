@@ -14,6 +14,7 @@ from .execution_semantics import (
     validate_ohlc_bar,
 )
 from .retained import CostModel, InstrumentSpec, calculate_round_trip_cost
+from .semantics.data_costs import _money
 
 
 class ReplayExecutionError(ValueError):
@@ -200,7 +201,7 @@ class ReplayExecutionEvent(BaseModel):
 class ReplayExecutionEventV2(ReplayExecutionEvent):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     schema_version: Literal["replay-execution-event-v2"] = "replay-execution-event-v2"
-    kind: Literal["market_fill", "order_rejected", "protective_fill", "price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel"]
+    kind: Literal["market_fill", "order_rejected", "protective_fill", "price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel", "financing"]
 
     @model_validator(mode="after")
     def margin_outcome_is_consistent(self):
@@ -235,6 +236,9 @@ class ReplayExecutionSnapshotV2(ReplayExecutionSnapshot):
 
     @model_validator(mode="after")
     def margin_ledger_is_consistent(self):
+        if self.schema_version == "replay-execution-tick-v1":
+            # Tick snapshots validate all V2 contracts in their ordered ledger pass.
+            return self
         for raw in self.ledger:
             replay_event_for_snapshot(self, raw)
         return self
@@ -257,7 +261,7 @@ def parse_replay_execution_snapshot(raw: dict) -> ReplayExecutionSnapshot | Repl
     raise ReplayExecutionError("unsupported replay execution snapshot version")
 
 
-def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> ReplayExecutionEvent:
+def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict, *, _financing_index=None) -> ReplayExecutionEvent:
     if raw.get('details', {}).get('execution_timing') == 'current_quote':
         from .replay_immediate_execution import validate_current_quote_fill
         validate_current_quote_fill(snapshot, _event_type(snapshot).model_validate(raw))
@@ -265,6 +269,8 @@ def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> R
         if raw.get("schema_version") != "replay-execution-event-v2":
             raise ReplayExecutionError("v2 replay requires explicitly versioned v2 events")
         event = ReplayExecutionEventV2.model_validate(raw)
+        if event.kind == "financing" and snapshot.schema_version != "replay-execution-tick-v1":
+            raise ReplayExecutionError("timed Forex financing requires a tick snapshot")
         if event.kind == "manual_close":
             _validate_manual_close(snapshot, event)
         if event.kind in {"market_fill", "order_rejected"}:
@@ -283,7 +289,7 @@ def replay_event_for_snapshot(snapshot: ReplayExecutionSnapshot, raw: dict) -> R
                 raise ReplayExecutionError("margin outcome differs from frozen assumption/calculation")
         if snapshot.schema_version == 'replay-execution-tick-v1':
             from .replay_tick_execution import validate_tick_execution_event
-            validate_tick_execution_event(snapshot, raw)
+            validate_tick_execution_event(snapshot, raw, _financing_index=_financing_index)
         return event
     event = ReplayExecutionEvent.model_validate(raw)
     if event.kind == "manual_close":
@@ -365,7 +371,7 @@ def reconstruct_replay_execution_checkpoint(
             )
         # A phase transition can follow the bar's price mark without advancing
         # the cursor. Preserve that entire checkpoint before the next bar.
-        if (event.kind in {"price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel"} and event.cursor_index == cursor_index
+        if (event.kind in {"price_mark", "phase_transition", "protection_change", "manual_close", "order_cancel", "financing"} and event.cursor_index == cursor_index
                 and (event_sequence is None or event.sequence == event_sequence)):
             selected = event
 
@@ -463,6 +469,8 @@ def _cost_mapping(cost_model: CostModel) -> dict:
         "quote_to_account_rate": str(cost_model.quote_to_account_rate),
         "account_ccy": cost_model.account_ccy,
         "rounding_decimals": cost_model.rounding_decimals,
+        **({"commission_per_side_per_quantity_account": str(cost_model.commission_per_side_per_quantity_account)}
+           if cost_model.commission_per_side_per_quantity_account else {}),
     }
 
 
@@ -710,6 +718,42 @@ def _liquidation_pnl(
         exit_ask,
     )
     return Decimal(str(cost["net_account"])), cost
+
+
+def _liquidation_net_account(
+    position: ReplayOpenPosition,
+    *,
+    exit_bid: Decimal,
+    exit_ask: Decimal,
+    instrument: InstrumentSpec,
+    cost_model: CostModel,
+) -> Decimal:
+    """Fast validated valuation path for floating checks.
+
+    It deliberately returns only rounded net account P/L. Event closes still
+    use ``_liquidation_pnl`` so cost breakdown/provenance remains unchanged.
+    Callers must pass the already validated InstrumentSpec/CostModel from the
+    current execution window.
+    """
+    commission = cost_model.commission_per_side_account
+    minimum_fee = cost_model.minimum_fee_account
+    financing = cost_model.financing_account
+    if position.original_quantity is not None:
+        ratio = position.quantity / position.original_quantity
+        commission *= ratio
+        minimum_fee *= ratio
+        financing *= ratio
+    units = position.quantity * instrument.contract_size
+    if position.side == "BUY":
+        gross_quote = (exit_bid - position.entry_ask) * units
+    else:
+        gross_quote = (position.entry_bid - exit_ask) * units
+    gross_account = gross_quote * cost_model.quote_to_account_rate
+    slippage = cost_model.slippage_price_per_side * Decimal(2) * units * cost_model.quote_to_account_rate
+    commission_account = max((commission + cost_model.commission_per_side_per_quantity_account
+                              * position.quantity) * Decimal(2), minimum_fee)
+    return _money(gross_account - commission_account - slippage - financing,
+                  cost_model.rounding_decimals)
 
 
 def _validate_manual_close(snapshot, event):

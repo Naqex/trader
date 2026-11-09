@@ -7,7 +7,8 @@ param(
     [ValidatePattern('^[a-zA-Z0-9_]+$')][string]$DatabaseName = 'trading_workspace_v2_exness_history',
     [string]$ArtifactRoot, [string]$ManifestPath, [string]$BinaryDirectory,
     [ValidateSet('qdm', 'dukascopy', 'none')][string]$DownloadEngine = 'qdm',
-    [string]$QdmHome, [string]$ScientificCapability, [string]$LegacyCodecCapability
+    [string]$QdmHome, [string]$ScientificCapability, [string]$LegacyCodecCapability,
+    [string]$LocalCapabilityFile
 )
 
 $ErrorActionPreference = 'Stop'
@@ -44,6 +45,38 @@ foreach ($option in @(@('--artifact-root', $ArtifactRoot), @('--qdm-home', $QdmH
 function Invoke-Platform([string[]]$ActionArgs) {
     & $pythonPath -B $launcherPath @profileArgs @ActionArgs
     if ($LASTEXITCODE -ne 0) { throw 'Runtime action failed. Inspect the sanitized launcher error above.' }
+}
+
+function Resolve-LocalCapabilityFile([string]$SelectedPath, [string]$OwnerManifest,
+    [string]$Profile, [string]$OwnedProject, [int]$ListenPort) {
+    if ($SelectedPath -and $Profile -ne 'native') {
+        throw 'Local owner capabilities require the explicit native runtime profile.'
+    }
+    if (Test-Path -LiteralPath $OwnerManifest) {
+        $item = Get-Item -LiteralPath $OwnerManifest -Force
+        if ($item.PSIsContainer -or $item.Length -gt 1MB -or
+            ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw 'Cannot verify the runtime auth selection from its ownership manifest. Nothing was changed.'
+        }
+        $record = Get-Content -LiteralPath $OwnerManifest -Raw | ConvertFrom-Json
+        if ($record.auth_mode -eq 'local-capability') {
+            if ($Profile -ne 'native' -or $record.runtime_profile -ne 'native' -or
+                $record.project -ne $OwnedProject -or $record.port -ne $ListenPort) {
+                throw 'Capability ownership manifest does not match this native project/port. Nothing was changed.'
+            }
+            if (-not $SelectedPath) {
+                if (-not $record.local_capability_file) {
+                    throw 'Owned native runtime is secured but its private config path is missing. Pass -LocalCapabilityFile explicitly.'
+                }
+                $SelectedPath = $record.local_capability_file
+            }
+        }
+    }
+    if ($SelectedPath) {
+        # The launcher checks private scope, bounded size and non-reparse ancestors.
+        # Pass only a pathname; capability bytes never enter this wrapper/argv.
+        return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($SelectedPath)
+    }
 }
 
 function Get-OfflineListener {
@@ -98,6 +131,9 @@ try {
     foreach ($path in @($pythonPath, $launcherPath)) {
         if (-not (Test-Path -LiteralPath $path)) { throw "Required local path is missing: $path" }
     }
+    $selectedCapability = Resolve-LocalCapabilityFile -SelectedPath $LocalCapabilityFile -OwnerManifest $ManifestPath `
+        -Profile $RuntimeProfile -OwnedProject $projectRoot -ListenPort $Port
+    if ($selectedCapability) { $profileArgs += @('--local-capability-file', $selectedCapability) }
     if (-not $env:TW_V2_DATABASE_URL) { $env:TW_V2_DATABASE_URL = [Environment]::GetEnvironmentVariable('TW_V2_DATABASE_URL', 'User') }
     if (-not $env:TW_V2_DATABASE_URL) { throw 'TW_V2_DATABASE_URL is missing; restore the existing local database configuration.' }
     # Establish listener ownership before a build could replace its executable.
@@ -109,13 +145,16 @@ try {
     if ($ApplyMigration) { $preflightArgs += '--allow-pending-migrations' }
     Invoke-Platform -ActionArgs $preflightArgs
     if ($ApplyMigration -and -not $BackupConfirmed) { throw 'Back up and verify BOTH PostgreSQL and artifact files, then pass -ApplyMigration -BackupConfirmed.' }
-    if ($listener) { Assert-NoActiveDownload }
+    # Native preflight above checks ALL persisted download snapshots and legacy
+    # checkpoints; its guarded --stop repeats that DB check immediately before stop.
+    # The compatibility HTTP check remains for the legacy provider runtime.
+    if ($listener -and $RuntimeProfile -eq 'compatibility') { Assert-NoActiveDownload }
     if ($CheckOnly) { Write-Host 'Preflight passed. Check-only: no schema/process/provider changes.'; exit 0 }
     if ($listener) {
         $current = Get-OfflineListener
         if (-not $current -or $current.Process.ProcessId -ne $listener.Process.ProcessId -or
             $current.Process.CreationDate -ne $listener.Process.CreationDate) { throw 'API ownership changed. Nothing was stopped.' }
-        Assert-NoActiveDownload
+        if ($RuntimeProfile -eq 'compatibility') { Assert-NoActiveDownload }
         if ($current.Kind -eq 'managed') {
             Invoke-Platform -ActionArgs @('--stop', '--allow-pending-migrations')
         } else {

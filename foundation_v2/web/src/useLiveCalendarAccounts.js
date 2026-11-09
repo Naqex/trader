@@ -46,5 +46,7 @@ export default function useLiveCalendarAccounts({ workspace, enabled, selection,
     return () => { controller.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', visible) }
   }, [workspace, enabled, preview, remoteKey, scope])
   if (!enabled) return { payload: null, issue: '' }
-  return combineCalendarAccounts(ids.map(id => ({ id, payload: id === primary ? broker : id.startsWith('broker:') ? remote.scope === scope ? remote.values[id] : null : manualSnapshot(accounts.find(item => item.record_id === id), records) })))
+  const sources = ids.map(id => ({ id, payload: id === primary ? broker : id.startsWith('broker:') ? remote.scope === scope ? remote.values[id] : null : manualSnapshot(accounts.find(item => item.record_id === id), records) }))
+  const loading=extra.some(id=>remote.scope!==scope || !Object.hasOwn(remote.values,id))
+  return {...combineCalendarAccounts(sources),sources,loading}
 }

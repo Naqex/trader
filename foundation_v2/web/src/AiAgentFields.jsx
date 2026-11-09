@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { uploadDocument, documentSize } from './aiDocuments.js'
 import { aiErrorCopy } from './aiProvider.js'
@@ -40,10 +41,10 @@ export default function AiAgentFields({ workspace, value, onChange, en, disabled
       <div className="wm-ai-knowledge-heading"><span>{say('Tài liệu tham khảo', 'Knowledge')}</span><a href={strategySample} target="_blank" rel="noreferrer">{say('Xem mẫu strategy', 'View strategy sample')} ↗</a></div>
       <p>{say('TXT, Markdown · tối đa 5 tệp, 10 MB mỗi tệp.', 'TXT, Markdown · up to 5 files, 10 MB each.')}</p>
       <input className="wm-ai-sr" tabIndex={-1} ref={fileInput} type="file" multiple accept=".txt,.md,text/plain,text/markdown" aria-label={say('Tải tài liệu lên', 'Upload knowledge')} onChange={event => void attach(event.target.files)} />
-      <button className="wm-ai-upload" type="button" onClick={() => fileInput.current?.click()}><span aria-hidden="true">＋</span>{value.reading ? say('Đang tải…', 'Uploading…') : say('Chọn tệp', 'Choose files')}</button>
+      <button className="wm-ai-upload" type="button" onClick={() => fileInput.current?.click()}><span aria-hidden="true"><AppIcon name="plus" size={16} /></span>{value.reading ? say('Đang tải…', 'Uploading…') : say('Chọn tệp', 'Choose files')}</button>
       <button className="wm-ai-upload" type="button" aria-expanded={libraryOpen} onClick={() => setLibraryOpen(v => !v)}>{say('Thư viện', 'Library')}</button>
       {libraryOpen && <div className="wm-ai-library">{libraryError && <p role="alert">{libraryError}</p>}{!libraryError && !library.length && <p>{say('Chưa có tài liệu trong thư viện.', 'No library documents yet.')}</p>}{library.map(file => <button className="wm-ai-upload" type="button" key={file.id} disabled={value.knowledge.length >= 5 || value.knowledge.some(v => v.id === file.id)} onClick={() => onChange(previous => ({ ...previous, knowledge: previous.knowledge.length < 5 && !previous.knowledge.some(v => v.id === file.id) ? [...previous.knowledge, file] : previous.knowledge }))}>{file.name} · {documentSize(file.bytes)}</button>)}</div>}
-      {value.knowledge.length > 0 && <ul>{value.knowledge.map((file, index) => <li key={index}><span>{file.name}{file.bytes != null && <small> · {documentSize(file.bytes)}</small>}</span><button type="button" aria-label={`${say('Gỡ tệp', 'Remove file')}: ${file.name}`} onClick={() => { generation.current++; update({ knowledge: value.knowledge.filter((_, i) => i !== index) }) }}>×</button></li>)}</ul>}
+      {value.knowledge.length > 0 && <ul>{value.knowledge.map((file, index) => <li key={index}><span>{file.name}{file.bytes != null && <small> · {documentSize(file.bytes)}</small>}</span><button type="button" aria-label={`${say('Gỡ tệp', 'Remove file')}: ${file.name}`} onClick={() => { generation.current++; update({ knowledge: value.knowledge.filter((_, i) => i !== index) }) }}><AppIcon name="close" size={16} /></button></li>)}</ul>}
       {fileError && <p className="wm-ai-error" role="alert">{fileError}</p>}
     </section>}
   </fieldset>

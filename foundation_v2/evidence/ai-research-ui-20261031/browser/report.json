@@ -1,0 +1,96 @@
+{
+  "scope": "UI-only production build. All APIs unavailable; writes and external requests blocked. Local browser fixtures are not engine/provider/broker evidence.",
+  "cases": [
+    {
+      "width": 1440,
+      "theme": "dark",
+      "lang": "vi",
+      "outcome": "pass",
+      "overflow": 0,
+      "journeys": [
+        "review/choice/reload",
+        "stop/Escape/focus",
+        "insufficient/error",
+        "create/select/reload",
+        "search/empty/filter/reset",
+        "draft/sample-flow/result",
+        "tabs/keyboard"
+      ]
+    },
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "outcome": "pass",
+      "overflow": 0,
+      "journeys": [
+        "review/choice/reload",
+        "stop/Escape/focus",
+        "insufficient/error",
+        "create/select/reload",
+        "search/empty/filter/reset",
+        "draft/sample-flow/result",
+        "tabs/keyboard"
+      ]
+    },
+    {
+      "width": 1440,
+      "theme": "light",
+      "lang": "en",
+      "outcome": "pass",
+      "overflow": 0,
+      "journeys": [
+        "review/choice/reload",
+        "stop/Escape/focus",
+        "insufficient/error",
+        "create/select/reload",
+        "search/empty/filter/reset",
+        "draft/sample-flow/result",
+        "tabs/keyboard"
+      ]
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "lang": "vi",
+      "outcome": "pass",
+      "overflow": 0,
+      "journeys": [
+        "review/choice/reload",
+        "stop/Escape/focus",
+        "insufficient/error",
+        "create/select/reload",
+        "search/empty/filter/reset",
+        "draft/sample-flow/result",
+        "tabs/keyboard"
+      ]
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "outcome": "pass",
+      "overflow": 0,
+      "journeys": [
+        "review/choice/reload",
+        "stop/Escape/focus",
+        "insufficient/error",
+        "create/select/reload",
+        "search/empty/filter/reset",
+        "draft/sample-flow/result",
+        "tabs/keyboard"
+      ]
+    },
+    {
+      "name": "storage-write-failure",
+      "outcome": "pass"
+    },
+    {
+      "name": "corrupt-storage-recovery",
+      "outcome": "pass"
+    }
+  ],
+  "errors": [],
+  "writes": [],
+  "external": []
+}

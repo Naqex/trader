@@ -8,8 +8,14 @@ import { parseTradesCsv } from './liveLedgerModel.js'
 import { downloadLiveCsv } from './liveCsvDownload.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { accountDraftErrors, mt5AccountName } from './liveAccountModel.js'
+import LiveNoteEditor from './LiveNoteEditor.jsx'
 
-export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, onClose, onSaved }) {
+export default function LiveRecordDialog({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, folderId, records, broker, onNavigateNote, onClose, onSaved }) {
+  if (kind === 'note') return <LiveNoteEditor {...{workspace,accounts,connections,strategies,accountId,record,seed,folderId,records,broker,onClose,onSaved}} onNavigate={onNavigateNote}/>
+  return <LiveRecordForm {...{workspace,kind,accounts,connections,strategies,accountId,record,seed,folderId,onClose,onSaved}}/>
+}
+
+function LiveRecordForm({ workspace, kind, accounts, connections = [], strategies, accountId, record, seed, folderId, onClose, onSaved }) {
   const { t, timezone } = useTestingLocale()
   const initial = record?.payload || seed || {}
   const [draft, setDraft] = useState({ name: '', currency: 'USD', opening_balance: '', account_type:'', opening_at_utc:new Date().toISOString(), account_id: accountId || (kind === 'note' ? '' : accounts[0]?.record_id) || '',
@@ -54,13 +60,13 @@ export default function LiveRecordDialog({ workspace, kind, accounts, connection
           onSaved(saved, false); setImportDone(index+1)
         }
         onClose()
-      } else onSaved(await saveLiveRecord(workspace,kind,payload,record))
+      } else onSaved(await saveLiveRecord(workspace,kind,payload,record,folderId))
     } catch (problem) {
       setUncertain(problem.outcomeKnown === false)
       setError(problem.outcomeKnown === false ? 'Chưa xác nhận kết quả lưu. Tải lại sổ giao dịch để kiểm tra trước khi thao tác tiếp.' : problem.message || 'Không lưu được bản ghi.')
     } finally { lock.current = false; setPending(false) }
   }
-  return <LegacyModal className={`live-record-dialog${kind === 'account' ? ' is-account' : ''}`} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={kind === 'account' ? t(record ? 'Sửa tài khoản' : 'Tạo tài khoản') : record ? t('Edit {name}',{name:t(titles[kind])}) : t(titles[kind])} onClose={() => { if (!lock.current) onClose() }}>
+  return <LegacyModal overlayClassName={kind === 'note' ? 'is-drawer-overlay' : ''} className={`live-record-dialog${kind === 'account' ? ' is-account' : ''}${kind === 'note' ? ' is-drawer' : ''}`} theme={document.querySelector('.fx-app')?.dataset.theme || 'dark'} label={kind === 'account' ? t(record ? 'Sửa tài khoản' : 'Tạo tài khoản') : record ? t('Edit {name}',{name:t(titles[kind])}) : t(titles[kind])} onClose={() => { if (!lock.current) onClose() }}>
     <form className="live-record-form" onSubmit={submit} aria-busy={pending}>
       {kind === 'account' ? <>
         {accountField('name','Tên tài khoản',{required:true,maxLength:160,placeholder:t('Tên tài khoản')})}

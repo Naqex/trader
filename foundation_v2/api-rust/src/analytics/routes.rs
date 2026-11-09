@@ -21,16 +21,28 @@ struct CacheItems {
 #[derive(Default)]
 pub struct ProjectionCache {
     inner: Mutex<CacheItems>,
+    // Profit sort summarizes every matching session; a separate lane keeps those
+    // summaries from evicting each other and the shared report/page entries.
+    summaries: Mutex<CacheItems>,
 }
+const CACHE_BYTES: usize = 64 * 1024 * 1024;
+const SHARED_ITEMS: usize = 24;
+const SUMMARY_ITEMS: usize = 1024;
 fn cached(cache: &ProjectionCache, key: &str) -> Option<Arc<Value>> {
-    let mut c = cache.inner.lock().ok()?;
+    lookup(&cache.inner, key)
+}
+fn retain(cache: &ProjectionCache, key: String, v: Value) -> Arc<Value> {
+    store(&cache.inner, key, v, SHARED_ITEMS)
+}
+fn lookup(lane: &Mutex<CacheItems>, key: &str) -> Option<Arc<Value>> {
+    let mut c = lane.lock().ok()?;
     let i = c.items.iter().position(|(k, _, _)| k == key)?;
     let item = c.items.remove(i)?;
     let v = item.1.clone();
     c.items.push_back(item);
     Some(v)
 }
-fn retain(cache: &ProjectionCache, key: String, v: Value) -> Arc<Value> {
+fn store(lane: &Mutex<CacheItems>, key: String, v: Value, max_items: usize) -> Arc<Value> {
     fn retained(v: &Value) -> usize {
         std::mem::size_of::<Value>()
             + match v {
@@ -46,17 +58,17 @@ fn retain(cache: &ProjectionCache, key: String, v: Value) -> Arc<Value> {
     // Conservative owned-tree accounting bounds the cache, including map allocation overhead.
     let bytes = retained(&v).saturating_add(key.capacity());
     let v = Arc::new(v);
-    if bytes > 64 * 1024 * 1024 {
+    if bytes > CACHE_BYTES {
         return v;
     }
-    let Ok(mut c) = cache.inner.lock() else {
+    let Ok(mut c) = lane.lock() else {
         return v;
     };
     if let Some(i) = c.items.iter().position(|(k, _, _)| *k == key) {
         let old = c.items.remove(i).unwrap();
         c.bytes -= old.2;
     }
-    while c.bytes.saturating_add(bytes) > 64 * 1024 * 1024 || c.items.len() >= 24 {
+    while c.bytes.saturating_add(bytes) > CACHE_BYTES || c.items.len() >= max_items {
         let Some(old) = c.items.pop_front() else {
             break;
         };
@@ -65,6 +77,22 @@ fn retain(cache: &ProjectionCache, key: String, v: Value) -> Arc<Value> {
     c.bytes += bytes;
     c.items.push_back((key, v.clone(), bytes));
     v
+}
+fn summary_key(
+    workspace: &str,
+    record: &Value,
+    zone: chrono_tz::Tz,
+    activity_basis: bool,
+) -> String {
+    json!([
+        "summary-v3",
+        workspace,
+        record["record_id"],
+        record["revision"],
+        zone.name(),
+        activity_basis
+    ])
+    .to_string()
 }
 async fn record_heads(
     tx: &Transaction<'_>,
@@ -85,16 +113,8 @@ async fn summary(
     zone: chrono_tz::Tz,
     activity_basis: bool,
 ) -> Result<Value, ApiError> {
-    let key = json!([
-        "summary-v3",
-        workspace,
-        record["record_id"],
-        record["revision"],
-        zone.name(),
-        activity_basis
-    ])
-    .to_string();
-    if let Some(v) = cached(cache, &key) {
+    let key = summary_key(workspace, record, zone, activity_basis);
+    if let Some(v) = lookup(&cache.summaries, &key) {
         return Ok(v.as_ref().clone());
     }
     let full = crate::replay_service::load_record(tx, workspace, text(&record["record_id"]), false)
@@ -110,7 +130,9 @@ async fn summary(
             activity::equity_curve(&full["payload"], None, false).map_err(source)?;
         value["periods"]["time_basis"] = json!("market");
     }
-    Ok(retain(cache, key, value).as_ref().clone())
+    Ok(store(&cache.summaries, key, value, SUMMARY_ITEMS)
+        .as_ref()
+        .clone())
 }
 pub fn native(method: &str, path: &str) -> bool {
     if method == "POST" && path == "/api/v2/analytics/prop/evaluate" {
@@ -523,10 +545,11 @@ async fn invoke(
                 open_trades::append_projected(&mut report, &open, &f).map_err(source)?;
                 open_trades::append_projected(&mut facet, &open, &json!({})).map_err(source)?;
                 report["label_revision_key"] = json!(journal_heads);
+                let index = trades::JournalIndex::new(&journals);
                 for projection in [&mut report, &mut facet] {
                     if let Some(rows) = projection["ledger"].as_array_mut() {
                         for row in rows.iter_mut() {
-                            *row = trades::decorate(row, &journals);
+                            *row = trades::decorate(row, &index);
                         }
                         crate::trade_labels::project(&tx, &scope.workspace_id, rows, None).await?;
                     }
@@ -1154,6 +1177,43 @@ mod csv_tests {
         retain(&cache, local.clone(), json!({"month":"2026-02"}));
         assert_eq!(cached(&cache, &utc).unwrap()["month"], "2026-01");
         assert_eq!(cached(&cache, &local).unwrap()["month"], "2026-02");
+    }
+    #[test]
+    fn profit_sort_summaries_survive_more_than_shared_cache_capacity() {
+        let cache = ProjectionCache::default();
+        let record =
+            |i: usize, revision: i32| json!({"record_id": format!("s{i}"), "revision": revision});
+        let key =
+            |i: usize, revision: i32| summary_key("w", &record(i, revision), chrono_tz::UTC, false);
+        for i in 0..40 {
+            store(
+                &cache.summaries,
+                key(i, 1),
+                json!({"pnl": i}),
+                SUMMARY_ITEMS,
+            );
+        }
+        // Report/page traffic must not evict the summaries a profit sort just built.
+        for i in 0..SHARED_ITEMS + 5 {
+            retain(&cache, format!("report-{i}"), json!({"page": i}));
+        }
+        for i in 0..40 {
+            assert_eq!(lookup(&cache.summaries, &key(i, 1)).unwrap()["pnl"], i);
+        }
+        assert!(cached(&cache, "report-0").is_none());
+        assert_eq!(cache.inner.lock().unwrap().items.len(), SHARED_ITEMS);
+        // A new head revision misses and recomputes; the stale revision is never served for it.
+        assert!(lookup(&cache.summaries, &key(3, 2)).is_none());
+        store(
+            &cache.summaries,
+            key(3, 2),
+            json!({"pnl": 99}),
+            SUMMARY_ITEMS,
+        );
+        assert_eq!(lookup(&cache.summaries, &key(3, 2)).unwrap()["pnl"], 99);
+        assert_eq!(lookup(&cache.summaries, &key(3, 1)).unwrap()["pnl"], 3);
+        let activity = summary_key("w", &record(3, 2), chrono_tz::UTC, true);
+        assert!(lookup(&cache.summaries, &activity).is_none());
     }
     #[test]
     fn python_csv_bytes() {

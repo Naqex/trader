@@ -19,6 +19,7 @@ from .replay_execution import (
     ReplayResearchMargin,
     _decimal,
     _liquidation_pnl,
+    _liquidation_net_account,
     initialize_replay_execution,
     reconstruct_replay_execution_checkpoint,
 )
@@ -31,6 +32,20 @@ class BrokerReplayTick(BaseModel):
     sequence: int = Field(ge=0, strict=True)
     bid: Decimal = Field(gt=0)
     ask: Decimal = Field(gt=0)
+
+    @classmethod
+    def trusted(cls, *, time_msc, sequence, bid, ask):
+        """Construct a tick after the caller has performed its stream guards.
+
+        Prepared QDM readers validate type/range/order/grid and ask>=bid before
+        calling this path. Keeping the model shape preserves downstream event
+        serialization while avoiding duplicate Pydantic validation per quote.
+        """
+        if type(time_msc) is not int or time_msc < 0 or type(sequence) is not int or sequence < 0:
+            raise ValueError("trusted tick metadata must be nonnegative integers")
+        if not isinstance(bid, Decimal) or not isinstance(ask, Decimal) or bid <= 0 or ask < bid:
+            raise ValueError("trusted tick quotes must be positive and ordered")
+        return cls.model_construct(time_msc=time_msc, sequence=sequence, bid=bid, ask=ask)
 
     @model_validator(mode="after")
     def quotes_are_ordered(self):
@@ -49,6 +64,7 @@ class ReplayTickExecutionSnapshot(ReplayExecutionSnapshotV2):
 
     @model_validator(mode="after")
     def tick_quotes_and_ledger_are_consistent(self):
+        from .replay_execution import replay_event_for_snapshot
         if (self.last_bid is None) != (self.last_ask is None):
             raise ValueError("tick checkpoint requires both last quotes")
         if self.last_bid is not None and self.last_ask < self.last_bid:
@@ -58,8 +74,10 @@ class ReplayTickExecutionSnapshot(ReplayExecutionSnapshotV2):
         last_quote_key = None
         last_cursor = -1
         last_time = -1
+        from .forex_financing import _FinancingLedgerIndex
+        financing_index = _FinancingLedgerIndex(self.ledger)
         for sequence, raw in enumerate(self.ledger, start=1):
-            event = validate_tick_execution_event(self, raw)
+            event = replay_event_for_snapshot(self, raw, _financing_index=financing_index)
             if (event.sequence != sequence or event.replay_session_id != self.replay_session_id
                     or event.branch_id != self.branch_id or event.dataset_id != self.dataset_id
                     or event.dataset_sha256 != self.dataset_sha256
@@ -97,12 +115,16 @@ def initialize_tick_execution(
 
 
 def validate_tick_execution_event(
-    snapshot: ReplayTickExecutionSnapshot, raw: dict,
+    snapshot: ReplayTickExecutionSnapshot, raw: dict, *, _financing_index=None,
 ) -> ReplayExecutionEventV2:
     """Supplement the existing V2 money/margin validation with tick provenance."""
     event = ReplayExecutionEventV2.model_validate(raw)
     # Native closed-checkpoint amendments/transitions retain their V2 contracts.
     if event.kind == "phase_transition":
+        return event
+    if event.kind == "financing":
+        from .forex_financing import validate_financing_event
+        validate_financing_event(snapshot, event, _financing_index=_financing_index)
         return event
     d = event.details
     if (d.get("tick_snapshot_id") != snapshot.tick_snapshot_id
@@ -154,6 +176,9 @@ def validate_tick_execution_event(
     if event.virtual_time_utc != expected_time:
         raise ReplayExecutionError("tick event time differs from observed causal time")
     if event.kind in {"market_fill", "order_rejected", "protective_fill"}:
+        if "pilot_entry" in d:
+            from .forex_pilot_risk import validate_pilot_entry
+            validate_pilot_entry(snapshot, tick, event,_financing_index=_financing_index)
         side = d.get("side")
         if side not in {"BUY", "SELL"}:
             raise ReplayExecutionError("tick fill lacks its position side")
@@ -165,7 +190,16 @@ def validate_tick_execution_event(
             closed = ReplayOpenPosition.model_validate(d.get("closed_position"))
             stop_hit = closed.stop_loss is not None and (quote <= closed.stop_loss if side == "BUY" else quote >= closed.stop_loss)
             target_hit = closed.take_profit is not None and (quote >= closed.take_profit if side == "BUY" else quote <= closed.take_profit)
-            reason = "stop_loss" if stop_hit else "take_profit" if target_hit else None
+            if d.get("reason") == "pilot_risk_stop":
+                from .forex_pilot_risk import validate_pilot_close
+                validate_pilot_close(snapshot, tick, closed, d.get("pilot_trigger"))
+                reason = "pilot_risk_stop"
+            elif d.get("reason") == "pilot_strategy_exit":
+                from .forex_pilot_risk import validate_pilot_exit
+                validate_pilot_exit(snapshot, tick, closed, event,_financing_index=_financing_index)
+                reason = "pilot_strategy_exit"
+            else:
+                reason = "stop_loss" if stop_hit else "take_profit" if target_hit else None
             if (closed.side != side or closed.position_id != d.get("position_id")
                     or closed.source_operation_id != d.get("operation_id") or d.get("reason") != reason
                     or reason is None):
@@ -187,7 +221,7 @@ def validate_tick_execution_event(
 
 def advance_tick_execution(
     snapshot: ReplayTickExecutionSnapshot, *, ticks: Iterable[dict | BrokerReplayTick],
-    bar: dict, cursor_index: int,
+    bar: dict, cursor_index: int, _pilot_guard=None,
 ) -> ReplayTickExecutionAdvance:
     if type(cursor_index) is not int or cursor_index != snapshot.cursor_index + 1:
         raise ReplayExecutionError("execution cursor must advance exactly one bar")
@@ -208,13 +242,22 @@ def advance_tick_execution(
     sequence = snapshot.event_sequence
     last_tick = None
     exposure = position is not None
+    floating_key = None
+    floating_value = Decimal("0")
 
     def floating(tick):
+        nonlocal floating_key, floating_value
         if position is None:
             return Decimal("0")
-        value, _ = _liquidation_pnl(position, exit_bid=tick.bid, exit_ask=tick.ask,
-                                  instrument=instrument, cost_model=costs)
-        return value
+        # Reuse only the valuation inputs, never a risk decision. Costs and
+        # instrument are fixed for this window; partial quantities change the key.
+        key = (tick.bid, tick.ask, position.side, position.quantity,
+               position.original_quantity, position.entry_bid, position.entry_ask)
+        if key != floating_key:
+            floating_value = _liquidation_net_account(position, exit_bid=tick.bid, exit_ask=tick.ask,
+                                                      instrument=instrument, cost_model=costs)
+            floating_key = key
+        return floating_value
 
     def record(kind, tick, detail, *, mark=False):
         nonlocal sequence
@@ -240,6 +283,23 @@ def advance_tick_execution(
         events.append(event)
         ledger.append(event.model_dump(mode="json"))
 
+    def close_position(tick, reason, *, trigger=None, exit_request=None):
+        nonlocal position, balance
+        closed = position
+        realized, cost = _liquidation_pnl(closed, exit_bid=tick.bid, exit_ask=tick.ask,
+                                        instrument=instrument, cost_model=costs)
+        balance += realized
+        position = None
+        record("protective_fill", tick, {"operation_id": closed.source_operation_id,
+            "position_id": closed.position_id, "side": closed.side,
+            "quantity": str(closed.quantity), "reason": reason,
+            "fill_price": str(tick.bid if closed.side == "BUY" else tick.ask),
+            "net_pnl": str(realized), "cost_model_version": cost["cost_model_version"],
+            "cost_breakdown": cost, "closed_position": closed.model_dump(mode="json"),
+            **({"pilot_trigger": trigger.model_dump(mode="json")} if trigger else {}),
+            **({"pilot_exit": exit_request.model_dump(mode="json"),
+                "command_operation_id": exit_request.operation_id} if exit_request else {})})
+
     for raw in ticks:
         tick = raw if isinstance(raw, BrokerReplayTick) else BrokerReplayTick.model_validate(raw)
         if not start <= tick.time_msc < end:
@@ -250,7 +310,18 @@ def advance_tick_execution(
                for quote in (tick.bid, tick.ask)):
             raise ReplayExecutionError("broker tick price does not align with instrument tick size")
         last_tick = tick
-        if pending is not None:
+        entry_ready = True
+        if _pilot_guard is not None:
+            trigger = _pilot_guard.begin_quote(tick, balance, floating(tick), position,int(pending is not None))
+            if trigger is not None and position is not None:
+                close_position(tick, "pilot_risk_stop", trigger=trigger)
+            entry_ready = _pilot_guard.entry_ready(tick)
+            if pending is not None and entry_ready:
+                pending = _pilot_guard.prepare_order(pending, tick, instrument)
+                if not _pilot_guard.admit(pending, tick, balance, instrument, costs):
+                    # Risk rejections belong to the offline pilot journal, not margin-only events.
+                    pending = None
+        if pending is not None and entry_ready:
             order = pending
             entry_fill = tick.ask if order.side == "BUY" else tick.bid
             if order.submitted_cursor_index != snapshot.cursor_index:
@@ -266,6 +337,8 @@ def advance_tick_execution(
             detail = {"operation_id": order.operation_id, "side": order.side,
                       "quantity": str(order.quantity), "fill_price": str(entry_fill),
                       "margin_admission": admission.model_dump(mode="json")}
+            if _pilot_guard is not None:
+                detail.update(_pilot_guard.entry_proof())
             if required > snapshot.starting_balance:
                 record("order_rejected", tick, {**detail, "reason": "insufficient_research_margin"})
             else:
@@ -276,22 +349,19 @@ def advance_tick_execution(
                     opened_cursor_index=cursor_index, opened_time_utc=tick.time_msc // 1000)
                 exposure = True
                 record("market_fill", tick, {**detail, "position_id": position.position_id})
+                if _pilot_guard is not None:
+                    _pilot_guard.record_entry(tick,balance,floating(tick),position,int(pending is not None))
         if position is not None:
             quote = tick.bid if position.side == "BUY" else tick.ask
             stop_hit = position.stop_loss is not None and (quote <= position.stop_loss if position.side == "BUY" else quote >= position.stop_loss)
             target_hit = position.take_profit is not None and (quote >= position.take_profit if position.side == "BUY" else quote <= position.take_profit)
             if stop_hit or target_hit:
-                closed = position
-                realized, cost = _liquidation_pnl(closed, exit_bid=tick.bid, exit_ask=tick.ask,
-                                                instrument=instrument, cost_model=costs)
-                balance += realized
-                position = None
-                record("protective_fill", tick, {"operation_id": closed.source_operation_id,
-                    "position_id": closed.position_id, "side": closed.side,
-                    "quantity": str(closed.quantity), "reason": "stop_loss" if stop_hit else "take_profit",
-                    "fill_price": str(quote), "net_pnl": str(realized),
-                    "cost_model_version": cost["cost_model_version"], "cost_breakdown": cost,
-                    "closed_position": closed.model_dump(mode="json")})
+                close_position(tick, "stop_loss" if stop_hit else "take_profit")
+        if _pilot_guard is not None:
+            exit_request = _pilot_guard.strategy_exit(tick, position)
+            if exit_request is not None:
+                close_position(tick, "pilot_strategy_exit", exit_request=exit_request)
+            _pilot_guard.finish_quote(tick, balance, floating(tick), position,int(pending is not None))
     if last_tick is None:
         raise ReplayExecutionError("tick coverage is empty; OHLC fallback is disabled")
     record("price_mark", last_tick, {

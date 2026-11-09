@@ -646,7 +646,11 @@ pub fn evaluate_prop_lifecycle_event(
         })
     }
     let mut anchor = num(phase, "daily_anchor")?;
-    let daily_balance = text(&spec["daily_loss"], "basis") == "balance";
+    let daily_balance = match spec.get("daily_anchor_basis").and_then(Value::as_str) {
+        Some("balance") => true,
+        Some("equity") => false,
+        _ => text(&spec["daily_loss"], "basis") == "balance",
+    };
     if boundary && text(spec, "reset_order") == "reset_then_fees" {
         anchor = if daily_balance { pre } else { pre_equity };
     }

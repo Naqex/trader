@@ -1,42 +1,5 @@
-import React from 'react'
+import AppIcon from './AppIcon.jsx'
 
 export default function TestingIcon({ kind = 'info', size = 18 }) {
-  const svgProps = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false }
-  const paths = {
-    minus: <path d="M5 12h14" />,
-    check: <><circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/></>,
-    'zoom-in': <><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></>,
-    'zoom-out': <><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></>,
-    'zoom-area': <><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><circle cx="11" cy="11" r="4"/><path d="m14 14 4 4"/></>,
-    hand: <><path d="M8 12V6a2 2 0 0 1 4 0v5-7a2 2 0 0 1 4 0v7-5a2 2 0 0 1 4 0v8c0 5-3 7-7 7-3 0-5-2-7-5l-3-4a2 2 0 0 1 3-2l2 2Z"/></>,
-    home: <><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></>,
-    refresh: <><path d="M20 11a8 8 0 1 0-2 6M20 4v7h-7" /></>,
-    sync: <><path d="M20 4v6h-6M4 20v-6h6"/><path d="M5.6 8a7 7 0 0 1 11.5-2L20 10M4 14l2.9 4A7 7 0 0 0 18.4 16"/></>,
-    lock: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
-    ledger: <><path d="M4 4h16v16H4ZM4 9h16M8 13h5m-5 4h8" /></>,
-    trophy: <><path d="M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3a4 4 0 0 0 4 4M16 5h4v3a4 4 0 0 1-4 4M12 14v6M8 21h8" /></>,
-    pause: <><path d="M8 5v14M16 5v14" /></>,
-    stop: <rect x="5" y="5" width="14" height="14" rx="1" />,
-    close: <path d="m6 6 12 12M18 6 6 18" />,
-    play: <path d="m8 4 12 8-12 8Z" />,
-    search: <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></>,
-    upload: <><path d="M12 16V3m-5 5 5-5 5 5M4 14v6h16v-6" /></>,
-    download: <><path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4" /></>,
-    'chevron-left': <path d="m14 6-6 6 6 6" />,
-    'chevron-right': <path d="m10 6 6 6-6 6" />,
-    'chevrons-left': <path d="m11 6-6 6 6 6m8-12-6 6 6 6" />,
-    'chevrons-right': <path d="m5 6 6 6-6 6m8-12 6 6-6 6" />,
-    settings: <><path d="M4 7h16M4 17h16" /><circle cx="9" cy="7" r="3" /><circle cx="15" cy="17" r="3" /></>,
-    eye: <><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" /><circle cx="12" cy="12" r="2.5" /></>,
-    'eye-off': <><path d="m3 3 18 18M10.6 6.2A10.7 10.7 0 0 1 12 6c6 0 10 6 10 6a17 17 0 0 1-3.1 3.5M6.2 6.8C3.5 8.4 2 12 2 12s4 6 10 6a10.7 10.7 0 0 0 2-.2" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></>,
-    columns: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m6-16v16" /></>,
-    account: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9h18m-5 5h3" /></>,
-    chart: <><path d="M4 4v16h16M7 15l4-5 4 3 5-7" /></>,
-    deposit: <path d="M18 6 6 18M6 8v10h10" />,
-    withdrawal: <path d="M6 18 18 6M8 6h10v10" />,
-    tags: <><path d="m4 4 7 0 10 10-7 7L4 11Z" /><circle cx="8" cy="8" r="1" /></>,
-  }
-  if (paths[kind]) return <svg {...svgProps}>{paths[kind]}</svg>
-  if (kind === 'delete') return <svg {...svgProps}><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" /></svg>
-  return <svg {...svgProps}>{kind === 'plus' ? <path d="M12 5v14M5 12h14" /> : kind === 'journal' ? <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 3v18M11 8h6M11 12h6" /></> : kind === 'clock' ? <><circle cx="12" cy="12" r="9" /><path d="M12 6v6l4 2" /></> : kind === 'history' ? <><path d="M3 11a9 9 0 1 1 3 8M3 4v7h7M12 7v5l4 2" /></> : kind === 'trades' ? <><path d="M3 7h18l-4-4M21 17H3l4 4" /></> : kind === 'target' ? <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></> : <><circle cx="12" cy="12" r="9" /><path d="M12 11v6" /><circle cx="12" cy="7.5" r=".8" fill="currentColor" stroke="none" /></>}</svg>
+  return <AppIcon name={kind === 'check' ? 'success' : kind === 'zoom-area' ? 'fit' : kind} size={size} />
 }

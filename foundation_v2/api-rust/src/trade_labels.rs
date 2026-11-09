@@ -52,6 +52,11 @@ fn names(v: &Value) -> Vec<String> {
         })
         .unwrap_or_default()
 }
+fn optional_group_change<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error> {
+    Option::<String>::deserialize(deserializer).map(Some)
+}
 fn assignment_key(session: &str, trade: &str) -> String {
     format!(
         "{:x}",
@@ -71,7 +76,41 @@ pub async fn definitions(tx: &Transaction<'_>, workspace: &str) -> Result<Vec<Va
     tx.query("SELECT r.record_id,r.current_revision,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='trade_label' AND NOT v.deleted ORDER BY r.created_at_utc,r.record_id",&[&workspace]).await.map_err(|_|ApiError::database()).map(|rows|rows.iter().map(|r|json!({"record_id":r.get::<_,String>(0),"revision":r.get::<_,i32>(1),"payload":r.get::<_,Value>(2)})).collect())
 }
 fn catalog(defs: &[Value]) -> Value {
-    json!({"schema_version":"trade-labels-v1","items":defs.iter().filter(|r|r["payload"]["active"]!=false).map(|r|json!({"id":r["record_id"],"revision":r["revision"],"name":r["payload"]["name"],"color":r["payload"]["color"]})).collect::<Vec<_>>()})
+    json!({"schema_version":"trade-labels-v1",
+        "groups":defs.iter().filter(|r|is_group(r) && r["payload"]["active"]!=false).map(|r|json!({"id":r["record_id"],"revision":r["revision"],"name":r["payload"]["name"],"archived":r["payload"]["archived"]==true})).collect::<Vec<_>>(),
+        "items":defs.iter().filter(|r|!is_group(r) && r["payload"]["active"]!=false).map(|r|json!({"id":r["record_id"],"revision":r["revision"],"name":r["payload"]["name"],"color":r["payload"]["color"],"group_id":r["payload"]["group_id"],"archived":is_archived(r,defs)})).collect::<Vec<_>>()})
+}
+fn is_group(def: &Value) -> bool {
+    def["payload"]["entity"] == "group"
+}
+fn is_archived(def: &Value, defs: &[Value]) -> bool {
+    def["payload"]["archived"] == true
+        || defs.iter().any(|group| {
+            is_group(group)
+                && group["record_id"] == def["payload"]["group_id"]
+                && group["payload"]["archived"] == true
+        })
+}
+fn validate_group(defs: &[Value], id: Option<&str>) -> Result<(), ApiError> {
+    if id.is_some_and(|id| {
+        !defs.iter().any(|r| {
+            is_group(r)
+                && text(r, "record_id") == id
+                && r["payload"]["active"] != false
+                && !is_archived(r, defs)
+        })
+    }) {
+        return Err(invalid("invalid_label_group"));
+    }
+    Ok(())
+}
+async fn live_assignments(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    defs: &[Value],
+) -> Result<Vec<Value>, ApiError> {
+    let rows = tx.query("SELECT v.payload_json,r.current_revision FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='trade_label_assignment' AND NOT v.deleted AND v.payload_json->>'session_id' LIKE 'live:%' ORDER BY r.record_id", &[&workspace]).await.map_err(|_|ApiError::database())?;
+    Ok(rows.iter().map(|r|{let p:Value=r.get(0);json!({"session_id":p["session_id"],"trade_id":p["trade_id"],"revision":r.get::<_,i32>(1),"tags":normalize(&names(&p["tags"]),defs)})}).collect())
 }
 async fn read(
     State(state): State<Arc<AppState>>,
@@ -82,7 +121,9 @@ async fn read(
         .transaction()
         .await
         .map_err(|_| ApiError::database())?;
-    let result = catalog(&definitions(&tx, &scope.workspace_id).await?);
+    let defs = definitions(&tx, &scope.workspace_id).await?;
+    let mut result = catalog(&defs);
+    result["assignments"] = json!(live_assignments(&tx, &scope.workspace_id, &defs).await?);
     tx.commit().await.map_err(|_| ApiError::database())?;
     Ok(Json(result))
 }
@@ -92,14 +133,41 @@ enum Draft {
     Create {
         name: String,
         color: String,
+        #[serde(default)]
+        group_id: Option<String>,
     },
     Update {
         id: String,
         expected_revision: i64,
         name: String,
         color: String,
+        #[serde(default, deserialize_with = "optional_group_change")]
+        group_id: Option<Option<String>>,
     },
     Delete {
+        id: String,
+        expected_revision: i64,
+    },
+    Archive {
+        id: String,
+        expected_revision: i64,
+    },
+    CreateGroup {
+        name: String,
+        #[serde(default)]
+        capture_ungrouped: bool,
+    },
+    DuplicateGroup {
+        id: Option<String>,
+        expected_revision: Option<i64>,
+        name: String,
+    },
+    UpdateGroup {
+        id: String,
+        expected_revision: i64,
+        name: String,
+    },
+    ArchiveGroup {
         id: String,
         expected_revision: i64,
     },
@@ -159,13 +227,147 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
     let defs = definitions(tx, &scope.workspace_id).await?;
     let mut changed_assignment = None;
     match draft {
-        Draft::Create { name, color } => {
+        Draft::CreateGroup {
+            name,
+            capture_ungrouped,
+        } => {
+            validate_group_name(&defs, None, &name)?;
+            let group = crate::metadata_mutations::create(
+                tx,
+                scope,
+                "trade_label",
+                json!({"entity":"group","name":name,"active":true,"archived":false}),
+                None,
+            )
+            .await?;
+            if capture_ungrouped {
+                for current in defs.iter().filter(|r| {
+                    !is_group(r) && r["payload"]["group_id"].is_null() && !is_archived(r, &defs)
+                }) {
+                    let mut p = current["payload"].clone();
+                    p["group_id"] = group["record_id"].clone();
+                    crate::metadata_mutations::update(
+                        tx,
+                        scope,
+                        "trade_label",
+                        current.clone(),
+                        p,
+                        false,
+                    )
+                    .await?;
+                }
+            }
+        }
+        Draft::DuplicateGroup {
+            id,
+            expected_revision,
+            name,
+        } => {
+            validate_group_name(&defs, None, &name)?;
+            validate_group(&defs, id.as_deref())?;
+            if let Some(id) = &id {
+                let current = crate::metadata_mutations::load(tx, scope, "trade_label", id).await?;
+                if current["revision"].as_i64() != expected_revision {
+                    return Err(conflict());
+                }
+            }
+            let group = crate::metadata_mutations::create(
+                tx,
+                scope,
+                "trade_label",
+                json!({"entity":"group","name":name,"active":true,"archived":false}),
+                None,
+            )
+            .await?;
+            let mut used = defs.clone();
+            for current in defs.iter().filter(|r| {
+                !is_group(r)
+                    && r["payload"]["group_id"].as_str() == id.as_deref()
+                    && !is_archived(r, &defs)
+            }) {
+                let base: String = text(&current["payload"], "name").chars().take(48).collect();
+                let mut number = 1;
+                let next_name = loop {
+                    let candidate = format!("{base} ({number})");
+                    if validate_definition(
+                        &used,
+                        None,
+                        &candidate,
+                        text(&current["payload"], "color"),
+                    )
+                    .is_ok()
+                    {
+                        break candidate;
+                    }
+                    number += 1;
+                    if number > used.len() + 1 {
+                        return Err(invalid("duplicate_group_names_exhausted"));
+                    }
+                };
+                let created = crate::metadata_mutations::create(tx, scope, "trade_label",
+                    json!({"name":next_name,"color":current["payload"]["color"],"aliases":[next_name],"active":true,"group_id":group["record_id"],"archived":false}), None).await?;
+                used.push(created);
+            }
+        }
+        Draft::UpdateGroup {
+            id,
+            expected_revision,
+            name,
+        } => {
+            validate_group_name(&defs, Some(&id), &name)?;
+            let current = crate::metadata_mutations::load(tx, scope, "trade_label", &id).await?;
+            if !is_group(&current)
+                || current["revision"] != expected_revision
+                || is_archived(&current, &defs)
+            {
+                return Err(conflict());
+            }
+            let mut p = current["payload"].clone();
+            p["name"] = json!(name);
+            crate::metadata_mutations::update(tx, scope, "trade_label", current, p, false).await?;
+        }
+        Draft::ArchiveGroup {
+            id,
+            expected_revision,
+        } => {
+            let current = crate::metadata_mutations::load(tx, scope, "trade_label", &id).await?;
+            if !is_group(&current)
+                || current["revision"] != expected_revision
+                || current["payload"]["active"] == false
+            {
+                return Err(conflict());
+            }
+            let mut p = current["payload"].clone();
+            p["archived"] = json!(true);
+            crate::metadata_mutations::update(tx, scope, "trade_label", current, p, false).await?;
+        }
+        Draft::Archive {
+            id,
+            expected_revision,
+        } => {
+            let current = crate::metadata_mutations::load(tx, scope, "trade_label", &id).await?;
+            if is_group(&current)
+                || current["revision"] != expected_revision
+                || current["payload"]["active"] == false
+            {
+                return Err(conflict());
+            }
+            let mut p = current["payload"].clone();
+            p["archived"] = json!(true);
+            crate::metadata_mutations::update(tx, scope, "trade_label", current, p, false).await?;
+        }
+        Draft::Create {
+            name,
+            color,
+            group_id,
+        } => {
             validate_definition(&defs, None, &name, &color)?;
+            validate_group(&defs, group_id.as_deref())?;
             crate::metadata_mutations::create(
                 tx,
                 scope,
                 "trade_label",
-                json!({"name":name,"color":color,"aliases":[name],"active":true}),
+                json!({"name":name,"color":color,"aliases":[name],"active":true,"group_id":group_id,"archived":false}),
                 None,
             )
             .await?;
@@ -175,13 +377,21 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
             expected_revision,
             name,
             color,
+            group_id,
         } => {
             validate_definition(&defs, Some(&id), &name, &color)?;
             let current = crate::metadata_mutations::load(tx, scope, "trade_label", &id).await?;
-            if current["revision"] != expected_revision || current["payload"]["active"] == false {
+            if is_group(&current)
+                || current["revision"] != expected_revision
+                || current["payload"]["active"] == false
+            {
                 return Err(conflict());
             }
             let mut p = current["payload"].clone();
+            if let Some(group) = &group_id {
+                validate_group(&defs, group.as_deref())?;
+                p["group_id"] = json!(group);
+            }
             let mut aliases = names(&p["aliases"]);
             if !aliases.contains(&name) {
                 aliases.push(name.clone())
@@ -196,7 +406,10 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
             expected_revision,
         } => {
             let current = crate::metadata_mutations::load(tx, scope, "trade_label", &id).await?;
-            if current["revision"] != expected_revision || current["payload"]["active"] == false {
+            if is_group(&current)
+                || current["revision"] != expected_revision
+                || current["payload"]["active"] == false
+            {
                 return Err(conflict());
             }
             let mut p = current["payload"].clone();
@@ -209,31 +422,23 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
             expected_revision,
             tags,
         } => {
-            if session_id.is_empty()
-                || session_id.len() > 128
-                || trade_id.is_empty()
-                || trade_id.len() > 512
-            {
-                return Err(invalid("invalid_label_trade"));
-            }
-            // Verify the persisted trade at its saved checkpoint; no broker or replay mutation.
-            let mut record =
-                crate::replay_service::load_record(tx, &scope.workspace_id, &session_id, false)
-                    .await?;
-            record["workspace_id"] = json!(scope.workspace_id);
-            let view = crate::analytics::build_replay_analytics_view(&record, None)
-                .map_err(|_| invalid("invalid_label_trade"))?;
-            if !view["ledger"]
-                .as_array()
-                .is_some_and(|rows| rows.iter().any(|r| r["trade_id"] == trade_id))
-            {
-                return Err(ApiError::detail(
-                    StatusCode::NOT_FOUND,
-                    "label_trade_not_found",
-                ));
-            }
+            verify_trade(tx, &scope.workspace_id, &session_id, &trade_id).await?;
             if tags.len() > 32 || tags.iter().any(|tag| !clean_name(tag)) {
                 return Err(invalid("invalid_trade_labels"));
+            }
+            let prior = assignment(tx, scope, &assignment_key(&session_id, &trade_id)).await?;
+            let previous = prior
+                .as_ref()
+                .map(|r| normalize(&names(&r["payload"]["tags"]), &defs))
+                .unwrap_or_default();
+            let normalized = normalize(&tags, &defs);
+            if normalized.iter().any(|tag| {
+                !previous.contains(tag)
+                    && defs.iter().any(|r| {
+                        !is_group(r) && text(&r["payload"], "name") == tag && is_archived(r, &defs)
+                    })
+            }) {
+                return Err(invalid("label_archived"));
             }
             assign(
                 tx,
@@ -242,18 +447,20 @@ async fn execute(tx: &Transaction<'_>, scope: &Workspace, body: Value) -> Result
                 &session_id,
                 &trade_id,
                 Some(expected_revision),
-                &normalize(&tags, &defs),
+                &normalized,
             )
             .await?;
             let saved = assignment(tx, scope, &assignment_key(&session_id, &trade_id))
                 .await?
                 .unwrap();
             changed_assignment = Some(
-                json!({"session_id":session_id,"trade_id":trade_id,"revision":saved["revision"],"tags":saved["payload"]["tags"]}),
+                json!({"session_id":session_id,"trade_id":trade_id,"revision":saved["revision"],"tags":normalize(&names(&saved["payload"]["tags"]),&defs)}),
             );
         }
     }
-    let mut result = catalog(&definitions(tx, &scope.workspace_id).await?);
+    let defs = definitions(tx, &scope.workspace_id).await?;
+    let mut result = catalog(&defs);
+    result["assignments"] = json!(live_assignments(tx, &scope.workspace_id, &defs).await?);
     if let Some(saved) = changed_assignment {
         result["assignment"] = saved;
     }
@@ -269,7 +476,8 @@ fn validate_definition(
         return Err(invalid("invalid_label_definition"));
     }
     if defs.iter().any(|r| {
-        Some(text(r, "record_id")) != id
+        !is_group(r)
+            && Some(text(r, "record_id")) != id
             && (text(&r["payload"], "name").to_lowercase() == name.to_lowercase()
                 || names(&r["payload"]["aliases"])
                     .iter()
@@ -278,6 +486,95 @@ fn validate_definition(
         return Err(ApiError::detail(StatusCode::CONFLICT, "label_name_exists"));
     }
     Ok(())
+}
+fn validate_group_name(defs: &[Value], id: Option<&str>, name: &str) -> Result<(), ApiError> {
+    if !clean_name(name) {
+        return Err(invalid("invalid_label_group"));
+    }
+    if defs.iter().any(|r| {
+        is_group(r)
+            && Some(text(r, "record_id")) != id
+            && text(&r["payload"], "name").to_lowercase() == name.to_lowercase()
+    }) {
+        return Err(ApiError::detail(
+            StatusCode::CONFLICT,
+            "label_group_name_exists",
+        ));
+    }
+    Ok(())
+}
+pub(crate) async fn verify_trade(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    session: &str,
+    trade: &str,
+) -> Result<(), ApiError> {
+    if session.is_empty() || session.len() > 128 || trade.is_empty() || trade.len() > 512 {
+        return Err(invalid("invalid_label_trade"));
+    }
+    if session.starts_with("live:") {
+        return verify_live_trade(tx, workspace, session, trade).await;
+    }
+    let mut record = crate::replay_service::load_record(tx, workspace, session, false).await?;
+    record["workspace_id"] = json!(workspace);
+    let view = crate::analytics::build_replay_analytics_view(&record, None)
+        .map_err(|_| invalid("invalid_label_trade"))?;
+    if !view["ledger"]
+        .as_array()
+        .is_some_and(|rows| rows.iter().any(|r| r["trade_id"] == trade))
+    {
+        return Err(ApiError::detail(
+            StatusCode::NOT_FOUND,
+            "label_trade_not_found",
+        ));
+    }
+    Ok(())
+}
+async fn verify_live_trade(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    session: &str,
+    trade: &str,
+) -> Result<(), ApiError> {
+    let id = session
+        .strip_prefix("live:")
+        .and_then(|id| uuid::Uuid::parse_str(id).ok())
+        .ok_or_else(|| invalid("invalid_label_trade"))?;
+    let position = trade
+        .strip_prefix("position:")
+        .and_then(|id| id.parse::<u64>().ok())
+        .filter(|v| *v > 0)
+        .ok_or_else(|| invalid("invalid_label_trade"))?;
+    let snapshot = tx
+        .query_opt(
+            "SELECT snapshot FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",
+            &[&workspace, &id],
+        )
+        .await
+        .map_err(|_| ApiError::database())?
+        .and_then(|r| r.get::<_, Option<Value>>(0));
+    if !snapshot.is_some_and(|p| live_trade_positions(&p).any(|id| id == position)) {
+        return Err(ApiError::detail(
+            StatusCode::NOT_FOUND,
+            "label_trade_not_found",
+        ));
+    }
+    Ok(())
+}
+pub(crate) fn live_trade_positions(snapshot: &Value) -> impl Iterator<Item = u64> + '_ {
+    snapshot["deals"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|d| matches!(d["type"].as_i64(), Some(0 | 1)))
+        .filter_map(|d| d["position_id"].as_u64())
+        .chain(
+            snapshot["positions"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|r| r["identifier"].as_u64().or(r["ticket"].as_u64())),
+        )
 }
 async fn assignment(
     tx: &Transaction<'_>,
@@ -331,10 +628,9 @@ async fn assign(
     }
     // Import existing journal labels on first explicit edit; no fabricated rating defaults.
     for name in tags {
-        if !defs
-            .iter()
-            .any(|r| r["payload"]["active"] != false && text(&r["payload"], "name") == name)
-        {
+        if !defs.iter().any(|r| {
+            !is_group(r) && r["payload"]["active"] != false && text(&r["payload"], "name") == name
+        }) {
             validate_definition(defs, None, name, "gray")?;
             crate::metadata_mutations::create(
                 tx,
@@ -461,10 +757,11 @@ pub fn normalize(tags: &[String], defs: &[Value]) -> Vec<String> {
     for tag in tags {
         let key = tag.to_lowercase();
         let def = defs.iter().find(|r| {
-            text(&r["payload"], "name").to_lowercase() == key
-                || names(&r["payload"]["aliases"])
-                    .iter()
-                    .any(|a| a.to_lowercase() == key)
+            !is_group(r)
+                && (text(&r["payload"], "name").to_lowercase() == key
+                    || names(&r["payload"]["aliases"])
+                        .iter()
+                        .any(|a| a.to_lowercase() == key))
         });
         let name = match def {
             Some(r) if r["payload"]["active"] == false => continue,
@@ -495,8 +792,12 @@ pub async fn project(
         })
         .collect::<Vec<_>>();
     let assignments=tx.query("SELECT r.source_key,r.current_revision,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='trade_label_assignment' AND r.source_key=ANY($2) AND NOT v.deleted",&[&workspace,&keys]).await.map_err(|_|ApiError::database())?;
+    let mut by_key = std::collections::HashMap::new();
+    for a in &assignments {
+        by_key.entry(a.get::<_, String>(0)).or_insert(a);
+    }
     for (r, key) in rows.iter_mut().zip(keys) {
-        let assignment = assignments.iter().find(|a| a.get::<_, String>(0) == key);
+        let assignment = by_key.get(&key).copied();
         let raw = assignment
             .map(|a| a.get::<_, Value>(2)["tags"].clone())
             .unwrap_or_else(|| r["tags"].clone());
@@ -505,7 +806,8 @@ pub async fn project(
         r["labels_authoritative"] = json!(true);
         r["label_aliases"] = json!(
             defs.iter()
-                .filter(|d| d["payload"]["active"] != false
+                .filter(|d| !is_group(d)
+                    && d["payload"]["active"] != false
                     && names(&r["tags"]).contains(&text(&d["payload"], "name").to_owned()))
                 .flat_map(|d| names(&d["payload"]["aliases"]))
                 .collect::<Vec<_>>()
@@ -523,6 +825,7 @@ pub async fn project_context(
         definitions(tx, workspace)
             .await?
             .iter()
+            .filter(|r| !is_group(r))
             .map(|r| r["payload"].clone())
             .collect::<Vec<_>>()
     );
@@ -545,6 +848,26 @@ pub async fn project_context(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn live_trade_positions_preserves_deal_types_and_position_identifier_precedence() {
+        let snapshot = json!({"deals":[
+            {"type":0,"position_id":1},{"type":1,"position_id":2},
+            {"type":2,"position_id":3},{"type":"0","position_id":4},
+            {"type":0,"position_id":-1},{"type":0,"position_id":1}
+        ],"positions":[
+            {"identifier":5,"ticket":6},{"ticket":7},
+            {"identifier":null,"ticket":8},{"identifier":-1,"ticket":9}
+        ]});
+        assert_eq!(
+            live_trade_positions(&snapshot).collect::<Vec<_>>(),
+            vec![1, 2, 1, 5, 7, 8, 9]
+        );
+        assert_eq!(live_trade_positions(&json!({})).count(), 0);
+        assert_eq!(
+            live_trade_positions(&json!({"deals":null,"positions":{}})).count(),
+            0
+        );
+    }
     #[test]
     fn aliases_and_deletion_do_not_change_execution() {
         let defs = vec![
@@ -582,5 +905,35 @@ mod tests {
         );
         assert!(clean_name("Mô hình đẹp"));
         assert!(!clean_name("A\nB"));
+    }
+    #[test]
+    fn groups_and_archived_labels_preserve_trade_history() {
+        let defs = vec![
+            json!({"record_id":"group","revision":1,"payload":{"entity":"group","name":"Rating","active":true,"archived":true}}),
+            json!({"record_id":"label","revision":2,"payload":{"name":"Good","color":"green","aliases":["old"],"group_id":"group","active":true}}),
+        ];
+        let result = catalog(&defs);
+        assert_eq!(result["groups"].as_array().unwrap().len(), 1);
+        assert_eq!(result["items"].as_array().unwrap().len(), 1);
+        assert_eq!(result["items"][0]["archived"], true);
+        assert_eq!(normalize(&["old".into()], &defs), vec!["Good"]);
+        assert!(validate_group(&defs, Some("group")).is_err());
+        assert!(validate_definition(&defs, None, "Rating", "gray").is_ok());
+        assert!(validate_group_name(&defs, None, "Rating").is_err());
+    }
+    #[test]
+    fn update_distinguishes_retaining_and_clearing_a_group() {
+        let update =
+            json!({"action":"update","id":"a","expected_revision":1,"name":"A","color":"green"});
+        let Draft::Update { group_id, .. } = serde_json::from_value(update.clone()).unwrap() else {
+            panic!()
+        };
+        assert_eq!(group_id, None);
+        let mut clear = update;
+        clear["group_id"] = Value::Null;
+        let Draft::Update { group_id, .. } = serde_json::from_value(clear).unwrap() else {
+            panic!()
+        };
+        assert_eq!(group_id, Some(None));
     }
 }

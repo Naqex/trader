@@ -13,6 +13,19 @@ const BINARY_HASH: &str = "0fd1f03b80a4acac69515e3737fc9f4445de69221e4750e20a3c7
 const PANEL_HASH: &str = "8c9c6b7d3fb311e6aad5d06e1993e53a2d28389e640448a1bc6304ed20b057b5";
 const PANEL_VERSION: &str = "v1.26.7";
 const LOGIN_TIMEOUT: Duration = Duration::from_secs(300);
+
+pub(crate) fn managed_port() -> u16 {
+    #[derive(serde::Deserialize)]
+    struct Ports {
+        #[serde(rename = "cliProxyApiPort")]
+        gateway: u16,
+    }
+    let ports: Ports = serde_json::from_str(include_str!("../../local-services.json"))
+        .expect("valid embedded local services config");
+    assert!(ports.gateway >= 1024, "nonprivileged managed gateway port");
+    ports.gateway
+}
+
 #[cfg(test)]
 pub(crate) static ACCEPTANCE_LOCK: Mutex<()> = Mutex::const_new(());
 
@@ -101,7 +114,7 @@ impl GatewayRuntime {
             binary: project
                 .join(".runtime/ai-gateway-evaluation/cliproxyapi-v8.0.40/cli-proxy-api.exe"),
             home: project.join(".runtime/mt5-ai-gateway"),
-            port: 17852,
+            port: managed_port(),
             state: Mutex::new(RuntimeState::default()),
         }
     }

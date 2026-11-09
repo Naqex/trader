@@ -19,7 +19,13 @@ export function filterLiveDeals(payload, filters = LIVE_FILTERS) {
   if (!payload?.account || filters.account !== 'all' && filters.account !== payload.account.account_ref) return []
   return (payload.deals || []).filter(deal => {
     if (![0, 1].includes(deal.type)) return false
-    if (filters.tags?.length && !filters.tags.some(tag => deal.record?.payload?.tags?.includes(tag))) return false
+    const dealTags = deal.record?.payload?.tags || deal.tags || []
+    const includeTags = filters.tagInclude || filters.tags || []
+    const excludeTags = filters.tagExclude || []
+    const includeMatch = (filters.tagIncludeMode || 'OR') === 'AND' ? includeTags.every(tag => dealTags.includes(tag)) : includeTags.some(tag => dealTags.includes(tag))
+    const excludeMatch = (filters.tagExcludeMode || 'OR') === 'AND' ? excludeTags.every(tag => dealTags.includes(tag)) : excludeTags.some(tag => dealTags.includes(tag))
+    if (includeTags.length && !includeMatch) return false
+    if (excludeTags.length && excludeMatch) return false
     const day = dayKey(deal.time_msc, filters.timezone), net = dealNet(deal)
     return (filters.asset === 'all' || deal.symbol === filters.asset)
       && (filters.side === 'all' || deal.type === Number(filters.side))

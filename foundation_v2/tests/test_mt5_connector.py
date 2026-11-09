@@ -39,6 +39,25 @@ class ConnectorTests(unittest.TestCase):
         self.sdk.order_check.assert_not_called()
         self.assertEqual(self.sdk.history_deals_get.call_count,3)
 
+    def test_ftmo_current_cashflow_is_not_dropped_as_a_future_utc_event(self):
+        self.secret['server'] = self.account.server = 'FTMO-Demo'
+        now = datetime(2026,11,4,1,0,tzinfo=timezone.utc)
+        stamp = int(now.timestamp()*1000)-500
+        cash = dict(ticket=1,order=0,position_id=0,symbol='',type=2,entry=0,
+                    volume=0,price=0,profit=10000,commission=0,swap=0,fee=0,
+                    time_msc=stamp+7200000)
+        self.sdk.history_deals_get.return_value = (NS(**cash),)
+        with patch.object(connector,'datetime') as dates:
+            dates.now.return_value = now
+            result = connector.snapshot(self.sdk,self.secret,now-timedelta(hours=1),
+                                        '2026-11-04T00:00:00Z')
+        row = result['cashflows'][0]
+        self.assertEqual(row['time_msc'],stamp)
+        self.assertEqual(row['source_time_msc'],stamp+7200000)
+        self.sdk.history_deals_get.assert_called_once_with(now+timedelta(hours=1),now+timedelta(hours=3))
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
     def test_read_only_is_application_access_not_password_inference(self):
         self.account.trade_allowed=True
         self.assertFalse(self.read()['verified_permissions']['trade'])
@@ -46,6 +65,16 @@ class ConnectorTests(unittest.TestCase):
         self.account.trade_allowed=False
         self.sdk.account_info.side_effect=[self.account,NS(login=7,server='Fixture-Demo')]
         with self.assertRaisesRegex(RuntimeError,'mt5_identity_changed'):self.read()
+
+    def test_broker_account_name_is_preserved_without_inference(self):
+        self.account.name='$10k Fixture Free Trial Swing 2-Step'
+        self.assertEqual(self.read()['account']['name'],self.account.name)
+        self.account.name='Standard'
+        self.assertEqual(self.read()['account']['name'],'Standard')
+        self.account.name=''
+        self.assertEqual(self.read()['account']['name'],'')
+        self.sdk.order_send.assert_not_called()
+        self.sdk.order_check.assert_not_called()
 
     def test_ipc_failure_is_distinct_from_broker_network_disconnection(self):
         self.sdk.terminal_info.return_value=None

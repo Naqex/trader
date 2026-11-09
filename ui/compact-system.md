@@ -1,16 +1,49 @@
-# Bộ chuẩn giao diện gọn — 09/10/2026
+# Bộ chuẩn giao diện gọn — cập nhật 31/10/2026
 
 Trang xem và thử: `http://127.0.0.1:5180/?workspace=tenant-a&area=testing&ui_reference=1`.
 Đổi sáng/tối trên header; rê chuột, dùng Tab và mở dialog mẫu để xem trực tiếp.
 Đây là chuẩn chung đang áp dụng cho Naqex Trader, chưa phải chứng nhận mọi workflow
-của sản phẩm. Thông số chuẩn và các ngoại lệ bên dưới được phân biệt rõ.
+của sản phẩm. Thông số bên dưới là profile Trader trong `product-ui-profile.css`;
+palette/foundation vẫn pin `annam-compact@0.3.0`, không sửa đè snapshot chung.
+UI Reference đọc giá trị hiệu lực `--wm-*`, cập nhật khi đổi theme/màn hình;
+không dùng kích thước foundation `--ds-*` thay cho profile sản phẩm.
+
+## Studio — đội AI và đánh giá
+
+Studio có bốn mục: **Đội AI / AI team**, **Đánh giá / Reviews**,
+**Model / Models**, **Kết nối / Connections**. Trang quản trị CLIProxyAPI mở từ
+chi tiết kết nối và giữ mục Kết nối được chọn. Link Bot cũ chuyển về Đội AI.
+
+- Shell sở hữu lề trang; nội dung native Studio căn trái, rộng tối đa960px.
+  Không thêm card bao toàn trang. Header, danh sách và form dùng cùng mép.
+- Header, status và trạng thái panel dùng `AiPageHeader`, `AiStatus`,
+  `AiPanelState`; icon dùng `AppIcon`. Trạng thái có chữ cùng chấm màu,
+  không dùng màu làm tín hiệu duy nhất. Hàng kết nối mở drawer và có mô tả
+  trạng thái cho trình đọc màn hình.
+- Hàng bình thường, hover, selected và selected+hover dùng token riêng;
+  `--wm-row-selected-hover` pha từ selected và hover của theme hiện hành.
+  Dấu focus dùng `--wm-focus`, không đổi kích thước hàng khi tương tác.
+  Composer có một vùng focus cho cả nhóm nhập và controls.
+- Drawer kết nối dùng modal chung, rộng tối đa480px; Escape đóng và trả focus
+  về hàng vừa mở. Trên màn nhỏ, status xuống hàng; model controls và history/
+  kết quả xếp dọc. Vùng bấm theo profile cảm ứng chung.
+- Chuyển động dùng token chung; `prefers-reduced-motion` tắt transition của
+  hàng/disclosure/composer và animation tiến trình.
+- Giữ UI gốc của Paperclip và CLIProxyAPI trong iframe đã mở. Chuyển tab hoặc
+  đổi ngôn ngữ không tự tạo document mới; host ẩn có `hidden` và `inert`.
+  Retry có thể tải document mới khi dịch vụ lỗi. Health chỉ chứng minh dịch vụ
+  phản hồi, không chứng minh tài khoản/model còn quyền hoặc quota.
+
+Fixture `aiStudio.browser.mjs` kiểm layout/states/VI–EN; fixture
+`studioEmbed.browser.mjs` kiểm host với document tổng hợp. Chúng không thay
+nghiệm thu Paperclip/CLIProxyAPI thật hoặc một job AI hoàn chỉnh.
 
 ## Kích thước, chữ và khoảng cách
 
 | Cái nhìn thấy / bấm được | Máy tính | Cảm ứng / màn nhỏ | Cách hiểu |
 | --- | --- | --- | --- |
-| Nút có chữ, dropdown, ô nhập | Cao 36px | Ít nhất 44px | Nút rộng theo nội dung, không cố định mọi chiều rộng |
-| Nút chỉ có icon | Vùng bấm 32×32px | 44×44px | Hình icon bên trong chỉ 16px |
+| Nút có chữ, dropdown, ô nhập | Cao 32px | Ít nhất 44px | Nút rộng theo nội dung, không cố định mọi chiều rộng |
+| Nút chỉ có icon | Vùng bấm 28×28px | 44×44px | Hình icon bên trong chỉ 16px |
 | Tab chọn loại trong dialog | Nút cao28px, cả cụm36px | Nút44px | Gọn hơn nút hành động |
 | Tab báo cáo | 36px | 44px | Không đổi chiều cao khi chọn |
 | Thanh tab chuyển trang | 48px | Giữ cuộn ngang khi cần | Hover chỉ sáng chữ/icon, chọn có gạch dưới |
@@ -25,16 +58,60 @@ của sản phẩm. Thông số chuẩn và các ngoại lệ bên dưới đư�
 | Viền cấu trúc | 1px | 1px | Không mọc thêm viền khi hover |
 | Dấu focus bàn phím | Ring2px cho nút; viền1px xanh cho ô nhập; dropdown dùng nền + gạch chân | Như desktop | Một dấu; không chồng viền/outline/shadow |
 | Khoảng icon–chữ / các nút cùng nhóm | 8px | 8px | Chung đường căn giữa |
-| Khoảng các ô / nhóm | 24px | 16–24px | Khoảng trống phân nhóm trước card/viền |
-| Khoảng khu vực lớn | 32px | 24px | Không thêm wrapper để lấp chỗ trống |
-| Lề trang | 32px | Tablet24px, điện thoại16px | Header, nội dung và footer dùng cùng mép |
-| Lề dialog | 24px | 16px | Nội dung dài cuộn ở phần giữa |
-| Hàng bảng | Tối thiểu48px | Đủ44px cho thao tác | Hàng nhiều dòng được cao hơn |
+| Khoảng các ô / nhóm | 20px | 16–20px | Khoảng trống phân nhóm trước card/viền |
+| Khoảng khu vực lớn | 24px | 24px | Không thêm wrapper để lấp chỗ trống |
+| Lề trang | 24px | Tablet20px, điện thoại16px | Header, nội dung và footer dùng cùng mép |
+| Lề dialog | 20px | 16px | Nội dung dài cuộn ở phần giữa |
+| Hàng bảng | Tối thiểu44px | 48px | Hàng nhiều dòng được cao hơn |
 | Thanh tiến độ | Cao4px | 4px | Không dành cả cột chỉ cho chữ trạng thái |
 
 Thang khoảng cách dùng lại: **4 / 8 / 12 / 16 / 20 / 24 / 32px**. Không phải mọi
 khối đều cùng chiều cao: ô lịch, hàng nhiều thông tin và lựa chọn tài sản có nhu
 cầu riêng. Cần ghi rõ ngoại lệ, không đặt một số mới chỉ vì “trông vừa”.
+
+### Hàng công cụ và đường phân cách Live
+
+`page-layout.css` sở hữu layout; profile sản phẩm đặt
+`--wm-pane-toolbar-inset` (12px mỗi phía dọc) và
+`--wm-pane-toolbar-height` (control32px + hai inset +1px trên desktop).
+Các hàng công cụ full-bleed của Live dùng cùng quy tắc, với lề ngang theo
+`--wm-page-gutter`. Tiêu đề panel bên cạnh dùng cùng hàng grid với toolbar:
+đường dưới vẫn thẳng khi bộ lọc có chip hoặc controls xuống hàng.
+Một separator có một owner: border1px hoặc pseudo-element1px, không cả hai.
+Lịch sở hữu cạnh phải màu lãi/lỗ, panel bên cạnh không vẽ thêm nét.
+Hàng chọn đơn vị/ẩn số dư có inset theo toolbar phía trên và dưới; balance row sở hữu
+line1px phía trên để tách controls khỏi số liệu, không cộng thêm line ở controls.
+
+Trang báo cáo có lề (Live Analytics/Practice Analytics) và trang tổng quan phiên
+dùng nhịp nội dung đã có: bắt đầu sau `--wm-page-start`. Không ép chúng thành
+toolbar full-bleed. Bảng Live và Practice dùng `PaginationFooter` chung, không
+thêm padding riêng ở footer Accounts. Wrapper sở hữu khoảng cách của heading;
+heading trong hàng công cụ không cộng thêm margin mặc định.
+
+### Nhãn trong bảng Live và Practice
+
+Hai chế độ dùng chung `TradeLabelCell` và catalog nhãn. Ô nhãn không có nền
+hover riêng; placeholder “Chọn nhãn…” hiện theo hover/focus như hiện hành.
+Picker có danh sách trước, ô tìm/tạo ở dưới. Chỉ badge nhỏ là nút gắn/gỡ nhãn;
+vùng trống của hàng không hover, không nhận bấm. Dấu chọn dùng `.fx-select-check`
+chung với select chuẩn, không tự đặt màu chữ trắng.
+Grip dùng `ChartIcon` loại `grip` cùng chart toolbar; kéo bằng chuột/cảm ứng
+hoặc Alt + ↑/↓ đổi thứ tự. Escape hủy kéo trước khi đóng popup; tooltip tạm ẩn
+khi kéo để không chiếm Escape. Grip/ba chấm có focus riêng trên hitbox nhỏ.
+Thứ tự là display preference theo workspace trên trình duyệt, dùng chung
+Live/Practice/Settings qua `useTradeLabels`; không sửa catalog/assignment API,
+không đồng bộ thiết bị. Lỗi lưu browser phải báo thứ tự chỉ giữ trong phiên.
+Nhãn mới nối cuối, ID đã xóa được bỏ qua; đổi tên/màu không đổi thứ tự đã lưu.
+Nút ba chấm mở editor riêng cạnh hàng đã chọn, không thay cả picker bằng form.
+Editor có tên, danh sách bảy màu với swatch đặc, dấu chọn và xóa có xác nhận.
+Enter lưu tên; chọn màu lưu ngay với tên đang sửa. Escape bỏ draft chưa lưu và
+trả focus về ba chấm; Escape tiếp theo đóng picker và trả về ô bảng. Lỗi revision
+đóng editor, đọc lại catalog và yêu cầu mở lại; không tự ghi đè.
+Separator của mục Xóa thuộc wrapper riêng; hover của nút chỉ phủ vùng bấm
+bo góc phía dưới, dùng `--wm-hover`, giữ màu chữ nguy hiểm. Không đặt border
+hoặc padding phân nhóm lên chính nút để tránh hover trùm đường phân cách.
+
+Kiểm chứng: [label picker correction](../foundation_v2/evidence/label-picker-20261029/RECEIPT.md).
 
 Ngoại lệ màn hẹp dùng chuột: tab chọn loại phiên vẫn cao28px và nút X vẫn32px.
 Khi thiết bị dùng cảm ứng, hai vùng bấm này tăng lên44px; hình icon không phóng to.
@@ -50,12 +127,16 @@ scale bitmap, làm mờ bằng opacity hoặc ép `crispEdges` lên icon tròn/c
 
 Nền chung vẫn sáng/tối trung tính. Màu có vai trò, không tô mỗi trang một màu.
 Owner đã bỏ phương án hover xanh đục; hover chung dùng hai độ sáng trung tính.
+Dropdown dùng nền menu trước đợt đổi palette qua `--wm-popup`, độc lập với nền
+panel/control. FxSelect, session/account picker và popup nhãn cùng dùng nền này;
+khung ngoài không viền, shadow giữ `0 8px 24px #0003`. Viền của ô tìm và separator
+bên trong vẫn có vai trò riêng. Palette snapshot chung không bị sửa để đổi menu.
 
 | Vai trò | Dark | Light |
 | --- | --- | --- |
 | Nền trang | `#080808` | `#F5F5F5` |
 | Nền panel | `#121212` | `#FFFFFF` |
-| Menu/lớp nổi | `#1C1C1C` | `#F0F0F0` |
+| Menu dropdown (`--wm-popup`) | `#1D1D1D` | `#FAFAFA` |
 | Nút phụ | `#242424` | `#E9E9E9` |
 | Hover control | `#383838` | `#D9D9D9` |
 | Hover dòng | `#1D1D1D` | `#EFEFEF` |
@@ -101,8 +182,16 @@ nền semantic riêng hoặc chữ chính; không hạ tương phản bằng l�
 | Ô nhập | Viền1px | Viền rõ hơn | Viền/focus xanh; lỗi đỏ bên cạnh ô |
 | Nút không khả dụng | Nền control, chữ disabled; không giảm opacity cả nút | Không hiện hover enabled | Không bấm/submit được |
 
+Checkbox thường, checkbox trong dropdown và checkbox trong dialog dùng chung
+dấu chọn16px. Nền đã chọn dùng `--project-highlight`; dấu dùng `--wm-on-check`
+(trắng ở light, `#121212` ở dark) để không mất tương phản khi shade cam đổi theo
+theme. Chọn một phần có dấu ngang; không khả dụng vẫn giữ dấu trạng thái và
+focus bàn phím chỉ hiện trên control có thể thao tác. Dòng dữ liệu đã chọn giữ
+màu chọn khi hover; action bên trong dòng có phản hồi hover riêng, không đổi
+kích thước hoặc che trạng thái chọn.
+
 Dropdown nằm trong form dùng `FxSelect` với `className="is-field"`: cùng viền
-1px, góc 8px và chiều cao một dòng 36px như textbox. Bình thường viền nhẹ,
+1px, góc 8px và chiều cao một dòng 32px như textbox (44px cảm ứng). Bình thường viền nhẹ,
 hover và khi mở dùng nền trung tính `--wm-hover`, không thêm viền sáng.
 Focus bàn phím dùng nền và gạch chân nhãn; lựa chọn vẫn giữ tích/checkbox.
 Ô ghép tài sản tô hover trên toàn ô ngoài;
@@ -192,7 +281,7 @@ Tooltip và dialog. Header cùng order marker do app vẽ trong iframe chart dù
 cùng controller, gắn theo ownerDocument và viewport của iframe. Tooltip dữ liệu
 và control do TradingView tự vẽ giữ lifecycle riêng của renderer.
   Menu chọn checkbox có một lề hàng10px và gap8px; “Chọn tất cả” và lựa chọn
-  dùng cùng bố cục36px desktop/44px touch. Nhãn cùng điểm bắt đầu; mô tả nằm dưới
+  dùng cùng bố cục32px desktop/44px touch. Nhãn cùng điểm bắt đầu; mô tả nằm dưới
   nhãn, không bị space-between đẩy ra mép phải. Số đã chọn chỉ đếm mục có thể chọn;
   chọn tất cả không sửa mục đang bị khóa. Viền bàn phím nằm trong dòng để không
   bị vùng cuộn cắt. Animation dùng translate riêng, không ghi đè transform căn mép.
@@ -361,6 +450,35 @@ dùng token menu160ms/dialog220ms, reduced motion tắt cả portal bên ngoài 
 Kiểm chứng và giới hạn của lượt rà soát:
 [UI-system audit 20/10/2026](../foundation_v2/evidence/ui-system-audit-20261020/CHECKPOINT.md).
 
+## Live Notes và bộ chọn tài khoản
+
+- `SessionFilter` giữ hành vi chọn phiên/tài khoản riêng, dùng `SelectChevron`
+  từ `FxSelect` và `.fx-select-check` cho dấu tích; màu, nét và trạng thái mở
+  phải giống control chuẩn.
+- Notes không có picker tài khoản trên toolbar. Danh sách mặc định gồm mọi
+  ghi chú trong workspace; note mới mặc định là ghi chú chung. Sửa note giữ
+  tài khoản đã lưu trong record.
+- “Nhóm theo” là menu `FxSelect`, trigger chữ phụ không nền; None/Note type/Day/Week/Month/Year. Nhóm ngày dùng ngày cập nhật theo múi giờ hiện hành; tuần bắt đầu thứ Hai. Schema hiện chỉ có ghi chú chung, không tự tạo loại từ tài khoản. Nút cây bút dùng menu `FxSelect`; Content
+  bật/tắt nội dung xem trước. Trades/Win rate/PnL chưa khả dụng khi schema chưa
+  có liên kết giao dịch, không suy ra thống kê từ nhãn hay tài khoản của note.
+- Bộ lọc Notes mở `FilterDrawer` bên phải, không có tab Basic/Tags. Đúng 5 mục theo thứ tự: Note type, Date range, Days, Month, Year. Dùng `FxSelect` đa chọn và `DateFilter`/`ProjectDateInput` có sẵn; không thêm bộ chọn Chart/Realtime.
+- Các bộ lọc thời gian dùng `updated_at_utc` của ghi chú theo múi giờ hiện hành, cùng ngày hiển thị và cách nhóm. Khoảng ngày gồm cả hai đầu; OR trong một mục đa chọn, AND giữa các mục và tìm kiếm. Năm lấy từ ngày cập nhật thực tế và năm hiện tại theo múi giờ (cả khi chưa có note).
+- Loại note gồm Daily review/General/Monthly review/Weekly review. Record thiếu `note_type` là General; schema lưu hiện chỉ hỗ trợ General, không tự tạo review từ tài khoản hay giao dịch.
+- Draft chỉ có hiệu lực khi Apply; Clear All xóa draft, Escape hủy và trả focus về nút mở. Escape trong calendar/menu chỉ đóng control đang mở trước; khoảng ngày đảo ngược khóa Apply.
+
+- Notes cuộn toàn bộ danh sách, không có phân trang. Màn trống giữ All + nút thêm thư mục, hình minh họa và Add note.
+- Nút thêm thư mục mở `LegacyModal` giữa màn hình: tìm/chọn note → Next (cho phép 0 note) → nhập tên → Confirm. Tên trim, tối đa 80 ký tự, không trùng không phân biệt hoa/thường trong workspace. Thư mục và membership lưu API; tạo note khi chọn thư mục gắn vào thư mục trong cùng transaction. Một note có thể nằm trong nhiều thư mục. Chọn thư mục hiện badge tên và số note trước lọc.
+- Lỗi đọc thư mục không được biến lựa chọn thư mục thành All; lỗi kết quả lưu chưa rõ khóa form đến khi đóng/tải lại catalog.
+
+## Trade detail và note drawers
+
+- Ba entry point dùng panel phải cùng nhịp: tạo/sửa note từ Notes, chi tiết giao dịch luyện tập và chi tiết giao dịch Live. Shell drawer dùng chung; adapter dữ liệu và quyền thao tác vẫn tách theo surface.
+- Live note dùng `LiveRecordDialog` và contract `live-records-v1` hiện có, giữ mapping tài khoản/connection, revision và folder khi tạo. Không thêm `trade_id` vào live note vì schema hiện tại chưa hỗ trợ.
+- Luyện tập giữ `TradeInspector`/`ProvenanceInspector` và dữ liệu provenance read-only. Live dựng chi tiết từ position/deal đã reconstruct; thiếu dữ liệu hiển thị `-`/`N/A`, không ghép hoặc suy diễn fill.
+- Tab Nhãn của Live reuse `TradeLabelCell` với session `live:{connection_id}` và ticket. Editor ghi chú ở hai detail drawer dùng chung BlockNote và autosave; adapter giữ đúng workspace/session/trade hoặc connection/ticket theo [contract autosave](autosave.md), không tự lưu sang standalone Live Notes.
+
+Kiểm chứng: [Notes filters](../foundation_v2/evidence/notes-filters-20261029/RECEIPT.md), [Notes folders](../foundation_v2/evidence/notes-folders-20261029/RECEIPT.md), [Notes controls](../foundation_v2/evidence/notes-controls-20261029/RECEIPT.md).
+
 ## Dùng cho tính năng sau này
 
 Đã có contract cho button, text action, icon action, field, select, checkbox/radio,
@@ -369,7 +487,7 @@ drag/drop, modal/drawer, loading/empty/error. Đây là **chuẩn thiết kế**
 một đống component giả trước khi cần. Lấy control đã có, dùng đúng role; chỉ tạo
 component/ngoại lệ mới khi workflow thật yêu cầu.
 
-Nguồn chung: [Compact contract](../../../UI-Systems/core/tokens/compact/0.1.1/CONTRACT.md),
+Nguồn chung: [Compact contract](../../../UI-Systems/core/tokens/compact/0.3.0/CONTRACT.md),
 token JSON có version, CSS được xuất tự động. Quy tắc gắn dữ liệu trading nằm ở
 project/domain; không đổi dữ liệu, model, quyền broker hay logic tải vì refactor UI.
 Kết quả kiểm chứng: [follow-up receipt](../foundation_v2/evidence/compact-states-20261009/RECEIPT.md),

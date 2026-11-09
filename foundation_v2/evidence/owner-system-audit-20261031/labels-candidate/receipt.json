@@ -1,0 +1,54 @@
+{
+  "scope": "Production UI, synthetic catalog/deals; GET counts and shared state, no database/broker/provider",
+  "mode": "candidate",
+  "cases": [
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "name": "tag-analysis-shared-catalog",
+      "catalogGETs": 1,
+      "panelExpandedGETs": 0
+    },
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "name": "trades-shared-mutation",
+      "catalogGETs": 1,
+      "overviewColor": "orange"
+    },
+    {
+      "width": 1920,
+      "theme": "dark",
+      "lang": "vi",
+      "name": "one-retry-recovers-analysis-and-panel",
+      "catalogGETs": 2
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "name": "tag-analysis-shared-catalog",
+      "catalogGETs": 1,
+      "panelExpandedGETs": 0
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "name": "trades-shared-mutation",
+      "catalogGETs": 1,
+      "overviewColor": "orange"
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "lang": "en",
+      "name": "one-retry-recovers-analysis-and-panel",
+      "catalogGETs": 2
+    }
+  ],
+  "errors": [],
+  "blocked": []
+}

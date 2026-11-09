@@ -5,7 +5,7 @@ from pathlib import Path
 import tempfile
 import time
 from types import SimpleNamespace as NS
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 import unittest
 from unittest.mock import Mock, patch
 
@@ -101,6 +101,92 @@ class DemoTradingTests(unittest.TestCase):
             demo.prepare(self.sdk,demo.BrokerPolicy(self.policy),self.command)
         self.sdk.order_send.assert_not_called()
         self.sdk.order_check.assert_not_called()
+
+    def test_quote_rejection_keeps_timing_evidence_without_check_or_send(self):
+        for stamp in (100000, 109001):
+            with self.subTest(stamp=stamp):
+                self.tick.time_msc = stamp
+                with self.assertRaises(demo.Denied) as caught:
+                    demo.instrument(self.sdk, self.policy, 'EURUSD', now=108)
+                self.assertEqual(str(caught.exception), 'demo_quote_stale')
+                self.assertEqual(caught.exception.data_quality, dict(quote_time_msc=stamp,
+                    observed_at_msc=108000, quote_age_ms=108000-stamp,
+                    max_quote_age_ms=2000, clock='host_utc'))
+        for stamp in (None, True, float('nan'), float('inf'), -1):
+            self.tick.time_msc = stamp
+            with self.assertRaisesRegex(demo.Denied, 'demo_quote_unavailable'):
+                demo.instrument(self.sdk, self.policy, 'EURUSD', now=108, allow_stale=True)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
+    def test_cold_subscription_reads_updated_spec_before_validating(self):
+        cold = NS(**{**vars(self.info), 'visible': False, 'trade_tick_size': 0})
+        self.sdk.symbol_info.side_effect = [cold, self.info]
+        self.sdk.symbol_select.return_value = True
+        info, _ = demo.instrument(self.sdk, self.policy, 'EURUSD')
+        self.assertIs(info, self.info)
+        self.sdk.symbol_select.assert_called_once_with('EURUSD', True)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
+    def test_snapshot_recovers_from_unquoted_feed_without_restarting_or_sending(self):
+        self.account.leverage = 100
+        self.sdk.copy_rates_from_pos.return_value = []
+        self.tick.bid = 0
+        with self.assertRaisesRegex(demo.Denied, '^demo_quote_unavailable$'):
+            demo.snapshot(self.sdk, demo.BrokerPolicy(self.policy), 'EURUSD')
+        self.tick.bid = 1.1
+        result = demo.snapshot(self.sdk, demo.BrokerPolicy(self.policy), 'EURUSD')
+        self.assertEqual(result['status'], 'ready')
+        self.assertEqual(result['quote']['bid'], 1.1)
+        self.sdk.initialize.assert_not_called()
+        self.sdk.shutdown.assert_not_called()
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
+    def test_ftmo_snapshot_and_admission_use_same_clock_without_refreshing_stale_ticks(self):
+        now = datetime(2026,11,4,1,0,tzinfo=timezone.utc).timestamp()
+        self.account.server = self.policy['server'] = 'FTMO-Demo'
+        self.account.leverage = 100
+        policy = demo.BrokerPolicy(self.policy)
+        raw = int(now*1000)+7200000-200
+        self.tick.time_msc = raw
+        self.sdk.copy_rates_from_pos.return_value = [dict(time=int(now)+7200,
+            open=1.1,high=1.2,low=1.,close=1.15,tick_volume=10)]
+        with patch.object(demo.time,'time',return_value=now):
+            result = demo.snapshot(self.sdk,policy,'EURUSD')
+            self.assertEqual(result['quote']['time_msc'],raw-7200000)
+            self.assertEqual(result['quote']['source_time_msc'],raw)
+            self.assertEqual(result['data_quality']['quote_status'],'fresh')
+            self.assertEqual(result['data_quality']['quote_age_ms'],200)
+            self.assertEqual(result['bars'][0]['timestamp'],'2026-11-04T01:00:00Z')
+            for drift in (-10000,60000):
+                self.tick.time_msc = raw + drift
+                with self.subTest(drift=drift),self.assertRaisesRegex(demo.Denied,'demo_quote_stale'):
+                    demo.prepare(self.sdk,policy,{**self.command,'server':'FTMO-Demo'})
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
+    def test_invalid_instrument_values_identify_field_without_exposing_raw_data(self):
+        fields = [(self.tick, key, 'quote.' + key) for key in ('bid', 'ask')]
+        fields += [(self.info, key, 'instrument.' + key) for key in
+                   ('trade_tick_size', 'point', 'volume_min', 'volume_max', 'volume_step')]
+        for obj, key, field in fields:
+            original = getattr(obj, key)
+            for value in (0, -1, None, True, float('nan'), float('inf')):
+                with self.subTest(field=field, value=value):
+                    setattr(obj, key, value)
+                    reason = 'demo_quote_unavailable' if field.startswith('quote.') else 'demo_invalid_number'
+                    with self.assertRaisesRegex(demo.Denied, '^' + reason + '$') as caught:
+                        demo.instrument(self.sdk, self.policy, 'EURUSD', allow_stale=True)
+                    self.assertEqual(caught.exception.data_quality, {
+                        'source': 'application', 'invalid_field': field,
+                        'requirement': 'positive_finite_number',
+                    })
+                    json.dumps(caught.exception.data_quality, allow_nan=False)
+            setattr(obj, key, original)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
 
     def test_broker_closed_market_and_side_restrictions_are_not_inferred_from_quote_age(self):
         for retcode,reason in demo.BROKER_REASONS.items():
@@ -265,10 +351,12 @@ class DemoTradingTests(unittest.TestCase):
         self.denied('demo_frozen',action='protect',ticket=77)
 
     def test_snapshot_is_real_sdk_data_and_no_send(self):
+        self.account.name='Standard'
         self.sdk.copy_rates_from_pos.return_value=[dict(time=1700000000,open=1.1,high=1.2,low=1.,close=1.15,tick_volume=10)]
         result=demo.snapshot(self.sdk,self.policy,'EURUSD')
         self.assertEqual(result['status'],'ready')
         self.assertEqual(result['account']['login'],'12345')
+        self.assertEqual(result['account']['name'],'Standard')
         self.assertEqual(result['bars'][0]['volume'],10)
         self.assertEqual(result['quote']['time_msc'],self.tick.time_msc)
         self.assertEqual(result['policy']['max_quote_age_ms'],2000)
@@ -303,6 +391,28 @@ class DemoTradingTests(unittest.TestCase):
         self.assertTrue(result['resolved']); self.assertEqual(result['reason'],'demo_reconciled_partial_final')
         self.sdk.order_send.assert_not_called(); self.sdk.order_check.assert_not_called()
 
+    def test_ftmo_reconciliation_normalizes_evidence_and_rejects_future_matches(self):
+        now = datetime(2026,11,4,1,0,tzinfo=timezone.utc)
+        self.account.server = self.policy['server'] = 'FTMO-Demo'
+        command = {**self.command,'server':'FTMO-Demo'}
+        tag = demo.request_comment(command['request_id'])
+        stamp = int(now.timestamp()*1000)
+        deal = NS(ticket=91,order=92,position_id=93,comment=tag,magic=self.policy['magic'],
+                  symbol='EURUSD',entry=0,type=0,time_msc=stamp+7200000,volume=.1,price=1.10002)
+        order = NS(ticket=92,comment=tag,magic=self.policy['magic'],symbol='EURUSD',
+                   state=4,volume_initial=.1,volume_current=0)
+        self.sdk.history_deals_get.return_value = (deal,)
+        self.sdk.history_orders_get.return_value = (order,)
+        with patch.object(demo,'datetime',wraps=datetime) as dates:
+            dates.now.return_value = now
+            self.assertTrue(demo.reconcile(self.sdk,self.policy,command,now.isoformat(),{})['resolved'])
+            self.sdk.history_deals_get.assert_called_once_with(
+                now+timedelta(hours=2,seconds=-60),now+timedelta(hours=3,seconds=1))
+            deal.time_msc += 60000
+            self.assertFalse(demo.reconcile(self.sdk,self.policy,command,now.isoformat(),{})['resolved'])
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
     def test_reconcile_missing_tag_active_order_or_mismatched_account_preserves_unknown(self):
         submitted=datetime.now(timezone.utc).isoformat()
         self.sdk.history_deals_get.return_value=()
@@ -328,6 +438,280 @@ class DemoTradingTests(unittest.TestCase):
         self.assertTrue(demo.reconcile(self.sdk,self.policy,command,submitted,{})['resolved'])
         order.state=4
         self.assertFalse(demo.reconcile(self.sdk,self.policy,command,submitted,{})['resolved'])
+        self.sdk.order_send.assert_not_called()
+
+    def automation_policy(self, *, owned=(17,), **changes):
+        grant = dict(environment='demo', login=self.policy['login'], server=self.policy['server'],
+            symbols=['EURUSD'], actions=['place','close'], account_currency='USD',
+            expires_at=(datetime.now(timezone.utc)+timedelta(minutes=5)).isoformat(),
+            max_risk_amount='25', max_risk_pct='2', max_aggregate_risk_amount='100',
+            max_volume='0.5', session_equity_floor='9500', free_margin_floor='100',
+            cost_buffer_per_lot='10', max_positions=3, max_attempts=10,
+            max_quote_age_ms=2000, max_spread_points='10', deviation_points=5)
+        grant.update(changes)
+        return demo.AutomationBrokerPolicy._from_authenticated_worker(demo.BrokerPolicy(self.policy),
+            grant, owned_order_ids=owned, risk_reserved=25)
+
+    def test_automation_policy_requires_worker_factory_and_rejects_unknown_costs(self):
+        with self.assertRaisesRegex(demo.Denied,'native_context_required'):
+            demo.AutomationBrokerPolicy(self.policy)
+        for changes in ({'environment':'real'}, {'cost_buffer_per_lot':None},
+                        {'max_risk_amount':'NaN'}, {'max_quote_age_ms':True},
+                        {'actions':['protect']}, {'symbols':['XAUUSD']}):
+            with self.subTest(changes=changes), self.assertRaises(demo.Denied):
+                self.automation_policy(**changes)
+        self.sdk.order_check.assert_not_called()
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_force_demo_hedging_sl_limits_and_session_equity_floor(self):
+        policy=self.automation_policy()
+        for attribute,value,reason in [('trade_mode',2,'demo_account_required'),
+                ('margin_mode',0,'demo_hedging_required'), ('currency','EUR','currency_mismatch'),
+                ('equity',9500,'equity_floor'), ('margin_free',110,'demo_margin_insufficient')]:
+            with self.subTest(attribute=attribute):
+                prior=getattr(self.account,attribute);setattr(self.account,attribute,value)
+                with self.assertRaisesRegex(demo.Denied,reason):
+                    demo.execute(self.sdk,policy,self.command)
+                setattr(self.account,attribute,prior)
+        for changes,reason in [({'stop_loss':None},'demo_stop_required'),
+                               ({'volume':.6},'demo_volume_step_or_limit'),
+                               ({'stop_loss':1.09},'order_risk_limit')]:
+            with self.subTest(changes=changes),self.assertRaisesRegex(demo.Denied,reason):
+                demo.execute(self.sdk,policy,{**self.command,**changes})
+        self.account.equity=9510
+        with self.assertRaisesRegex(demo.Denied,'demo_risk_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_aggregate_risk_counts_and_quote_unknowns_deny(self):
+        policy=self.automation_policy(max_risk_amount='25',max_aggregate_risk_amount='25')
+        p=self.position();p.sl=1.098
+        self.sdk.positions_get.return_value=(p,)
+        with self.assertRaisesRegex(demo.Denied,'demo_risk_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        p.sl=0
+        with self.assertRaisesRegex(demo.Denied,'existing_risk_unknown'):
+            demo.execute(self.sdk,policy,self.command)
+        p.sl=1.099
+        self.sdk.positions_get.return_value=(p,p,p)
+        with self.assertRaisesRegex(demo.Denied,'demo_position_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        self.sdk.positions_get.return_value=()
+        self.tick.ask=1.10020
+        with self.assertRaisesRegex(demo.Denied,'spread_limit'):
+            demo.execute(self.sdk,policy,self.command)
+        self.tick.ask=1.10002;self.tick.time_msc-=6000
+        with self.assertRaisesRegex(demo.Denied,'demo_quote_stale'):
+            demo.execute(self.sdk,policy,self.command)
+        self.tick.time_msc=int(time.time()*1000)
+        self.sdk.order_calc_profit.return_value=None;self.sdk.order_calc_profit.side_effect=None
+        with self.assertRaisesRegex(demo.Denied,'demo_risk_unavailable'):
+            demo.execute(self.sdk,policy,self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_final_mutable_state_is_rechecked_after_order_check(self):
+        policy=self.automation_policy()
+        def beyond_deviation():
+            self.tick.bid += .00006
+            self.tick.ask += .00006
+        mutations=[lambda:setattr(self.account,'equity',9999),
+            lambda:setattr(self.account,'margin_free',9999),
+            beyond_deviation,
+            lambda:setattr(self.sdk.positions_get,'return_value',(self.position(),)),
+            lambda:setattr(self.sdk.orders_get,'return_value',None)]
+        for change in mutations:
+            with self.subTest(change=change):
+                self.setUp()
+                policy=self.automation_policy()
+                self.sdk.order_check.side_effect=lambda _,change=change:(change() or NS(retcode=0))
+                with self.assertRaises(demo.Denied):
+                    demo.execute(self.sdk,policy,self.command)
+                self.sdk.order_send.assert_not_called()
+                self.sdk.order_check.assert_called_once()
+        self.setUp()
+        self.sdk.order_calc_margin.side_effect=[20,21]
+        with self.assertRaisesRegex(demo.Denied,'state_changed'):
+            demo.execute(self.sdk,self.automation_policy(),self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_final_grant_revocation_expiry_and_unknown_send_never_retry(self):
+        policy=self.automation_policy()
+        with self.assertRaisesRegex(demo.Denied,'grant_revoked'):
+            demo.execute(self.sdk,policy,self.command,lambda:demo.deny('grant_revoked'))
+        self.sdk.order_send.assert_not_called()
+        policy=self.automation_policy()
+        def expire():
+            policy['expires_at']=(datetime.now(timezone.utc)-timedelta(seconds=1)).isoformat()
+        with self.assertRaisesRegex(demo.Denied,'grant_expired'):
+            demo.execute(self.sdk,policy,self.command,expire)
+        self.sdk.order_send.assert_not_called()
+        self.sdk.order_send.return_value=None
+        self.assertEqual(demo.execute(self.sdk,self.automation_policy(),self.command)['status'],'unknown')
+        self.sdk.order_send.assert_called_once()
+
+    def test_automation_same_prices_with_new_tick_timestamp_passes_but_stale_still_denies(self):
+        original = self.tick.time_msc
+        def next_tick(_):
+            self.tick.time_msc = original + 1
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = next_tick
+        result = demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.assertEqual(result['status'], 'filled')
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_called_once()
+        self.sdk.order_check.reset_mock();self.sdk.order_send.reset_mock()
+        def stale_tick(_):
+            self.tick.time_msc = original - 10000
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = stale_tick
+        with self.assertRaisesRegex(demo.Denied, 'demo_quote_stale'):
+            demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_recheck_rejection_identifies_changed_fields_without_inventory_details(self):
+        def price_change(_):
+            self.tick.bid += .00006
+            self.tick.ask += .00006
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = price_change
+        with self.assertRaises(demo.Denied) as caught:
+            demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.assertEqual(str(caught.exception), 'demo_automation_state_changed')
+        self.assertFalse(caught.exception.admission_recheck['request_changed'])
+        self.assertTrue(caught.exception.admission_recheck['quote_drift_exceeds_policy'])
+        self.assertIn('admission_quote', caught.exception.admission_recheck['changed_preview_fields'])
+        self.assertNotIn('positions', caught.exception.admission_recheck)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_price_move_within_approved_deviation_recomputes_risk_before_single_send(self):
+        def price_change(_):
+            self.tick.bid += .00005
+            self.tick.ask += .00005
+            self.tick.time_msc += 1
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = price_change
+        result = demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.assertEqual(result['status'], 'filled')
+        self.assertEqual(result['estimate']['entry_price'], self.tick.ask)
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_called_once()
+        self.assertEqual(self.sdk.order_calc_profit.call_count, 2)
+
+    def test_automation_price_move_cannot_bypass_risk_spread_sl_or_margin_limit(self):
+        for effect, reason in (('risk', 'order_risk_limit'), ('spread', 'spread_limit'),
+                               ('margin', 'demo_margin_insufficient'), ('stop', 'demo_stop_direction')):
+            with self.subTest(effect=effect):
+                self.setUp()
+                def change(_):
+                    if effect == 'risk':
+                        self.sdk.order_calc_profit.side_effect = None
+                        self.sdk.order_calc_profit.return_value = -30
+                    elif effect == 'spread':
+                        self.tick.ask += .00010
+                    elif effect == 'margin':
+                        self.sdk.order_calc_margin.return_value = 10001
+                    else:
+                        self.command['stop_loss'] = self.tick.bid + .00001
+                    return NS(retcode=0)
+                self.sdk.order_check.side_effect = change
+                with self.assertRaisesRegex(demo.Denied, reason):
+                    demo.execute(self.sdk, self.automation_policy(), self.command)
+                self.sdk.order_send.assert_not_called()
+
+    def test_automation_price_bearing_request_stays_equal_to_checked_request(self):
+        self.info.trade_exemode = 0
+        def price_change(_):
+            self.tick.bid += .00001
+            self.tick.ask += .00001
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect = price_change
+        with self.assertRaisesRegex(demo.Denied, 'state_changed'):
+            demo.execute(self.sdk, self.automation_policy(), self.command)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_full_close_can_reduce_exposure_while_floating_equity_moves(self):
+        own = self.position();own.identifier=77
+        self.sdk.positions_get.return_value=(own,)
+        def changed(_):
+            self.account.equity -= 1
+            self.account.margin_free -= 1
+            self.tick.bid += .00001
+            self.tick.ask += .00001
+            return NS(retcode=0)
+        self.sdk.order_check.side_effect=changed
+        result=demo.execute(self.sdk,self.automation_policy(owned=(77,)),
+            {**self.command,'action':'close','ticket':77,'volume':None})
+        self.assertEqual(result['status'],'filled')
+        self.sdk.order_send.assert_called_once()
+
+    def test_automation_clock_age_is_rechecked_after_final_native_fence(self):
+        fences=0
+        def guard():
+            nonlocal fences
+            fences+=1
+            if fences==2:
+                self.tick.time_msc-=10000
+        # Advancing the clock after final preparation must invalidate its retained
+        # quote even if native DB revocation/identity checks themselves succeed.
+        clock=time.time()
+        with patch.object(demo.time,'time',side_effect=[clock,clock,clock+10]):
+            with self.assertRaisesRegex(demo.Denied,'demo_quote_stale'):
+                demo.execute(self.sdk,self.automation_policy(),self.command,guard)
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_close_requires_durable_opening_identifier_not_magic_or_ticket(self):
+        p=self.position();p.magic=999;p.identifier=77
+        self.sdk.positions_get.return_value=(p,)
+        policy=self.automation_policy(owned=(77,))
+        result=demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':None})
+        self.assertEqual(result['status'],'filled')
+        self.assertEqual(self.sdk.order_send.call_args.args[0]['position'],77)
+        self.sdk.order_send.reset_mock();p.identifier=17
+        with self.assertRaisesRegex(demo.Denied,'demo_ticket_not_managed'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':None})
+        self.sdk.order_send.assert_not_called()
+        p.identifier=77;p.ticket=88
+        with self.assertRaisesRegex(demo.Denied,'position_identity_unsupported'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':88,'volume':None})
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_connection_pause_during_final_margin_calculation_blocks_send(self):
+        paused=False
+        calculations=0
+        def margin(*args):
+            nonlocal paused,calculations
+            calculations+=1
+            if calculations==2:
+                paused=True
+            return 20
+        def guard():
+            if paused:
+                raise RuntimeError('mt5_connection_revoked')
+        self.sdk.order_calc_margin.side_effect=margin
+        with self.assertRaisesRegex(RuntimeError,'mt5_connection_revoked'):
+            demo.execute(self.sdk,self.automation_policy(),self.command,guard)
+        self.assertEqual(calculations,2)
+        self.sdk.order_check.assert_called_once()
+        self.sdk.order_send.assert_not_called()
+
+    def test_automation_owned_full_close_remains_available_below_entry_floors(self):
+        own=self.position();own.identifier=77
+        other=self.position();other.ticket=88;other.identifier=88;other.sl=1.01
+        self.sdk.positions_get.return_value=(own,other)
+        self.account.equity=9000
+        self.account.margin_free=-25
+        policy=self.automation_policy(owned=(77,))
+        result=demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':None})
+        self.assertEqual(result['status'],'filled')
+        self.sdk.order_send.assert_called_once()
+        self.sdk.order_calc_margin.assert_not_called()
+        self.sdk.order_calc_profit.assert_not_called()
+        self.sdk.order_send.reset_mock()
+        with self.assertRaisesRegex(demo.Denied,'demo_ticket_not_managed'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':88,'volume':None})
+        with self.assertRaisesRegex(demo.Denied,'demo_partial_close_unsupported'):
+            demo.execute(self.sdk,policy,{**self.command,'action':'close','ticket':77,'volume':.05})
         self.sdk.order_send.assert_not_called()
 
 

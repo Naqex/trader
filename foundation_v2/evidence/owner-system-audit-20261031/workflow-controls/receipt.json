@@ -1,0 +1,106 @@
+{
+  "scope": "Isolated React/Vite fixtures; API responses are mocked; no owner writes",
+  "cases": [
+    {
+      "theme": "dark",
+      "language": "vi",
+      "width": 1440,
+      "pickerDisableTransition": true,
+      "emptyPicker": true,
+      "confirmationCancelFocus": true,
+      "nestedEscape": true,
+      "presetMenuBlurEscape": true,
+      "presetConfirmation": true,
+      "busyEscapeBlocked": true,
+      "mediaErrorRetry": true,
+      "groupConfirmation": true,
+      "templateConfirmation": true
+    },
+    {
+      "theme": "light",
+      "language": "en",
+      "width": 390,
+      "pickerDisableTransition": true,
+      "emptyPicker": true,
+      "confirmationCancelFocus": true,
+      "nestedEscape": true,
+      "presetMenuBlurEscape": true,
+      "presetConfirmation": true,
+      "busyEscapeBlocked": true,
+      "mediaErrorRetry": true,
+      "groupConfirmation": true,
+      "templateConfirmation": true
+    }
+  ],
+  "errors": [],
+  "writes": [
+    {
+      "path": "/api/v2/trade-media",
+      "body": {
+        "action": "remove_media",
+        "id": "image-one"
+      },
+      "fixture": true
+    },
+    {
+      "path": "/api/v2/trade-media",
+      "body": {
+        "action": "remove_media",
+        "id": "image-one"
+      },
+      "fixture": true
+    },
+    {
+      "path": "/api/v2/trade-labels",
+      "body": {
+        "action": "archive_group",
+        "id": "group-one",
+        "expected_revision": 1
+      },
+      "fixture": true
+    },
+    {
+      "path": "/api/v2/note-templates",
+      "body": {
+        "action": "delete",
+        "id": "custom",
+        "expected_revision": 1
+      },
+      "fixture": true
+    },
+    {
+      "path": "/api/v2/trade-media",
+      "body": {
+        "action": "remove_media",
+        "id": "image-one"
+      },
+      "fixture": true
+    },
+    {
+      "path": "/api/v2/trade-media",
+      "body": {
+        "action": "remove_media",
+        "id": "image-one"
+      },
+      "fixture": true
+    },
+    {
+      "path": "/api/v2/trade-labels",
+      "body": {
+        "action": "archive_group",
+        "id": "group-one",
+        "expected_revision": 1
+      },
+      "fixture": true
+    },
+    {
+      "path": "/api/v2/note-templates",
+      "body": {
+        "action": "delete",
+        "id": "custom",
+        "expected_revision": 1
+      },
+      "fixture": true
+    }
+  ]
+}

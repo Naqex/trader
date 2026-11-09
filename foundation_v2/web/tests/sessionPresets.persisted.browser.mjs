@@ -77,7 +77,7 @@ try {
   await view.trigger.click()
   if(mode==='backtest') await view.dialog.screenshot({animations:'disabled',path:`${out}/persisted-preset.png`})
   await restored.getByRole('button',{name:`Xóa preset ${name}`,exact:true}).click()
-  const confirmation=view.page.locator('.session-preset-confirm')
+  const confirmation=view.page.locator('.wm-confirmation-dialog')
   await confirmation.getByRole('button',{name:'Xóa preset',exact:true}).click()
   await confirmation.waitFor({state:'detached'})
   assert.deepEqual(await list(mode),baseline[mode],'Existing user presets must remain unchanged')

@@ -55,12 +55,15 @@ impl LocalGateway {
             .parent()
             .and_then(|p| p.parent())
             .ok_or("project path unavailable")?;
-        let base = std::env::var("TW_AI_GATEWAY_BASE_URL")
-            .unwrap_or_else(|_| "http://127.0.0.1:17852/v1".into());
+        let managed_base = format!(
+            "http://127.0.0.1:{}/v1",
+            crate::ai_gateway_runtime::managed_port()
+        );
+        let base = std::env::var("TW_AI_GATEWAY_BASE_URL").unwrap_or_else(|_| managed_base.clone());
         let key_file = std::env::var_os("TW_AI_GATEWAY_KEY_FILE")
             .map(PathBuf::from)
             .unwrap_or_else(|| project.join(".runtime/mt5-ai-gateway/inference.key"));
-        let managed = base_url(&base)? == "http://127.0.0.1:17852/v1"
+        let managed = base_url(&base)? == managed_base
             && key_file == project.join(".runtime/mt5-ai-gateway/inference.key");
         let mut gateway = Self::new(&base, key_file, std::env::var("TW_AI_GATEWAY_MODEL").ok())?;
         if managed && cfg!(windows) {

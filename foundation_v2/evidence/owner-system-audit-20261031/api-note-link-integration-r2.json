@@ -1,0 +1,42 @@
+{
+  "passed": true,
+  "scope": "owned disposable PostgreSQL; real native Router, auth, idempotency and concurrent revision/count admission",
+  "note_link_validation_selects": {
+    "empty": {
+      "expected": 0,
+      "observed": 0,
+      "passed": true
+    },
+    "14": {
+      "expected": 1,
+      "observed": 1,
+      "passed": true
+    },
+    "500": {
+      "expected": 2,
+      "observed": 2,
+      "passed": true
+    },
+    "unchanged": {
+      "expected": 0,
+      "observed": 0,
+      "passed": true
+    }
+  },
+  "query_count_method": "actual disposable PostgreSQL log_statement=all between test markers; not latency timing",
+  "owner_runtime_touched": false,
+  "source_unchanged": true,
+  "source_sha256": {
+    "api-rust\\src\\live_ledger.rs": "89713aaf1ea7dbaa9d9c320e69d46c01bd4c3c72582be9a2a691f318bc4dc50f",
+    "api-rust\\tests\\live_ledger_pg.rs": "5e0fed41682a8447b4ddec11ada156cecb0dc6179a8f4addf2f77833a05479cf",
+    "api-rust\\tests\\live_ledger_pg.py": "a90a8f83af4afe4d44ee67c2ce53d00655ab3a109990e3291182317780df6203",
+    "api-rust\\src\\lib.rs": "e95beeb88ed27181602a32e0294cb3c3de293b2d8bcab114d73fa4e1dd783496",
+    "api-rust\\src\\commands.rs": "20ab654631b7c6d38eb22e70062f4e8ee8c3a008b02d2425eddcd669c0dabe00",
+    "api-rust\\src\\rust_runtime.rs": "71cabdd21705e8f825970c8c5d2af404e934c6284ace0ec827714d55942c5a94",
+    "api-rust\\src\\native_mutation.rs": "861844aa7e616f49c098b4c11ceb3dce9a5074be6a22dd0b6203ab9facfa0366",
+    "api-rust\\src\\trade_labels.rs": "73e01fed64f05c4446d9e2e45ace66389af9a6d1aa5b82f10e07812857ecfc71",
+    "migrations\\0008_live_journal.sql": "4eb3b5e093965a1503b4cbe2dd84e18060f0ed087258eba701d51a2b410053db"
+  },
+  "stdout": "\nrunning 2 tests\ntest live_records_are_scoped_immutable_revisioned_and_idempotent ... ok\ntest note_link_validation_batches_sources_and_preserves_admission ... ok\n\ntest result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s\n\n",
+  "stderr": "   Compiling trading-workspace-api v0.1.0-alpha.1 (D:\\ANNAM\\TradingWorkspace\\projects\\trader\\foundation_v2\\api-rust)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 26s\n     Running tests\\live_ledger_pg.rs (E:/BACKUP-TRADINGWORKSPACE/owner-system-audit-20261031/cargo-target\\debug\\deps\\live_ledger_pg-e3ab4b4e2d60bd06.exe)\n"
+}

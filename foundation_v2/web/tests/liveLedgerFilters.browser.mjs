@@ -76,9 +76,10 @@ try {
     await expect(toolbar.locator('.fxa-filter-chip')).toContainText('planned AND review, later')
     await page.screenshot({path:`${out}/applied-${width}-${theme}.png`})
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
-    const bounds=await toolbar.evaluate(el=>{const p=el.parentElement.getBoundingClientRect(),r=el.getBoundingClientRect(),line=getComputedStyle(el,'::after');return {left:r.left-p.left,right:p.right-r.right,lineLeft:line.left,lineRight:line.right}})
+    const bounds=await toolbar.evaluate(el=>{const p=el.parentElement.getBoundingClientRect(),r=el.getBoundingClientRect(),line=getComputedStyle(el,'::after');return {left:r.left-p.left,right:p.right-r.right,lineContent:line.content,borderBottom:getComputedStyle(el).borderBottomWidth}})
     assert(Math.abs(bounds.left)<1&&Math.abs(bounds.right)<1)
-    assert.equal(bounds.lineLeft,'0px');assert.equal(bounds.lineRight,'0px')
+    assert.equal(bounds.lineContent,'none','No pseudo separator extending into adjacent panes')
+    assert.equal(bounds.borderBottom,'1px','Toolbar owns the single bottom separator')
     await toolbar.getByRole('button',{name:'Clear filters',exact:true}).click()
     await open();await page.screenshot({path:`${out}/basic-${width}-${theme}.png`});await page.keyboard.press('Escape')
     if(width===1920){

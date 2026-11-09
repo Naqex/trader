@@ -14,7 +14,7 @@ export function liveLedgerRows(payload, timeBasis = 'market') {
     return {
       sourceRow, symbol: sourceRow.symbol,
       side: sourceRow.type === 0 ? 'buy' : sourceRow.type === 1 ? 'sell' : null,
-      status, net_pnl: status === 'open' ? null : manual ? dealNet(sourceRow) : sourceRow.net_pnl,
+      status, net_pnl: status !== 'closed' ? null : manual ? dealNet(sourceRow) : sourceRow.net_pnl,
       table_time_utc: timeBasis === 'activity' ? activityTime : marketTime,
       tags: manual ? trade.tags || [] : [],
       notes: manual ? trade.note || '' : '',

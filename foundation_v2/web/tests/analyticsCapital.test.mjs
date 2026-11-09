@@ -1,8 +1,19 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { advancedAnalytics, analyticsCapitalBases, periodReturn } from '../src/tradingAnalyticsModel.js'
+import { buildAnalyticsModel } from '../src/analyticsViewModel.js'
 const row=(session_id,net_pnl,starting_balance,date='2024-01-01T12:00:00Z')=>({session_id,net_pnl,starting_balance,report_time_utc:date})
 const model=ledger=>({ledger,curve:[],drawdown:[],startBalance:10000,result:{multi_session:true}})
+
+test('a first post-trade balance cannot replace missing explicit opening capital',()=>{
+ const report={ledger:[{trade_id:'a',net_pnl:100,report_time_utc:'2026-10-01T12:00:00Z'}],metrics:{closed_trade_balance_curve:[{balance:1100}]}}
+ const source=buildAnalyticsModel(report)
+ assert.equal(source.startBalance,undefined)
+ assert.equal(analyticsCapitalBases(source).initial[0].capital,null)
+ assert.equal(advancedAnalytics(source).months[0].profitPct,null)
+ report.starting_balance=1000
+ assert.equal(buildAnalyticsModel(report).startBalance,1000)
+})
 test('session sum and overall gain count each source capital once across assets and months',()=>{
  const source=model([row('a',100,1000),row('a',100,1000,'2024-02-01T12:00:00Z'),row('b',200,2000)])
  const data=advancedAnalytics(source,{timezone:'UTC'})

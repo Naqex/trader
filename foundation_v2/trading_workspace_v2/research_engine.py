@@ -168,6 +168,8 @@ def execute_breakout(rows: list[dict], protocol: dict, *, continue_check=None, d
         raise ResearchEngineValidationError("bars overlap the declared timeframe; closed-bar timing is unsafe")
 
     cost_model = CostModel.from_mapping(protocol["parameters"]["cost_model"])
+    if cost_model.commission_per_side_per_quantity_account:
+        raise ResearchEngineValidationError("quantity commission is supported only by the offline Python replay pilot")
     spread_price = Decimal(str(protocol["parameters"].get("spread_price", 0)))
     if not spread_price.is_finite() or spread_price < 0:
         raise ResearchEngineValidationError("spread_price must be finite and nonnegative")

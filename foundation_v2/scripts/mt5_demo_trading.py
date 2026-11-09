@@ -5,6 +5,7 @@ Only main() imports the SDK, after validating the operator's local policy.
 """
 import importlib
 import base64
+import hashlib
 import json
 import math
 import os
@@ -14,10 +15,17 @@ import time
 import uuid
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import mt5_clock
 
 
 class Denied(Exception):
-    pass
+    def __init__(self, reason, *, data_quality=None, admission_recheck=None):
+        super().__init__(reason)
+        self.data_quality = data_quality
+        self.admission_recheck = admission_recheck
 
 
 class BrokerPolicy(dict):
@@ -27,13 +35,80 @@ class BrokerPolicy(dict):
     """
 
 
+class AutomationBrokerPolicy(BrokerPolicy):
+    """Bounded Demo capability built from native storage by the private worker.
+
+    A JSON policy never creates this class. Authentication, durable reservations
+    and the terminal lock belong to the native caller, not to an LLM command.
+    """
+
+    def __init__(self, *args, **kwargs):
+        deny('demo_automation_native_context_required')
+
+    @classmethod
+    def _from_authenticated_worker(cls, base, grant, *, owned_order_ids, risk_reserved):
+        policy = dict(base)
+        for key in ('symbols', 'actions', 'expires_at', 'account_currency', 'max_risk_amount',
+                    'max_risk_pct', 'max_aggregate_risk_amount', 'max_volume', 'max_positions',
+                    'max_attempts', 'max_quote_age_ms', 'max_spread_points', 'deviation_points',
+                    'session_equity_floor', 'cost_buffer_per_lot', 'free_margin_floor'):
+            if key not in grant:
+                deny('demo_automation_grant_invalid')
+            policy[key] = grant[key]
+        if (grant.get('environment') != 'demo' or base.get('mode') != 'demo' or
+                grant.get('login') != base.get('login') or grant.get('server') != base.get('server')):
+            deny('demo_automation_scope_mismatch')
+        for key in ('max_risk_amount', 'max_risk_pct', 'max_aggregate_risk_amount', 'max_volume',
+                    'session_equity_floor', 'cost_buffer_per_lot', 'free_margin_floor', 'max_spread_points'):
+            value = policy[key]
+            try:
+                if not isinstance(value, str) or not Decimal(value).is_finite():
+                    raise ValueError()
+                policy[key] = float(Decimal(value))
+                finite(policy[key], key not in ('cost_buffer_per_lot', 'free_margin_floor'))
+                if policy[key] < 0:
+                    raise ValueError()
+            except (ValueError, ArithmeticError):
+                deny('demo_automation_grant_invalid')
+        for key, low, high in (('max_positions', 1, 100), ('max_attempts', 1, 10000),
+                               ('max_quote_age_ms', 250, 5000),
+                               ('deviation_points', 0, 100)):
+            if type(policy[key]) is not int or not low <= policy[key] <= high:
+                deny('demo_automation_grant_invalid')
+        if (policy['max_risk_pct'] > 100 or policy['max_risk_amount'] > policy['max_aggregate_risk_amount'] or
+                not isinstance(policy['symbols'], list) or not policy['symbols'] or len(policy['symbols']) > 32 or
+                len(set(policy['symbols'])) != len(policy['symbols']) or
+                any(not isinstance(s, str) or not s or s not in base['symbols'] for s in policy['symbols']) or
+                not isinstance(policy['actions'], list) or not policy['actions'] or
+                len(set(policy['actions'])) != len(policy['actions']) or
+                any(a not in ('place', 'close') for a in policy['actions']) or
+                not isinstance(policy['account_currency'], str) or not policy['account_currency']):
+            deny('demo_automation_grant_invalid')
+        try:
+            expires = datetime.fromisoformat(policy['expires_at'].replace('Z', '+00:00'))
+            if expires.tzinfo is None:
+                raise ValueError()
+            reserved = float(Decimal(str(risk_reserved)))
+            if finite(reserved) < 0:
+                raise ValueError()
+        except (TypeError, AttributeError, ValueError, ArithmeticError):
+            deny('demo_automation_grant_invalid')
+        policy['owned_order_ids'] = frozenset(owned_order_ids)
+        if any(type(ticket) is not int or ticket <= 0 for ticket in policy['owned_order_ids']):
+            deny('demo_automation_grant_invalid')
+        policy['risk_reserved'] = reserved
+        result = dict.__new__(cls)
+        dict.__init__(result, policy)
+        return result
+
+
 BROKER_REASONS = {10017: 'demo_broker_trade_disabled', 10018: 'demo_market_closed',
                   10021: 'demo_broker_no_quotes', 10042: 'demo_broker_long_only',
                   10043: 'demo_broker_short_only', 10044: 'demo_broker_close_only'}
 
 
-def deny(reason):
-    raise Denied(reason)
+def deny(reason, **details):
+    raise Denied(reason, **details)
 
 
 def finite(value, positive=False):
@@ -93,6 +168,8 @@ def identity(sdk, policy, read=False):
         deny('demo_disconnected')
     if str(account.login) != policy['login'] or account.server != policy['server']:
         deny('demo_identity_changed')
+    if isinstance(policy, AutomationBrokerPolicy) and account.trade_mode != 0:
+        deny('demo_account_required')
     # ACCOUNT_TRADE_MODE_DEMO is 0. Never infer mode from a server's display name.
     if (account.trade_mode not in (0, 2)) if isinstance(policy, BrokerPolicy) else (account.trade_mode != 0):
         deny('demo_account_required')
@@ -114,16 +191,45 @@ def instrument(sdk, policy, symbol, now=None, allow_stale=False, read=False):
     info = sdk.symbol_info(symbol)
     if info is None:
         deny('demo_symbol_unavailable')
-    if not info.visible and not sdk.symbol_select(symbol, True):
-        deny('demo_symbol_unavailable')
+    if not info.visible:
+        if not sdk.symbol_select(symbol, True):
+            deny('demo_symbol_unavailable')
+        # Selection can populate broker specifications; the old SDK tuple is immutable.
+        info = sdk.symbol_info(symbol)
+        if info is None:
+            deny('demo_symbol_unavailable')
     quote = sdk.symbol_info_tick(symbol)
     if quote is None:
         deny('demo_quote_unavailable')
-    for value in (quote.bid, quote.ask, info.trade_tick_size, info.point, info.volume_min, info.volume_max, info.volume_step):
-        finite(value, True)
-    age = int((time.time() if now is None else now) * 1000) - quote.time_msc
+    for source, item, fields in (('quote', quote, ('bid', 'ask')),
+                                 ('instrument', info, ('trade_tick_size', 'point', 'volume_min', 'volume_max', 'volume_step'))):
+        for field in fields:
+            try:
+                finite(getattr(item, field, None), True)
+            except Denied:
+                deny('demo_quote_unavailable' if source == 'quote' else 'demo_invalid_number', data_quality={
+                    'source': 'application', 'invalid_field': source + '.' + field,
+                    'requirement': 'positive_finite_number',
+                })
+    stamp = quote.time_msc
+    if type(stamp) not in (int, float) or not math.isfinite(stamp) or not 0 < stamp <= 8640000000000000:
+        deny('demo_quote_unavailable')
+    try:
+        normalized_stamp = mt5_clock.utc_msc(stamp, policy['server'])
+    except RuntimeError:
+        deny('demo_quote_unavailable', data_quality={'source': 'application',
+             'invalid_field': 'quote.time_msc', 'requirement': 'unambiguous_broker_clock'})
+    if normalized_stamp != stamp:
+        quote = SimpleNamespace(bid=quote.bid, ask=quote.ask, time_msc=normalized_stamp,
+                                source_time_msc=stamp)
+    stamp = normalized_stamp
+    observed = int((time.time() if now is None else now) * 1000)
+    age = observed - stamp
     if quote.ask < quote.bid or not allow_stale and (age < -1000 or age > policy['max_quote_age_ms']):
-        deny('demo_quote_stale')
+        deny('demo_quote_stale', data_quality={
+            'quote_time_msc': stamp, 'observed_at_msc': observed, 'quote_age_ms': age,
+            'max_quote_age_ms': policy['max_quote_age_ms'], 'clock': 'host_utc',
+        })
     return info, quote
 
 
@@ -153,7 +259,9 @@ def risk_budget(sdk, policy, account, positions, orders, candidate, exclude=None
     for item in [*positions, *orders]:
         if exclude is not None and item.ticket == exclude and item in positions:
             continue
-        if item.symbol not in policy['symbols'] or item.sl <= 0:
+        if item.symbol not in policy['symbols'] or finite(item.sl) <= 0:
+            deny('demo_existing_risk_unknown')
+        if isinstance(policy, AutomationBrokerPolicy) and item.type not in ((0, 1) if item in positions else (2, 3, 4, 5, 6, 7)):
             deny('demo_existing_risk_unknown')
         side = 'BUY' if item.type in (0, 2, 4, 6) else 'SELL'
         # Equity already contains floating P/L: reserve remaining downside from
@@ -163,9 +271,13 @@ def risk_budget(sdk, policy, account, positions, orders, candidate, exclude=None
             reference = quote.bid if side == 'BUY' else quote.ask
         else:
             reference = item.price_open
-        total += stop_risk(sdk, policy, item.symbol, side, item.volume if item in positions else item.volume_current, reference, item.sl)
+        total += stop_risk(sdk, policy, item.symbol, side,
+            finite(item.volume if item in positions else item.volume_current, True), finite(reference, True), item.sl)
     equity = finite(account.equity, True)
-    limit = min(policy['max_risk_amount'], equity * policy['max_risk_pct'] / 100)
+    limit = min(policy['max_aggregate_risk_amount'] if isinstance(policy, AutomationBrokerPolicy)
+                else policy['max_risk_amount'], equity * policy['max_risk_pct'] / 100)
+    if isinstance(policy, AutomationBrokerPolicy):
+        limit = min(limit, equity - policy['session_equity_floor'])
     if total > limit + 1e-8:
         deny('demo_risk_limit')
     return total, limit
@@ -203,14 +315,58 @@ def protection(info, quote, side, sl, tp, required=False):
     return stop, target
 
 
-def prepare(sdk, policy, command):
+def _automation_current(policy):
+    if datetime.now(timezone.utc) >= datetime.fromisoformat(policy['expires_at'].replace('Z', '+00:00')):
+        deny('demo_automation_grant_expired')
+
+
+def _automation_state(account, positions, orders, *, closing=False):
+    """Fingerprint mutable SDK inputs without exposing another position's details."""
+    # Quote movement is separately bounded by the approved deviation and every
+    # prepare recomputes price risk. Floating equity cannot veto a full close;
+    # opening exposure still requires unchanged account financial inputs.
+    values = dict(currency=account.currency)
+    if not closing:
+        values.update(equity=finite(account.equity), margin_free=finite(account.margin_free))
+    values['positions'] = sorted((p.ticket, p.symbol, p.type, finite(p.volume, True), finite(p.price_open, True),
+                                  finite(p.sl), finite(p.tp), getattr(p, 'identifier', None)) for p in positions)
+    values['orders'] = sorted((p.ticket, p.symbol, p.type, finite(p.volume_current, True), finite(p.price_open, True),
+                               finite(p.sl), finite(p.tp)) for p in orders)
+    return hashlib.sha256(json.dumps(values, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
+
+
+def prepare(sdk, policy, command, *, check_broker=True):
     managed = isinstance(policy, BrokerPolicy)
+    automation = isinstance(policy, AutomationBrokerPolicy)
+    bounded = not managed or automation
+    if automation:
+        _automation_current(policy)
     if command.get('mode') != (policy['mode'] if managed else 'demo') or str(command.get('account_id')) != policy['login'] or command.get('server') != policy['server']:
         deny('demo_identity_mismatch')
     symbol, action = command.get('symbol'), command.get('action', 'place')
     info, quote = instrument(sdk, policy, symbol)
     account = identity(sdk, policy)
     positions, orders = inventory(sdk)
+    admission_state = None
+    admission_quote = None
+    if automation:
+        if action not in policy['actions']:
+            deny('demo_automation_action_denied')
+        if account.margin_mode != 2:
+            deny('demo_hedging_required')
+        if account.currency != policy['account_currency']:
+            deny('demo_automation_currency_mismatch')
+        # These floors admit new exposure. An approved full close must remain
+        # possible when equity/free margin fall or unrelated risk exceeds caps.
+        if action == 'place':
+            if finite(account.equity, True) <= policy['session_equity_floor']:
+                deny('demo_automation_equity_floor')
+            if finite(account.margin_free) < policy['free_margin_floor']:
+                deny('demo_margin_insufficient')
+        if (quote.ask - quote.bid) / info.point > policy['max_spread_points'] + 1e-8:
+            deny('demo_automation_spread_limit')
+        admission_state = _automation_state(account, positions, orders, closing=action == 'close')
+        admission_quote = dict(bid=quote.bid, ask=quote.ask, time_msc=quote.time_msc, point=info.point)
     request = {'symbol': symbol, 'magic': policy['magic'], 'comment': request_comment(command['request_id']) if command.get('request_id') else 'wm:preview'}
     estimated, margin, total_risk, limit = None, None, None, None
     if action == 'place':
@@ -220,29 +376,31 @@ def prepare(sdk, policy, command):
         if side not in ('BUY', 'SELL'):
             deny('demo_side_invalid')
         # Netting would merge user/order state. Initial workspace explicitly supports hedging only.
-        if not managed and account.margin_mode != 2:
+        if bounded and account.margin_mode != 2:
             deny('demo_hedging_required')
         if info.trade_mode not in ((1,2,4) if managed else (4,)) or not (info.order_mode & 1):
             deny('demo_symbol_trade_disabled')
         if info.trade_mode == 1 and side != 'BUY' or info.trade_mode == 2 and side != 'SELL':
             deny('demo_symbol_trade_disabled')
-        if not managed and len(positions) + len(orders) >= policy['max_positions']:
+        if bounded and len(positions) + len(orders) >= policy['max_positions']:
             deny('demo_position_limit')
         volume = finite(command.get('volume'), True)
-        if volume < info.volume_min or volume > (info.volume_max if managed else min(info.volume_max, policy['max_volume'])) or not aligned(volume, info.volume_step):
+        if volume < info.volume_min or volume > (min(info.volume_max, policy['max_volume']) if bounded else info.volume_max) or not aligned(volume, info.volume_step):
             deny('demo_volume_step_or_limit')
         price = quote.ask if side == 'BUY' else quote.bid
-        sl, tp = protection(info, quote, side, command.get('stop_loss'), command.get('take_profit'), not managed)
+        sl, tp = protection(info, quote, side, command.get('stop_loss'), command.get('take_profit'), bounded)
         if sl and not (info.order_mode & 16):
             deny('demo_symbol_trade_disabled')
         if tp and not (info.order_mode & 32):
             deny('demo_symbol_trade_disabled')
         estimated = stop_risk(sdk, policy, symbol, side, volume, price, sl) if sl else None
-        if not managed:
+        if automation and estimated > min(policy['max_risk_amount'], policy['risk_reserved']) + 1e-8:
+            deny('demo_automation_order_risk_limit')
+        if bounded:
             total_risk, limit = risk_budget(sdk, policy, account, positions, orders, estimated)
         identity(sdk, policy)
         margin = sdk.order_calc_margin(0 if side == 'BUY' else 1, symbol, volume, price)
-        if margin is None or finite(margin) < 0 or margin > finite(account.margin_free):
+        if margin is None or finite(margin) < 0 or margin > finite(account.margin_free) - (policy['free_margin_floor'] if automation else 0):
             deny('demo_margin_insufficient')
         request.update(action=1, type=0 if side == 'BUY' else 1, volume=volume, sl=sl, tp=tp, deviation=policy['deviation_points'], type_filling=filling(info))
         if info.trade_exemode != 2:
@@ -255,11 +413,22 @@ def prepare(sdk, policy, command):
         item = next((p for p in items if p.ticket == ticket and p.symbol == symbol), None)
         if item is None or not managed and item.magic != policy['magic']:
             deny('demo_ticket_not_managed')
+        if automation and (action != 'close' or getattr(item, 'identifier', None) not in policy['owned_order_ids']):
+            deny('demo_ticket_not_managed')
+        if automation and item.identifier != item.ticket:
+            # The native unknown receipt is committed before this worker runs;
+            # it does not yet durably carry the prepared stable identifier.
+            # Existing reconciliation binds deal.position_id to the requested
+            # ticket. Refuse rollover tickets until that contract is extended.
+            deny('demo_automation_position_identity_unsupported')
         if action == 'cancel':
             if info.trade_freeze_level * info.point >= min(abs(item.price_open - quote.bid), abs(item.price_open - quote.ask)):
                 deny('demo_frozen')
             request.update(action=8, order=ticket)
         elif action == 'close':
+            if automation:
+                if finite(item.volume, True) > policy['max_volume']:
+                    deny('demo_volume_step_or_limit')
             if command.get('volume') is not None and command['volume'] != item.volume:
                 deny('demo_partial_close_unsupported')
             side = 'SELL' if item.type == 0 else 'BUY'
@@ -281,23 +450,63 @@ def prepare(sdk, policy, command):
     else:
         deny('demo_action_unsupported')
     identity(sdk, policy)
-    check = sdk.order_check(request)
-    if check is None or check.retcode != 0:
-        deny(BROKER_REASONS.get(getattr(check, 'retcode', None), 'demo_order_check_rejected'))
-    return request, {'passed': True, 'reason': 'demo_preview_passed', 'entry_price': price if action in ('place', 'close') else None, 'estimated_stop_risk': estimated, 'margin_required': margin, 'currency': account.currency, 'total_stop_risk': total_risk, 'risk_limit': limit, 'risk_estimate_excludes': ['slippage', 'gap_risk', *(['commission','swap'] if managed else [])], 'cost_buffer_per_lot': None if managed else policy['cost_buffer_per_lot']}
+    if check_broker:
+        check = sdk.order_check(request)
+        if check is None or check.retcode != 0:
+            deny(BROKER_REASONS.get(getattr(check, 'retcode', None), 'demo_order_check_rejected'))
+    preview = {'passed': True, 'reason': 'demo_preview_passed', 'entry_price': price if action in ('place', 'close') else None, 'estimated_stop_risk': estimated, 'margin_required': margin, 'currency': account.currency, 'total_stop_risk': total_risk, 'risk_limit': limit, 'risk_estimate_excludes': ['slippage', 'gap_risk', *(['commission','swap'] if managed and not automation else [])], 'cost_buffer_per_lot': policy['cost_buffer_per_lot'] if bounded else None}
+    if automation:
+        preview['admission_state_sha256'] = admission_state
+        preview['admission_quote'] = admission_quote
+    return request, preview
 
 
 def execute(sdk, policy, command, before_send=lambda: None):
     request, preview = prepare(sdk, policy, command)
-    # No cached preview is trusted. Re-read identity AND quote immediately before send.
-    identity(sdk, policy)
-    _, last_quote = instrument(sdk, policy, command['symbol'])
-    if preview['entry_price'] is not None:
-        expected = last_quote.ask if request['type'] == 0 else last_quote.bid
-        if expected != preview['entry_price']:
-            deny('demo_quote_changed_preview_again')
-    before_send()
-    identity(sdk, policy)
+    if isinstance(policy, AutomationBrokerPolicy):
+        # The caller holds the native terminal lock through this whole exchange;
+        # revocation uses that same lock. Re-read the grant, then all financial
+        # inputs after OrderCheck. Do not run OrderCheck again or retry a send.
+        before_send()
+        final_request, final_preview = prepare(sdk, policy, command, check_broker=False)
+        first, last = preview['admission_quote'], final_preview['admission_quote']
+        deviation = policy['deviation_points'] * finite(last['point'], True)
+        changed_fields = sorted(k for k in preview.keys() | final_preview.keys()
+            if preview.get(k) != final_preview.get(k))
+        # Market-execution requests contain no price: OrderCheck checked the
+        # same immutable request. Accept only bounded fresh quote changes after
+        # all risk/spread/SL/margin limits have been revalidated. Price-bearing
+        # requests must remain byte-equivalent to the checked request.
+        dynamic = {'admission_quote', 'entry_price', 'estimated_stop_risk', 'total_stop_risk'}
+        quote_drift = (first['point'] != last['point'] or
+            any(abs(last[k] - first[k]) > deviation + last['point'] * 1e-7 for k in ('bid', 'ask')))
+        if request != final_request or quote_drift or any(k not in dynamic for k in changed_fields):
+            deny('demo_automation_state_changed', admission_recheck={
+                'request_changed': request != final_request,
+                'quote_drift_exceeds_policy': quote_drift,
+                'changed_preview_fields': changed_fields,
+            })
+        preview = final_preview
+        # Connection pause/disconnect also has its own fence and may arrive while
+        # SDK calculations run. Re-read it after those calculations as well.
+        before_send()
+        _automation_current(policy)
+        observed = int(time.time() * 1000)
+        age = observed - last['time_msc']
+        if age < -1000 or age > policy['max_quote_age_ms']:
+            deny('demo_quote_stale', data_quality=dict(quote_time_msc=last['time_msc'],
+                observed_at_msc=observed, quote_age_ms=age,
+                max_quote_age_ms=policy['max_quote_age_ms'], clock='host_utc'))
+    else:
+        # No cached preview is trusted. Re-read identity AND quote immediately before send.
+        identity(sdk, policy)
+        _, last_quote = instrument(sdk, policy, command['symbol'])
+        if preview['entry_price'] is not None:
+            expected = last_quote.ask if request['type'] == 0 else last_quote.bid
+            if expected != preview['entry_price']:
+                deny('demo_quote_changed_preview_again')
+        before_send()
+        identity(sdk, policy)
     try:
         result = sdk.order_send(request)  # Exactly one call, including timeouts/requotes.
     except Exception:
@@ -333,7 +542,12 @@ def snapshot(sdk, policy, symbol, timeframe='M1', bar_count=300):
     def row(item, pending=False):
         return {'ticket': item.ticket, 'symbol': item.symbol, 'side': 'BUY' if item.type in (0, 2, 4, 6) else 'SELL', 'volume': item.volume_current if pending else item.volume, 'price_open': item.price_open, 'sl': item.sl, 'tp': item.tp, 'profit': getattr(item, 'profit', None), 'type': item.type, 'managed': isinstance(policy, BrokerPolicy) or item.magic == policy['magic']}
     identity(sdk, policy, read=True)
-    result = {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': policy.get('read_only') is not True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(r['time']))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'application', 'profile':'managed_account', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {'source':'application', 'profile':'bounded_demo', **{key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}}
+    result = {'status': 'ready', 'reason': 'demo_ready', 'mode': policy['mode'] if isinstance(policy, BrokerPolicy) else 'demo', 'execution_enabled': policy.get('read_only') is not True, 'account': {key: getattr(account, key) for key in ('server', 'currency', 'balance', 'equity', 'margin', 'margin_free', 'trade_mode', *(['leverage'] if isinstance(policy, BrokerPolicy) else []))} | {'login': str(account.login)}, 'symbols': policy['symbols'], 'symbol': symbol, 'timeframe': timeframe, 'quote': {'bid': quote.bid, 'ask': quote.ask, 'time_msc': quote.time_msc}, 'instrument': {'symbol':symbol, 'asset_class':'fx' if info.trade_calc_mode in (0,5) else 'other', 'tick_size': info.trade_tick_size, 'point': info.point, 'digits': info.digits, 'quantity_min': info.volume_min, 'quantity_max': info.volume_max, 'quantity_step': info.volume_step, 'stops_level': info.trade_stops_level, 'freeze_level': info.trade_freeze_level}, 'positions': [row(p) for p in positions], 'orders': [row(p, True) for p in orders], 'bars': [{'timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(int(mt5_clock.utc_seconds(r['time'], policy['server'])))), **{key: float(r[key]) for key in ('open', 'high', 'low', 'close')}, 'volume': int(r['tick_volume'])} for r in rates], 'policy': {'source':'application', 'profile':'managed_account', 'max_quote_age_ms':policy['max_quote_age_ms']} if isinstance(policy, BrokerPolicy) else {'source':'application', 'profile':'bounded_demo', **{key: policy[key] for key in ('max_risk_amount', 'max_risk_pct', 'max_positions', 'max_volume', 'max_quote_age_ms', 'cost_buffer_per_lot')}}}
+    result['account']['name'] = getattr(account, 'name', None)
+    result['quote']['source_time_msc'] = getattr(quote, 'source_time_msc', quote.time_msc)
+    result['clock'] = mt5_clock.metadata(policy['server'])
+    for bar, raw in zip(result['bars'], rates):
+        bar['source_time'] = int(raw['time'])
     terminal = sdk.terminal_info()
     if terminal is None:
         deny('demo_disconnected')
@@ -373,7 +587,7 @@ def reconcile(sdk, policy, command, submitted_at, previous):
     ticket = command.get('ticket')
     if action == 'protect':
         position = next((p for p in positions if p.ticket == ticket and p.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or p.magic == policy['magic'])),None)
-        if position and position.time_update_msc >= int(started.timestamp()*1000) and position.sl == (command.get('stop_loss') or 0) and position.tp == (command.get('take_profit') or 0):
+        if position and int(started.timestamp()*1000) <= mt5_clock.utc_msc(position.time_update_msc, policy['server']) <= int(now.timestamp()*1000)+1000 and position.sl == (command.get('stop_loss') or 0) and position.tp == (command.get('take_profit') or 0):
             identity(sdk, policy)
             return {'resolved':True,'status':'accepted','reason':'demo_reconciled_protection_active','requires_reconciliation':False,'position':ticket,'evidence':{'sl':position.sl,'tp':position.tp,'time_update_msc':position.time_update_msc}}
         return {'resolved':False,'reason':'demo_reconciliation_unproven'}
@@ -383,7 +597,7 @@ def reconcile(sdk, policy, command, submitted_at, previous):
         history = sdk.history_orders_get(ticket=ticket)
         if history is None:
             deny('demo_history_unavailable')
-        matched = [o for o in history if o.ticket == ticket and o.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or o.magic == policy['magic']) and o.state == 2 and o.time_done_msc >= int(started.timestamp()*1000)]
+        matched = [o for o in history if o.ticket == ticket and o.symbol == command['symbol'] and (isinstance(policy, BrokerPolicy) or o.magic == policy['magic']) and o.state == 2 and int(started.timestamp()*1000) <= mt5_clock.utc_msc(o.time_done_msc, policy['server']) <= int(now.timestamp()*1000)+1000]
         if len(matched) == 1:
             identity(sdk, policy)
             return {'resolved':True,'status':'accepted','reason':'demo_reconciled_cancelled','requires_reconciliation':False,'order':ticket}
@@ -394,11 +608,11 @@ def reconcile(sdk, policy, command, submitted_at, previous):
     if any(o.comment == tag and o.magic == policy['magic'] for o in active_orders):
         return {'resolved':False,'reason':'demo_reconciliation_still_active'}
     # Bounded seven-day window. Exact request tag is mandatory for deal attribution.
-    deals = sdk.history_deals_get(started-timedelta(seconds=60),now+timedelta(seconds=1))
+    deals = sdk.history_deals_get(*mt5_clock.history_range(started-timedelta(seconds=60),now+timedelta(seconds=1),policy['server']))
     if deals is None or len(deals) > 100000:
         deny('demo_history_unavailable')
     expected_side = 0 if command.get('side') == 'BUY' else 1
-    matches = [d for d in deals if d.comment == tag and d.magic == policy['magic'] and d.symbol == command['symbol'] and d.time_msc >= start_msc]
+    matches = [d for d in deals if d.comment == tag and d.magic == policy['magic'] and d.symbol == command['symbol'] and start_msc <= mt5_clock.utc_msc(d.time_msc, policy['server']) <= int(now.timestamp()*1000)+1000]
     if not matches:
         return {'resolved':False,'reason':'demo_reconciliation_unproven'}
     if action == 'place':
@@ -474,6 +688,10 @@ def main():
         response = run(json.loads(raw))
     except Denied as error:
         response = {'status': 'rejected', 'passed': False, 'reason': str(error)}
+        if error.data_quality is not None:
+            response['data_quality'] = error.data_quality
+        if error.admission_recheck is not None:
+            response['admission_recheck'] = error.admission_recheck
     except Exception:
         # Unexpected failures could follow submission; never classify as safe to retry.
         response = {'status': 'unknown', 'passed': False, 'reason': 'demo_adapter_failed'}

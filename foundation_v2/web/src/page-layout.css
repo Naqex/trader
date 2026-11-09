@@ -1,6 +1,7 @@
 /* One content gutter; outer page wrappers never add a second inset. */
 .fx-app.fx-shell-story { --wm-page-gutter: var(--ds-page-gutter); --wm-page-start: var(--ds-space-6); }
-.fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content { padding: 0 var(--wm-page-gutter) 40px; }
+.fx-app.fx-shell-story { --wm-pane-toolbar-inset:16px; --wm-pane-toolbar-height:calc(max(40px,var(--wm-control-height)) + 2 * var(--wm-pane-toolbar-inset) + 1px); }
+.fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content { padding: 0 var(--wm-page-gutter) var(--wm-space-section,24px); }
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content > :is(.wm-page, .as-page, .pb-page, .ja-page, .rs-shell, .dd-shell, .learn-shell, .prop-shell, .trade-workspace, .risk-workspace, .replay-shell, .fx-dashboard) {
   box-sizing: border-box; width: 100%; max-width: none; margin-inline: 0; padding-inline: 0; padding-top: var(--wm-page-start);
 }
@@ -29,7 +30,7 @@
 .fx-app .wm-page > .fxa-trades { margin-inline: calc(-1 * var(--wm-page-gutter)); width: calc(100% + 2 * var(--wm-page-gutter)); }
 /* The ledger owns the remaining viewport; only its rows scroll. */
 .fx-app.fx-shell-story:not(.is-chart-workspace) .fx-content:has(> .wm-page > .fxa-trades) { overflow: hidden; padding-bottom: 0; display: flex; flex-direction: column; }
-.fx-app .fx-content > .wm-page:has(> .fxa-trades) { flex: 1; display: flex; flex-direction: column; min-height: 0; padding-top: 24px; padding-bottom: 0; }
+.fx-app .fx-content > .wm-page:has(> .fxa-trades) { flex: 1; display: flex; flex-direction: column; min-height: 0; padding-top: var(--wm-page-start); padding-bottom: 0; }
 .wm-page:has(> .fxa-trades) > .fxa-filters { flex: 0 1 auto; display: flex; flex-direction: column; min-height: 0; max-height: calc(100% - 180px); margin: 0; }
 .wm-page:has(> .fxa-trades) .fxa-filter-toolbar { flex: 0 0 auto; }
 .fxa-ledger-filter-panel { display: grid; gap: 14px; min-height: 0; overflow-y: auto; }
@@ -37,7 +38,110 @@
 .fxa-trades > .fxa-table-scroll { flex: 1; min-height: 0; overscroll-behavior: contain; }
 .fxa-trades .fxa-table-scroll th { position: sticky; top: 0; z-index: 1; border-bottom:0; box-shadow: inset 0 -1px var(--wm-border); }
 dialog.fxa-trade-inspector { width: min(760px, calc(100vw - 64px)); max-height: calc(100dvh - 64px); box-sizing: border-box; margin: auto; border: 1px solid var(--wm-border-strong); color: var(--wm-content); overflow: auto; }
+dialog.fxa-trade-inspector.is-drawer { inset: 0 0 0 auto; width:min(1440px,70vw); max-width:100vw; height:100dvh; max-height:100dvh; margin:0; border:0; border-left:1px solid var(--wm-border); border-radius:0; padding:0; overflow:hidden; background:var(--wm-canvas); color:var(--wm-content); }
+dialog.fxa-trade-inspector.is-drawer[open] { display:flex; flex-direction:column; }
+dialog.fxa-trade-inspector.is-drawer.is-expanded { width:100vw; }
 dialog.fxa-trade-inspector::backdrop { background: #0008; }
+.fx-trade-workspace-header { display:flex; align-items:center; gap:16px; flex-shrink:0; min-height:90px; padding:12px 20px; box-sizing:border-box; border-bottom:1px solid var(--wm-border); }
+.fx-trade-workspace-heading { flex:1; min-width:0; }
+.wm-autosave-status { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-height:18px; color:var(--wm-content-muted); font-size:12px; line-height:1.5; }
+.wm-autosave-status[data-state='error'],.wm-autosave-status[data-state='conflict'],.wm-autosave-status[data-state='invalid'] { color:var(--wm-negative); }
+.wm-autosave-status > .fxa-button { font-size:12px; min-height:26px; padding:2px 8px; }
+.fx-trade-workspace-heading .fx-live-trade-heading p { display:inline; margin:0; }
+.fx-trade-workspace-heading .wm-autosave-status { display:inline-flex; margin-left:8px; }
+.fx-trade-workspace-heading .wm-autosave-status:not(:empty)::before { content:'·'; margin-right:0; color:var(--wm-content-muted); }
+.fx-trade-window-controls { display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-window-controls .wm-button.is-icon { display:inline-flex; align-items:center; justify-content:center; border:0; background:transparent; color:var(--wm-content-muted); cursor:pointer; }
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-window-controls .wm-button.is-icon:hover { background:var(--wm-hover); color:var(--wm-content); }
+.fx-trade-workspace-header .fx-live-trade-heading { display:contents; min-width:0; margin:0; }
+.fx-trade-title-line { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+.fx-trade-title-line > span { font-size:12px; }
+.fx-trade-workspace-header .fx-live-trade-heading h2 { font-size:24px; line-height:1.3; overflow-wrap:anywhere; }
+.fx-trade-workspace-body { flex:1; min-height:0; min-width:0; display:flex; overflow:hidden; }
+.fx-trade-workspace-body > .as-inspector { flex:1; min-height:0; min-width:0; width:100%; margin:0; padding:0; border:0; border-radius:0; background:transparent; }
+.fx-trade-workspace-body > .fx-trade-detail-content { flex:1; width:100%; }
+.fx-trade-detail-tabs { display:flex; gap:4px; margin:0 0 18px; border:1px solid var(--wm-border); border-radius:999px; padding:3px; }
+.fx-trade-detail-tabs button { flex:1; min-height:32px; border:0; border-radius:999px; background:transparent; color:var(--wm-content-muted); font:inherit; cursor:pointer; }
+.fx-trade-detail-tabs button[aria-selected='true'] { background:var(--wm-hover); color:var(--wm-content); }
+.fx-live-trade-heading { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin-bottom:18px; }
+.fx-live-trade-heading h2 { margin:4px 0; font-size:20px; }
+.fx-live-trade-heading p,.fx-live-trade-heading small { margin:0; color:var(--wm-content-muted); font-size:12px; }
+.fx-live-trade-heading .is-positive { color:var(--wm-positive); }
+.fx-live-trade-heading .is-negative { color:var(--wm-negative); }
+.fx-trade-drawer-close { display:inline-flex; align-items:center; justify-content:center; flex:0 0 32px; width:32px; min-height:32px; padding:4px; }
+.fx-trade-drawer-close > svg { width:18px; height:18px; }
+.fx-trade-detail-content { --trade-sidebar-size:clamp(260px,var(--trade-details-ratio,28%),calc(100% - 300px)); position:relative; display:grid; grid-template-columns:var(--trade-sidebar-size) minmax(0,1fr); min-width:0; min-height:0; height:100%; }
+.fx-trade-detail-sidebar { display:flex; flex-direction:column; min-width:0; min-height:0; padding:16px 20px; overflow:auto; border-right:1px solid var(--wm-border); }
+.fx-trade-detail-tabs { flex-shrink:0; }
+.fx-trade-detail-content [role=tabpanel] { display:flex; flex-direction:column; flex:1; min-height:160px; }
+.wm-trade-details-resize { position:absolute; top:0; bottom:0; left:var(--trade-sidebar-size); width:8px; transform:translateX(-50%); cursor:col-resize; touch-action:none; z-index:2; }
+.wm-trade-details-resize:hover::after,.wm-trade-details-resize:focus-visible::after { content:''; display:block; width:2px; height:100%; margin:auto; background:var(--wm-info,#5b9cfb); }
+.fx-trade-detail-content .fx-trade-note-draft,.fx-trade-workspace-body > .fx-trade-note-draft { flex:1; display:flex; flex-direction:column; min-width:0; min-height:0; gap:16px; padding:16px 32px; margin:0; border:0; }
+.fx-trade-note-draft > label { flex:1; display:flex; min-height:120px; }
+.fx-trade-note-draft h3 { margin:0; font-size:14px; }
+.fx-trade-note-draft textarea { flex:1; width:100%; height:100%; box-sizing:border-box; resize:none; padding:0; border:0; border-radius:0; background:transparent; color:var(--wm-content); font:inherit; line-height:1.6; }
+.fx-trade-note-draft textarea::placeholder { font-style:italic; }
+.fx-trade-note-draft footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.fx-trade-note-draft small { font-size:12px; color:var(--wm-content-muted); }
+.fx-live-trade-details { display:grid; gap:0; }
+.fx-live-trade-details dl { display:grid; gap:12px; margin:0; padding:4px 0 24px; }
+.fx-live-trade-details dl + dl { border-top:1px solid var(--wm-border); padding-top:24px; }
+.fx-trade-detail-sidebar .fx-live-trade-details { margin-inline:-20px; }
+.fx-trade-detail-sidebar .fx-live-trade-details dl { padding-inline:20px; }
+.fx-live-trade-details dt { display:flex; align-items:center; gap:8px; }
+.fx-live-trade-details dt > svg,.fx-trade-money-icon { width:14px; flex:0 0 14px; text-align:center; font-size:16px; font-weight:400; }
+.fx-live-trade-details dl div { display:flex; justify-content:space-between; gap:16px; align-items:baseline; }
+.fx-live-trade-details dt,.fx-live-trade-details .as-context-value dt { color:var(--wm-content-muted); font-size:12px; font-weight:400; }
+.fx-live-trade-details dd { margin:0; max-width:65%; padding:3px 6px; border-radius:var(--ds-radius-small); background:var(--project-control); text-align:right; font-size:13px; line-height:18px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.fx-live-trade-details hr { width:100%; border:0; border-top:1px solid var(--wm-border); }
+dialog.is-details-hidden .fx-trade-detail-content { grid-template-columns:minmax(0,1fr); }
+dialog.is-details-hidden .fx-trade-detail-sidebar { display:none; }
+dialog.is-details-hidden .wm-trade-details-resize { display:none; }
+.wm-trade-tag-groups > header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.wm-trade-tag-groups > header > button:first-child { padding-left:0; border:0; background:transparent; }
+.wm-trade-tag-group { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 0; font-size:13px; }
+.wm-trade-tag-group > span { display:flex; align-items:center; gap:8px; min-width:0; overflow-wrap:anywhere; }
+.wm-trade-tag-group > span > svg { width:16px; height:16px; flex:none; color:var(--wm-content-muted); }
+.wm-trade-tag-group .wm-trade-group-choice { justify-content:flex-end; max-width:60%; width:auto; min-height:24px; }
+.wm-trade-group-choice .wm-label-placeholder { opacity:1; color:var(--wm-content-muted); font-style:italic; font-size:11px; }
+.wm-trade-group-create { display:grid; gap:12px; min-width:220px; padding:8px; }
+.wm-trade-group-create label { display:grid; gap:8px; font-size:12px; }
+.wm-trade-group-create input { width:100%; box-sizing:border-box; padding:8px; background:transparent; color:var(--wm-content); border:1px solid var(--wm-border); border-radius:6px; }
+.wm-trade-media { display:flex; flex:1; min-height:280px; flex-direction:column; border:1px dashed var(--wm-border); border-radius:12px; padding:12px; }
+.wm-trade-media[data-dragging] { border-color:var(--wm-info,#5b9cfb); background:var(--wm-hover); }
+.wm-trade-media-drop { display:flex; flex:1; min-height:180px; flex-direction:column; align-items:center; justify-content:center; gap:12px; text-align:center; }
+.wm-trade-media-drop h3 { margin:0; font-size:14px; font-weight:500; }
+.wm-trade-media-drop p { color:var(--wm-content-muted); font-size:12px; margin:0; }
+.wm-trade-media-drop .fxa-button { border:1px solid var(--wm-border); border-radius:999px; }
+.wm-trade-media-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:12px; }
+.wm-trade-media-list figure { margin:0; min-width:0; }
+.wm-trade-media-list figcaption { display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:11px; }
+.wm-trade-media-list figcaption > span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wm-trade-media-image { width:100%; height:110px; padding:0; border:0; background:transparent; cursor:zoom-in; }
+.wm-trade-media-image img { width:100%; height:100%; object-fit:contain; }
+.wm-trade-media-preview { max-width:90vw; margin:auto; padding:0; color:var(--wm-content); background:var(--wm-surface); border:1px solid var(--wm-border); border-radius:var(--ds-radius-medium,12px); }
+.wm-trade-media-preview::backdrop { background:#0008; }
+.wm-trade-media-preview > header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 16px; border-bottom:1px solid var(--wm-border); }
+.wm-trade-media-preview h2 { font-size:14px; overflow-wrap:anywhere; margin:0; }
+.wm-trade-media-preview img { display:block; min-width:120px; min-height:120px; max-width:min(85vw,1200px); max-height:75dvh; object-fit:contain; }
+.wm-data-table tr.is-actionable { cursor:pointer; }
+.wm-data-table tr.is-actionable:focus-visible { outline:1px solid var(--wm-focus); outline-offset:-1px; }
+@media(max-width:1000px) {
+  dialog.fxa-trade-inspector.is-drawer { width:100vw; }
+}
+@media(max-width:640px) {
+  .fx-trade-workspace-header { padding:12px; gap:10px; }
+  .fx-trade-window-controls { gap:0; }
+  .fx-trade-workspace-header .fx-live-trade-heading h2 { font-size:18px; }
+  .fx-trade-detail-content { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,45%) minmax(0,1fr); }
+  .wm-trade-details-resize { display:none; }
+  .fx-trade-detail-sidebar { border-right:0; border-bottom:1px solid var(--wm-border); padding:12px; }
+  .fx-trade-detail-sidebar .fx-live-trade-details { margin-inline:-12px; }
+  .fx-trade-detail-sidebar .fx-live-trade-details dl { padding-inline:12px; }
+  .fx-trade-detail-content .fx-trade-note-draft,.fx-trade-workspace-body > .fx-trade-note-draft { padding:16px; }
+  .fx-trade-note-draft footer { flex-wrap:wrap; }
+  dialog.is-details-hidden .fx-trade-detail-content { grid-template-rows:minmax(0,1fr); }
+}
 .market-sync-update { margin-left: auto; }
 .fxa-columns-control .fx-select-trigger { width: 40px; height: var(--wm-control-height); min-height: var(--wm-control-height); padding: 11px; border-radius: var(--wm-control-radius); }
 .fxa-columns-control .fx-select-menu { width: 270px; }
@@ -78,3 +182,78 @@ button.fxa-filter-chip:hover { background: var(--fx-shell-nav-selected); color: 
 .fx-app .fxa-filter-actions .fxa-icon-button,
 .fx-app .fxa-columns-control .fx-select-trigger { width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; flex-shrink: 0; }
 .fx-app .fxa-trades .fxa-detail-button { width: 32px; height: 32px; min-width: 32px; min-height: 32px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; vertical-align: middle; }
+.fx-trade-navigation { display:flex; align-items:center; gap:6px; flex:none; }
+.fx-trade-navigation .wm-button { width:30px; height:30px; padding:6px; }
+.fx-trade-navigation .wm-button[aria-pressed=true] { color:var(--wm-info,#5b9cfb); }
+.wm-trade-navigation-error { color:var(--wm-negative); font-size:12px; margin:4px 0 0; }
+.fx-trade-workspace-body { position:relative; }
+.wm-trade-comments { flex:0 0 clamp(270px,24vw,360px); min-width:0; overflow:auto; border-left:1px solid var(--wm-border); background:var(--wm-surface); padding:0 16px 16px; box-sizing:border-box; }
+.wm-trade-comments header { display:flex; align-items:center; justify-content:space-between; min-height:60px; gap:12px; }
+.wm-trade-comments h3 { display:flex; align-items:center; gap:8px; margin:0; font-size:14px; }
+.wm-trade-comments h3 small { border-radius:50%; padding:3px 7px; background:var(--wm-hover); font-size:11px; }
+.wm-trade-comments form { display:flex; flex-direction:column; gap:12px; border:1px solid var(--wm-border); padding:12px; border-radius:var(--ds-radius-medium,8px); }
+.wm-trade-comments textarea { min-height:72px; resize:vertical; width:100%; box-sizing:border-box; border:1px solid var(--wm-border); border-radius:var(--ds-radius-small); background:transparent; color:var(--wm-content); padding:12px; font:inherit; font-size:13px; }
+.wm-trade-comments form button { align-self:flex-end; }
+.wm-comments-empty { border:1px dashed var(--wm-border); padding:32px 12px; text-align:center; color:var(--wm-content-muted); font-size:12px; border-radius:var(--ds-radius-medium,8px); }
+.wm-trade-comments article { padding:16px 0; border-bottom:1px solid var(--wm-border); font-size:13px; }
+.wm-trade-comments article p { white-space:pre-wrap; overflow-wrap:anywhere; }
+.wm-trade-comments time { color:var(--wm-content-muted); font-size:11px; }
+.wm-trade-action-dialog { width:min(760px,calc(100vw - 32px)); max-height:80vh; box-sizing:border-box; border:1px solid var(--wm-border); border-radius:var(--ds-radius-medium,8px); padding:20px; background:var(--wm-surface); color:var(--wm-content); }
+.wm-trade-action-dialog::backdrop { background:rgb(0 0 0 / .55); }
+.wm-trade-action-dialog header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+.wm-trade-action-dialog h2 { margin:0; font-size:18px; }
+.wm-trade-action-dialog p { font-size:13px; line-height:1.6; }
+.wm-trade-action-dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+.wm-trade-fills-button { display:inline-flex; align-items:center; gap:6px; color:inherit; border:0; background:transparent; padding:0; font:inherit; cursor:pointer; }
+.wm-trade-fills-button:disabled { opacity:.5; cursor:default; }
+.fx-live-trade-details[data-variant=live] dl > div:not(.wm-trade-fills-action) { display:grid; grid-template-columns:minmax(0,42%) minmax(0,1fr); gap:12px; align-items:start; }
+.fx-live-trade-details[data-variant=live] dd { max-width:100%; width:fit-content; text-align:left; }
+.fx-live-trade-details[data-variant=live] .wm-trade-return-parts { justify-content:flex-start; }
+.fx-live-trade-details .wm-trade-fills-action { display:block; }
+.wm-trade-fills-action .wm-trade-fills-button { color:var(--wm-content-muted); gap:6px; min-height:28px; }
+.wm-trade-fills-action .wm-trade-fills-button:hover:not(:disabled) { color:var(--wm-content); }
+.wm-trade-fills-tabs { display:flex; padding:4px; background:var(--wm-canvas); border-radius:var(--ds-radius-medium,8px); margin-bottom:20px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-fills-tabs button { flex:1; border:0; border-radius:var(--ds-radius-medium,8px); padding:10px; font:inherit; color:var(--wm-content-muted); background:transparent; cursor:pointer; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-fills-tabs button[aria-selected=true] { background:var(--wm-hover); color:var(--wm-content); }
+.wm-trade-fill-fields { display:grid; gap:16px; max-height:40vh; overflow:auto; padding:6px 0; }
+.wm-trade-fill-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.wm-trade-fill-row label { position:relative; min-width:0; }
+.wm-trade-fill-row label > span { position:absolute; left:10px; top:-7px; font-size:11px; padding:0 4px; background:var(--wm-surface); color:var(--wm-content-muted); }
+.wm-trade-fill-row input { width:100%; min-width:0; box-sizing:border-box; border:1px solid var(--wm-border); border-radius:var(--ds-radius-field,8px); background:transparent; padding:12px; color:var(--wm-content); font:inherit; font-size:13px; }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-add-fill { display:flex; align-items:center; gap:6px; margin:18px auto 24px; border:0; background:transparent; font:inherit; color:var(--report-blue); }
+.wm-trade-add-fill:disabled { opacity:.5; cursor:default; }
+.wm-trade-fills-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; border:1px solid var(--wm-border); border-radius:var(--ds-radius-medium,8px); margin:0; padding:16px; text-align:center; }
+.wm-trade-fills-summary div { min-width:0; }
+.wm-trade-fills-summary dd { margin:0 0 8px; overflow-wrap:anywhere; font-weight:600; }
+.wm-trade-fills-summary dt { font-size:12px; color:var(--wm-content-muted); }
+@media(max-width:600px) { .wm-trade-fills-summary { grid-template-columns:repeat(2,minmax(0,1fr)); } .wm-trade-fill-row { gap:8px; } .wm-trade-fill-row input { padding:10px 7px; } }
+.wm-trade-return-parts { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+.wm-trade-return-parts > span { display:inline-flex; align-items:center; gap:4px; }
+.wm-trade-return-parts > span + span { border-left:1px solid var(--wm-border); padding-left:6px; }
+.wm-trade-tag-group { display:grid; grid-template-columns:20px minmax(0,1fr) minmax(0,1fr); gap:6px; align-items:start; }
+.wm-trade-tag-group[data-dragging=true] { background:var(--wm-hover); }
+.wm-trade-tag-group .wm-group-grip { width:20px; height:26px; min-height:26px; padding:2px; touch-action:none; cursor:grab; color:var(--wm-content-muted); }
+.wm-group-name { display:flex; align-items:center; gap:6px; padding:3px 0; min-height:26px; border:0; background:transparent; text-align:left; color:var(--wm-content); font:inherit; overflow-wrap:anywhere; cursor:pointer; }
+.wm-group-name svg { width:16px; height:16px; flex:none; color:var(--wm-content-muted); }
+.wm-group-name:disabled { cursor:default; opacity:.5; }
+.wm-trade-tag-group .wm-trade-group-choice { width:100%; max-width:none; min-height:26px; }
+.wm-trade-group-create form { display:grid; gap:12px; }
+.wm-trade-group-create label > span { display:flex; align-items:center; gap:8px; }
+.wm-group-menu { display:grid; border-bottom:1px solid var(--wm-border); padding-bottom:8px; }
+.wm-group-menu button { display:flex; align-items:center; gap:10px; text-align:left; padding:8px; border:0; background:transparent; color:var(--wm-content); font:inherit; font-size:13px; cursor:pointer; }
+.wm-group-menu button:first-child { color:var(--wm-negative); }
+.wm-group-menu button:hover:not(:disabled) { background:var(--wm-hover); }
+.wm-group-menu button:disabled { opacity:.4; cursor:default; }
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-navigation .wm-button.is-icon { min-width:30px; min-height:30px; width:30px; height:30px; background:transparent; border:0; border-radius:var(--ds-radius-small); }
+.fx-app.fx-shell-story[data-theme] .fx-content .fx-trade-navigation .wm-button.is-icon:hover:not(:disabled) { background:var(--wm-hover); }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-tag-group .wm-group-grip.is-icon { min-width:20px; width:20px; min-height:26px; height:26px; flex-basis:20px; background:transparent; border:0; border-radius:var(--ds-radius-small); }
+.fx-app.fx-shell-story[data-theme] .fx-content .wm-trade-tag-group .wm-group-grip.is-icon:hover { background:var(--wm-hover); }
+@media(max-width:1000px) {
+  .wm-trade-comments { position:absolute; z-index:4; right:0; top:0; bottom:0; width:min(360px,100%); box-shadow:-6px 0 20px rgb(0 0 0 / .12); }
+}
+@media(max-width:640px) {
+  .wm-trade-comments { width:100%; }
+  .fx-trade-workspace-header { display:grid; grid-template-columns:1fr auto; }
+  .fx-trade-workspace-heading { grid-row:2; grid-column:1 / -1; }
+  .fx-trade-navigation { grid-row:1; grid-column:2; gap:2px; }
+}

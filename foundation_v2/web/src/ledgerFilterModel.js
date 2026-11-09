@@ -7,6 +7,7 @@ const GROUPS = [
   ['search', 'Search'], ['notesPresence', 'Notes', false, true], ['statuses', 'Type', false, true],
   ['assets', 'Assets', false, true], ['sides', 'Side', false, true], ['outcomes', 'Outcome', false, true],
   ['years', 'Year', false, true], ['months', 'Month', false, true], ['hours', 'Hour of the day', false, true],
+  ['days', 'Day', false, true],
   ['reportKinds', 'Type', false, true], ['tagInclude', 'Include', false, true], ['tagExclude', 'Exclude', false, true],
   ['hour', 'Hour of the day'],
 ]

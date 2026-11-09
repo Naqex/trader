@@ -76,9 +76,9 @@ class ReleaseWorkflowTests(unittest.TestCase):
 
     def test_mismatched_lock_is_rejected(self):
         lock = self.root / "foundation_v2/web/package-lock.json"
-        document = json.loads(lock.read_text())
+        document = json.loads(lock.read_text(encoding="utf8"))
         document["packages"][""]["version"] = "9.0.0"
-        lock.write_text(json.dumps(document))
+        lock.write_text(json.dumps(document), encoding="utf8")
         with self.assertRaisesRegex(ValueError, "Lock mismatch"):
             release.check()
 

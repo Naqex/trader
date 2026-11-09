@@ -6,6 +6,9 @@ Live MT5 có kết nối và quyền thực thi được kiểm soát riêng.
 [![CI](https://github.com/Naqex/trader/actions/workflows/api-platform.yml/badge.svg)](https://github.com/Naqex/trader/actions/workflows/api-platform.yml)
 [Version](VERSION) · [Bắt đầu phát triển](docs/development/README.md) · [License](docs/licensing.md)
 
+Cổng riêng cho Paperclip/CLIProxyAPI và UI preview:
+[Local services](foundation_v2/docs/LOCAL-SERVICES.md).
+
 ![Giao dịch Live và bảng phân tích](docs/assets/live-trades.png)
 
 *Ảnh từ fixture kiểm thử synthetic; không phải dữ liệu broker hoặc kết quả đầu tư.*
@@ -23,8 +26,10 @@ flowchart LR
 |---|---|
 | Dựng frontend | Các lệnh bên dưới |
 | Chạy backend Rust/PostgreSQL | [Runtime guide](foundation_v2/docs/RUST-NATIVE-RUNTIME.md) |
+| Tải/xuất lịch sử Forex qua QDM CLI | [QDM: bộ cài, cache và lệnh export](docs/quantdatamanager.md) |
 | Cài hoặc khôi phục Advanced Charts | [Vendor setup](docs/advanced-charts.md) |
 | Sửa code, chạy test, tìm module | [Developer guide](docs/development/README.md) và [AGENTS.md](AGENTS.md) |
+| Tra cứu phần code đã nghỉ | [Legacy archive](archive/legacy/README.md) và [manifest](archive/legacy/MANIFEST.md) |
 | Chuẩn bị version và xem giới hạn phát hành | [Release policy](docs/releases.md), [changelog](CHANGELOG.md) |
 
 ## Bắt đầu

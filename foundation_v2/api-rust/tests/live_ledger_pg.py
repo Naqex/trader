@@ -24,7 +24,7 @@ def main():
     args = parser.parse_args()
     sources = [API / 'src/live_ledger.rs', API / 'tests/live_ledger_pg.rs', Path(__file__),
                API / 'src/lib.rs', API / 'src/commands.rs', API / 'src/rust_runtime.rs',
-               API / 'src/native_mutation.rs',
+               API / 'src/native_mutation.rs', API / 'src/trade_labels.rs',
                V2 / 'migrations/0008_live_journal.sql']
     fingerprints = {str(path.relative_to(V2)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
     with tempfile.TemporaryDirectory(prefix='live-ledger-fixture-') as directory:
@@ -36,7 +36,7 @@ def main():
         flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
         subprocess.run([str(args.pg_bin / 'initdb.exe'), '-D', str(data), '--auth=trust', '--username=postgres', '--no-locale', '--encoding=UTF8'], check=True, capture_output=True, creationflags=flags)
         with (runtime / 'postgres.log').open('w') as log:
-            process = subprocess.Popen([str(args.pg_bin / 'postgres.exe'), '-D', str(data), '-h', '127.0.0.1', '-p', str(port)], stdout=log, stderr=log, creationflags=flags)
+            process = subprocess.Popen([str(args.pg_bin / 'postgres.exe'), '-D', str(data), '-h', '127.0.0.1', '-p', str(port), '-c', 'log_statement=all'], stdout=log, stderr=log, creationflags=flags)
             try:
                 dsn = f'host=127.0.0.1 port={port} user=postgres dbname=postgres'
                 for _ in range(100):
@@ -61,13 +61,26 @@ def main():
                            TW_V2_RUNTIME_PROFILE='native', TW_V2_RUST_REQUESTS_PER_MINUTE='1000')
                 result = subprocess.run(['cargo', 'test', '--locked', '--test', 'live_ledger_pg', '--', '--ignored', '--nocapture'], cwd=API, env=env, text=True, capture_output=True, creationflags=flags)
                 unchanged = fingerprints == {str(path.relative_to(V2)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
+                server_log = (runtime / 'postgres.log').read_text(encoding='utf-8', errors='replace')
+                validation_queries = {}
+                for case, expected in [('empty', 0), ('14', 1), ('500', 2), ('unchanged', 0)]:
+                    begin, end = f'note_link_batch_{case}_begin', f'note_link_batch_{case}_end'
+                    if begin not in server_log or end not in server_log:
+                        validation_queries[case] = {'expected': expected, 'observed': None, 'passed': False}
+                        continue
+                    segment = server_log.split(begin, 1)[1].split(end, 1)[0]
+                    count = segment.count("SELECT r.record_id,r.kind,v.payload_json->>'account_id' AS account_id") + segment.count('SELECT connection_id,snapshot FROM mt5_connections')
+                    validation_queries[case] = {'expected': expected, 'observed': count, 'passed': count == expected}
+                passed = result.returncode == 0 and unchanged and all(item['passed'] for item in validation_queries.values())
                 args.output.parent.mkdir(parents=True, exist_ok=True)
-                args.output.write_text(json.dumps({'passed': result.returncode == 0 and unchanged,
+                args.output.write_text(json.dumps({'passed': passed,
                     'scope': 'owned disposable PostgreSQL; real native Router, auth, idempotency and concurrent revision/count admission',
+                    'note_link_validation_selects': validation_queries,
+                    'query_count_method': 'actual disposable PostgreSQL log_statement=all between test markers; not latency timing',
                     'owner_runtime_touched': False, 'source_unchanged': unchanged, 'source_sha256': fingerprints,
                     'stdout': result.stdout, 'stderr': result.stderr}, indent=2), encoding='utf-8')
-                print(json.dumps({'passed': result.returncode == 0 and unchanged, 'output': str(args.output)}))
-                return result.returncode if result.returncode else (0 if unchanged else 1)
+                print(json.dumps({'passed': passed, 'output': str(args.output)}))
+                return result.returncode if result.returncode else (0 if passed else 1)
             finally:
                 subprocess.run([str(args.pg_bin / 'pg_ctl.exe'), '-D', str(data), '-m', 'fast', 'stop'], capture_output=True, timeout=20, creationflags=flags)
                 process.wait(timeout=20)

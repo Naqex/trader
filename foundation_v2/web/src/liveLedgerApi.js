@@ -10,10 +10,10 @@ export async function fetchLiveRecords(workspace, signal) {
   return data.items
 }
 
-export async function saveLiveRecord(workspace, kind, payload, record) {
+export async function saveLiveRecord(workspace, kind, payload, record, folderId) {
   const path = record ? `/api/v2/live/records/${encodeURIComponent(record.record_id)}/revisions` : '/api/v2/live/records'
   const response = await scopedMutation(path, workspace, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kind, payload, ...(record ? { expected_revision: record.revision } : {}) }) })
+    body: JSON.stringify({ kind, payload, ...(!record && folderId ? {folder_id:folderId} : {}), ...(record ? { expected_revision: record.revision } : {}) }) })
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
     const error = new Error(response.status === 409 ? 'Bản ghi đã thay đổi. Đóng form và tải lại trước khi sửa.' : `Không lưu được. Kiểm tra dữ liệu (${body.detail || response.status}).`)

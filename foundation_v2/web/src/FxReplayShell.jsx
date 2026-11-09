@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { PRODUCT_NAME, wordmarkUrl } from './brand.js'
 import { liveTradingHref } from './liveTradingNavigation.js'
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
@@ -14,16 +15,17 @@ import './ai-gateway.css'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
 const AiChatPanel = lazy(() => import('./AiChatPanel.jsx'))
 const AiGatewayPanel = lazy(() => import('./AiGatewayPanel.jsx'))
+const AiPaperclipPanel = lazy(() => import('./AiPaperclipPanel.jsx'))
 
-function PersistentGateway({ active, workspace, language, chatOpen }) {
+function PersistentAiPanel({ active, label, language, children }) {
   const [visited, setVisited] = useState(active)
   useEffect(() => { if (active) setVisited(true) }, [active])
   if (!active && !visited) return null
   // Keep the document outside route boundaries; moving an iframe also reloads it.
-  return <section className="ai-gateway-host" hidden={!active} inert={!active} aria-label="CLIProxyAPI">
-    <TestingRouteBoundary fallback={<div className="ai-gateway-state" role="alert">{language === 'en' ? 'CLIProxyAPI could not load. Reload the page to try again.' : 'Không tải được CLIProxyAPI. Tải lại trang để thử lại.'}</div>}>
+  return <section className="ai-gateway-host" hidden={!active} inert={!active} aria-label={label}>
+    <TestingRouteBoundary fallback={<div className="ai-gateway-state" role="alert">{language === 'en' ? `Could not load ${label}. Reload the page to try again.` : `Không tải được ${label}. Tải lại trang để thử lại.`}</div>}>
     <Suspense fallback={null}>
-      <AiGatewayPanel workspace={workspace} language={language} active={active} chatOpen={chatOpen} />
+      {children}
     </Suspense>
     </TestingRouteBoundary>
   </section>
@@ -43,7 +45,7 @@ function AiPanelFallback({ open, modal, onClose, language, standalone, error = f
   }, [open, modal, onClose, standalone])
   const en = language === 'en'
   return <aside id="wm-ai-chat" className={`wm-ai-chat ${standalone ? 'is-standalone' : ''}`} hidden={!open} role={modal ? 'dialog' : 'complementary'} aria-modal={modal || undefined} aria-label="Mentor" aria-busy={!error}>
-    <header className="wm-ai-header"><h2>Mentor</h2><span />{!standalone && <button type="button" className="wm-dialog-close" ref={close} onClick={onClose} aria-label={en ? 'Close AI chat' : 'Đóng chat AI'}>×</button>}</header>
+    <header className="wm-ai-header"><h2>Mentor</h2><span />{!standalone && <button type="button" className="wm-dialog-close" ref={close} onClick={onClose} aria-label={en ? 'Close AI chat' : 'Đóng chat AI'}><AppIcon name="close" size={16} /></button>}</header>
     <div className="wm-ai-transcript" role={error ? 'alert' : 'status'}>{error ? en ? 'AI chat could not load. Reload the page to try again.' : 'Không tải được chat AI. Tải lại trang để thử lại.' : en ? 'Loading…' : 'Đang tải…'}</div>
   </aside>
 }
@@ -93,12 +95,12 @@ const SHELL_COPY = {
       tagAnalytics: ['Tag analytics', 'Phân tích theo tag'],
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
       strategies: ['Strategies', 'Quản lý chiến lược'],
-      ai: ['AI and Bots', 'Trợ lý AI, kết nối model và bot giao dịch'],
+      ai: ['Studio', 'Đội AI, đánh giá, model và kết nối'],
+      aiPaperclip: ['Đội AI', 'Giao việc và theo dõi các agent'],
+      aiWorkflows: ['Đánh giá', 'Nhờ AI đánh giá dữ liệu, chỉ đọc'],
+      aiModels: ['Model', 'Chọn model cho từng việc'],
       aiConnections: ['Kết nối', 'Tài khoản và dịch vụ AI'],
-      aiGateway: ['CLIProxyAPI', 'Trang quản trị CLIProxyAPI'],
-      aiModels: ['Model', 'Model mặc định và theo tính năng'],
-      aiWorkflows: ['Luồng AI', 'Phân tích đa model và dữ liệu chỉ đọc'],
-      automation: ['Bot', 'Bot giao dịch và AI giao dịch'],
+      aiResearch: ['Nghiên cứu', 'Nghiên cứu chiến lược · Bản mẫu'],
       myStrategies: ['My strategies', 'Chiến lược của tôi'],
       trade: ['Trades', 'Giao dịch trong phiên replay'],
       playbook: ['Strategies', 'Strategy và playbook'],
@@ -152,12 +154,12 @@ const SHELL_COPY = {
       tagAnalytics: ['Tag analytics', 'Tag-based analytics'],
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
       strategies: ['Strategies', 'Strategy workspace'],
-      ai: ['AI and Bots', 'AI assistant, model connections and trading bots'],
+      ai: ['Studio', 'AI team, reviews, models and connections'],
+      aiPaperclip: ['AI team', 'Assign and track agent work'],
+      aiWorkflows: ['Reviews', 'Ask AI to review data, read-only'],
+      aiModels: ['Models', 'Choose a model for each job'],
       aiConnections: ['Connections', 'AI accounts and services'],
-      aiGateway: ['CLIProxyAPI', 'CLIProxyAPI management'],
-      aiModels: ['Models', 'Default and feature models'],
-      aiWorkflows: ['Workflows', 'Multi-model analysis and read-only data'],
-      automation: ['Bots', 'Trading bots and AI trading'],
+      aiResearch: ['Research', 'Strategy research · Preview'],
       myStrategies: ['My strategies', 'Your strategies'],
       trade: ['Trades', 'Trades in a replay session'],
       playbook: ['Strategies', 'Strategies and playbooks'],
@@ -216,13 +218,13 @@ const SIDEBAR_SECTIONS = [
     ],
   },
   {
-    id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'connections',
+    id: 'ai', copyKey: 'ai', icon: 'ai', defaultRoute: 'ai', defaultSection: 'paperclip',
     items: [
-      { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections' },
-      { id: 'ai-gateway', copyKey: 'aiGateway', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'gateway' },
+      { id: 'ai-paperclip', copyKey: 'aiPaperclip', icon: 'ai', route: 'ai', activeViews: ['ai'], section: 'paperclip' },
+      { id: 'ai-workflows', copyKey: 'aiWorkflows', icon: 'my-strategies', route: 'ai', activeViews: ['ai'], section: 'workflows' },
       { id: 'ai-models', copyKey: 'aiModels', icon: 'settings', route: 'ai', activeViews: ['ai'], section: 'models' },
-      { id: 'ai-workflows', copyKey: 'aiWorkflows', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'workflows' },
-      { id: 'ai-automation', copyKey: 'automation', icon: 'automation', route: 'ai', activeViews: ['ai'], section: 'automation' },
+      // CLIProxyAPI management opens from the connection drawer and keeps this item lit.
+      { id: 'ai-connections', copyKey: 'aiConnections', icon: 'connections', route: 'ai', activeViews: ['ai'], section: 'connections', alsoSections: ['gateway'] },
     ],
   },
   { id: 'education', copyKey: 'learn', icon: 'education', defaultRoute: 'learn', items: [] },
@@ -250,7 +252,9 @@ function activeSectionId(activeView, query) {
 
 function isNavItemActive(item, activeView, query, sectionId) {
   if (!item.activeViews?.includes(activeView)) return false
-  if (sectionId !== 'testing' && (query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'connections' : '')) !== item.section) return false
+  const current = query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'paperclip' : '')
+  if (item.alsoSections?.includes(current)) return true
+  if (sectionId !== 'testing' && current !== item.section) return false
   if (sectionId === 'testing' && query?.get('area') === 'live') return false
   return !query?.get('section') || query.get('section') === item.section || sectionId === 'testing'
 }
@@ -259,7 +263,7 @@ const FxReplayContext = createContext(null)
 
 function NaqexWordmark() {
   return (
-    <svg className="fx-wordmark-svg" viewBox="0 0 242 30" role="img" aria-label={PRODUCT_NAME} focusable="false">
+    <svg className="fx-wordmark-svg" viewBox="0 0 232 35" role="img" aria-label={PRODUCT_NAME} focusable="false">
       <use href={`${wordmarkUrl}#wordmark`} />
     </svg>
   )
@@ -273,41 +277,9 @@ function hrefFor(id, workspace, query, overrides = {}) {
   return buildWorkspaceHref(id, workspace, query, overrides)
 }
 
-/*
- * The source reference uses small, high-contrast line icons in the rail. Keep
- * them inline so the shell does not depend on an icon font (which would make
- * the first paint and visual QA vary with the host machine's installed fonts).
- */
+const railIcons = { dashboard:'dashboard', sessions:'list', trades:'trades', analytics:'analytics', testing:'analytics', live:'activity', calendar:'calendar', notes:'document', tags:'tags', accounts:'account', strategies:'compass', 'my-strategies':'list-checks', education:'learn', learn:'learn', trade:'candles', playbook:'compass', settings:'settings', ai:'sparkles', connections:'link', automation:'bot', research:'layers' }
 function RailIcon({ id }) {
-  const common = {
-    className: 'fx-nav-icon-svg',
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: '1.8',
-    strokeLinecap: 'round',
-    strokeLinejoin: 'round',
-    focusable: 'false',
-  }
-  if (id === 'dashboard') return <svg {...common}><rect x="4" y="4" width="6" height="6" rx="1" /><rect x="14" y="4" width="6" height="6" rx="1" /><rect x="4" y="14" width="6" height="6" rx="1" /><rect x="14" y="14" width="6" height="6" rx="1" /></svg>
-  if (id === 'sessions') return <svg {...common}><path d="M5 6h14M5 12h14M5 18h14" /><path d="M3 6h.01M3 12h.01M3 18h.01" /></svg>
-  if (id === 'trades') return <svg {...common}><path d="M5 8h12M15 5l3 3-3 3M19 16H7M9 13l-3 3 3 3" /></svg>
-  if (id === 'analytics' || id === 'testing') return <svg {...common}><path d="M4 19V9M10 19V5M16 19v-7M22 19V3" /><path d="M3 21h20" /></svg>
-  if (id === 'live') return <svg {...common}><path d="M3 12h4l2-5 4 10 2-5h6" /><path d="M5 4a10 10 0 0 0 0 16M19 4a10 10 0 0 1 0 16" /></svg>
-  if (id === 'calendar') return <svg {...common}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M8 3v4M16 3v4M4 10h16M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01" /></svg>
-  if (id === 'notes') return <svg {...common}><path d="M6 3h9l3 3v15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /><path d="M14 3v4h4M8 11h8M8 15h6" /></svg>
-  if (id === 'tags') return <svg {...common}><path d="m4 5 7-1 9 9-6 6-9-9 1-7Z" /><circle cx="8" cy="8" r="1.2" /></svg>
-  if (id === 'accounts') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9h18M16 14h3" /><circle cx="16" cy="14" r=".7" /></svg>
-  if (id === 'strategies') return <svg {...common}><circle cx="12" cy="12" r="8.5" /><path d="m15.7 8.3-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" /></svg>
-  if (id === 'my-strategies') return <svg {...common}><path d="M5 6h14M5 12h14M5 18h9" /><path d="m17 16 2 2 3-4" /></svg>
-  if (id === 'education' || id === 'learn') return <svg {...common}><path d="m3 9 9-4 9 4-9 4-9-4Z" /><path d="M7 11v4c2 2 8 2 10 0v-4M21 9v6" /></svg>
-  if (id === 'trade') return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M8 9h.01M12 9h.01M16 9h.01M8 13h.01M12 13h.01M16 13h.01M8 17h8" /></svg>
-  if (id === 'playbook') return <svg {...common}><circle cx="12" cy="12" r="8.5" /><path d="m15.7 8.3-2.2 5.2-5.2 2.2 2.2-5.2 5.2-2.2Z" /></svg>
-  if (id === 'settings') return <svg {...common}><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6 18 18M18 6l-1.4 1.4M7.4 16.6 6 18" /><circle cx="12" cy="12" r="3.3" /></svg>
-  if (id === 'ai') return <AiSparkles className="fx-nav-icon-svg" />
-  if (id === 'connections') return <svg {...common}><path d="m8 7 3-3a5 5 0 0 1 7 7l-3 3M16 17l-3 3a5 5 0 0 1-7-7l3-3M8 16l8-8" /></svg>
-  if (id === 'automation') return <svg {...common}><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M12 3v4M1 12v4M23 12v4M9 16h6" /><circle cx="8" cy="12" r=".6" /><circle cx="16" cy="12" r=".6" /></svg>
-  return <svg {...common}><path d="M4 17V7M10 17V4M16 17V9M22 17V2" /><path d="M3 20h20" /></svg>
+  return <AppIcon name={railIcons[id] || 'chart'} size={20} className="fx-nav-icon-svg" />
 }
 
 function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, compact, onClose, closeButtonRef, inert }) {
@@ -341,7 +313,7 @@ function ShellRail({ activeView, workspace, query, copy, railId, drawerOpen, com
     <aside className="fx-rail" id={railId} inert={inert} aria-label={copy.workspaceAria} role={drawerOpen ? 'dialog' : undefined} aria-modal={drawerOpen ? 'true' : undefined}>
       {drawerOpen && <div className="fx-mobile-nav-header">
         <span>{copy.product}</span>
-        <button className="fx-shell-help-close" type="button" onClick={onClose} aria-label={copy.closeNavigation} ref={closeButtonRef}>×</button>
+        <button className="fx-shell-help-close" type="button" onClick={onClose} aria-label={copy.closeNavigation} ref={closeButtonRef}><AppIcon name="close" size={16} /></button>
       </div>}
       <div className="fx-rail-workspace-group">
       <a className="fx-rail-workspace" href={hrefFor('settings', workspace, query, { area: 'settings', section: null })}
@@ -421,9 +393,7 @@ function ShellSubnav({ activeView, workspace, query, copy, action }) {
 }
 
 function ThemeIcon({ theme }) {
-  return <svg className="fx-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-    {theme === 'dark' ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5" /></> : <path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" />}
-  </svg>
+  return <AppIcon name={theme === 'dark' ? 'sun' : 'moon'} className="fx-theme-icon" />
 }
 
 function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollapsed, onToggleRail, chartWorkspace, query, workspace, helpOpen, onToggleHelp, helpButtonRef, railId, mobileNavigation, drawerOpen, menuButtonRef, aiOpen, onToggleAi, aiButtonRef, aiModal, topbarAction }) {
@@ -454,17 +424,11 @@ function ShellTopbar({ copy, language, setLanguage, theme, setTheme, railCollaps
     <header className="fx-topbar" inert={drawerOpen || aiModal}>
       <div className="fx-topbar-brand" data-tooltip={copy.product}>
         <button className="fx-menu-button" type="button" onClick={onToggleRail} aria-expanded={!railCollapsed} aria-controls={railId} aria-label={navigationAction} data-tooltip={navigationAction} ref={menuButtonRef}>
-          <svg className="fx-menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-            {mobileNavigation ? <path d="M4 6h16M4 12h16M4 18h16" /> : <>
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <path d="M9 4v16" />
-              <path className="fx-menu-chevron" d={railCollapsed ? 'm13 9 3 3-3 3' : 'm16 9-3 3 3 3'} />
-            </>}
-          </svg>
+          <AppIcon name={mobileNavigation ? 'menu' : railCollapsed ? 'panel-left-open' : 'panel-left-close'} className="fx-menu-icon" />
         </button>
         <span className="fx-wordmark"><NaqexWordmark /></span>
         <span className="fx-wordmark-compact" role="img" aria-label={copy.product}>
-          <svg viewBox="0 0 30 30" aria-hidden="true" focusable="false"><use href={`${wordmarkUrl}#mark`} /></svg>
+          <svg viewBox="0 0 33 33" aria-hidden="true" focusable="false"><use href={`${wordmarkUrl}#mark`} /></svg>
         </span>
       </div>
       <div className="fx-topbar-actions">
@@ -488,7 +452,7 @@ function ShellHelp({ copy, helpCloseRef, onClose }) {
       <section className="fx-shell-help" id="fx-shell-help" role="dialog" aria-modal="true" aria-labelledby="fx-shell-help-title" aria-describedby="fx-shell-help-hint" onMouseDown={(event) => event.stopPropagation()}>
         <div className="fx-shell-help-header">
           <h2 id="fx-shell-help-title">{copy.shortcutsTitle}</h2>
-          <button className="fx-shell-help-close wm-dialog-close" type="button" onClick={onClose} aria-label={copy.closeHelp} data-tooltip={copy.closeHelp} data-testid="help-close" ref={helpCloseRef}>×</button>
+          <button className="fx-shell-help-close wm-dialog-close" type="button" onClick={onClose} aria-label={copy.closeHelp} data-tooltip={copy.closeHelp} data-testid="help-close" ref={helpCloseRef}><AppIcon name="close" size={16} /></button>
         </div>
         <dl className="fx-shell-shortcuts">
           <div><dt><kbd>?</kbd></dt><dd>{copy.shortcutHelp}</dd></div>
@@ -504,7 +468,7 @@ function currentQuery() {
   return typeof window === 'undefined' ? new URLSearchParams() : new URLSearchParams(window.location.search)
 }
 
-export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction, topbarAction, gatewayPage = false }) {
+export default function FxReplayShell({ children, workspace, query = currentQuery(), activeView = 'overview', mode = 'Replay', subnavAction, topbarAction, gatewayPage = false, paperclipPage = false }) {
   const chartWorkspace = (activeView === 'live' && query.get('section') === 'terminal' && query.get('surface') === 'workspace') || (activeView === 'replay' && query.get('select') !== '1' && (query.get('surface') === 'workspace' || Boolean(query.get('session')) || Boolean(query.get('dataset'))))
   const chartRoute = chartWorkspace
   const routeContext = useMemo(() => readWorkspaceContext(query), [query])
@@ -725,7 +689,7 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
 
   return (
     <TestingLocaleProvider language={language}><FxReplayContext.Provider value={contextValue}>
-      <div className={`fx-app fx-shell-story ${aiOpen && !aiPage ? 'is-ai-open' : ''} ${aiPage ? 'is-ai-page' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
+      <div className={`fx-app fx-shell-story ${aiOpen && !aiPage ? 'is-ai-open' : ''} ${aiPage ? 'is-ai-page' : ''} ${paperclipPage ? 'is-paperclip-page' : ''} ${displayedRailCollapsed ? 'is-rail-collapsed' : ''} ${drawerOpen ? 'is-mobile-nav-open' : ''} ${chartWorkspace ? 'is-chart-workspace' : ''} ${chartRoute ? 'is-chart-route' : ''}`} data-testid="fxreplay-shell" data-theme={theme} data-ui-area={query.get('area') || (['overview', 'replay', 'trade', 'analytics', 'market-data', 'testing', 'prop'].includes(activeView) ? 'testing' : activeView)} lang={language}>
         <ShellTopbar copy={copy} language={language} setLanguage={handleLanguage} theme={theme} setTheme={handleTheme} railCollapsed={displayedRailCollapsed} onToggleRail={handleRail} chartWorkspace={chartWorkspace} query={query} workspace={workspace} helpOpen={helpOpen} onToggleHelp={() => { setHelpOpen((value) => !value); setAiOpen(false) }} helpButtonRef={helpButtonRef} railId="fxreplay-rail" mobileNavigation={mobileNavigation} drawerOpen={drawerOpen} menuButtonRef={menuButtonRef} aiOpen={aiOpen || aiPage} onToggleAi={toggleAi} aiButtonRef={aiButtonRef} aiModal={!aiPage && aiOpen && aiOverlay} topbarAction={topbarAction} />
         {drawerOpen && <div className="fx-mobile-nav-backdrop" aria-hidden="true" onClick={() => setMobileNavigationOpen(false)} />}
         {!chartWorkspace && <ShellRail activeView={activeView} workspace={workspace} query={query} copy={copy} railId="fxreplay-rail" drawerOpen={drawerOpen} compact={displayedRailCollapsed} onClose={() => setMobileNavigationOpen(false)} closeButtonRef={navigationCloseRef} inert={!aiPage && aiOpen && aiOverlay} />}
@@ -733,10 +697,15 @@ export default function FxReplayShell({ children, workspace, query = currentQuer
           <div className="fx-main-content" inert={!aiPage && aiOpen && aiOverlay}>
           <ShellSubnav activeView={activeView} workspace={workspace} query={query} copy={copy} action={subnavAction} />
           {helpOpen && <ShellHelp copy={copy} helpCloseRef={helpCloseRef} onClose={() => setHelpOpen(false)} />}
-          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0} hidden={gatewayPage}>
+          <NotificationProvider key={workspace}><div className="fx-content" tabIndex={0} hidden={gatewayPage || paperclipPage}>
             {children}
           </div></NotificationProvider>
-          <PersistentGateway key={`gateway:${workspace}`} active={gatewayPage} workspace={workspace} language={language} chatOpen={aiOpen || aiPage} />
+          <PersistentAiPanel key={`gateway:${workspace}`} active={gatewayPage} label="CLIProxyAPI" language={language}>
+            <AiGatewayPanel workspace={workspace} language={language} active={gatewayPage} chatOpen={aiOpen || aiPage} />
+          </PersistentAiPanel>
+          <PersistentAiPanel active={paperclipPage} label="Paperclip" language={language}>
+            <AiPaperclipPanel active={paperclipPage} language={language} />
+          </PersistentAiPanel>
           </div>
           {(aiMounted || aiPage) && <TestingRouteBoundary key={workspace} fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} error />}><Suspense fallback={<AiPanelFallback open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} language={language} />}><AiChatPanel workspace={workspace} screen={activeView === 'ai' ? 'settings' : activeView} open={aiOpen || aiPage} modal={!aiPage && aiOverlay} standalone={aiPage} onClose={closeAi} settingsHref={buildWorkspaceHref('ai', workspace, query, { area: 'ai', section: 'connections', demo: null })} language={language} /></Suspense></TestingRouteBoundary>}
         </section>

@@ -2,9 +2,17 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
-const copy = JSON.parse(fs.readFileSync(new URL('../src/testing-copy.json', import.meta.url)))
+const copySource = fs.readFileSync(new URL('../src/testing-copy.json', import.meta.url), 'utf8')
+const copy = JSON.parse(copySource)
 const enums = JSON.parse(fs.readFileSync(new URL('../src/testing-enums.json', import.meta.url)))
 const placeholders = text => [...text.matchAll(/\{(\w+)\}/g)].map(match => match[1]).sort()
+
+test('one-entry-per-line catalog has no duplicate keys hidden by JSON.parse', () => {
+  const keys = [...copySource.matchAll(/^ {2}("(?:[^"\\]|\\.)*")\s*:/gm)].map(match => JSON.parse(match[1]))
+  const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index)
+  assert.deepEqual(duplicates, [], 'Duplicate keys overwrite translations silently')
+  assert.equal(keys.length, Object.keys(copy).length, 'Keep each catalog entry on its own line')
+})
 
 test('system copy provides both locales with matching interpolation contracts', () => {
   for (const [key, entry] of Object.entries(copy)) {

@@ -1,0 +1,167 @@
+{
+  "session": {
+    "workspace_id": "offline-fixture",
+    "session_id": "forex-prop-pilot",
+    "profile": {
+      "contract_version": "prop-session-v1",
+      "profile_id": "ftmo-2step-swing-offline-20261102",
+      "terms_version": "public-rules-observed-20261102",
+      "profile_hash": "sha256:64658f9df09064b60203b8f3d171a758fc46a70e04cbf2291e35e3ae68943700",
+      "effective_from": "2026-11-02",
+      "source_kind": "named_provider",
+      "source_url": "https://ftmo.com/en/trading-objectives/",
+      "supported_rule_flags": [
+        "daily_equity_loss_balance_anchor",
+        "static_equity_loss",
+        "flat_balance_target",
+        "four_entry_days",
+        "prague_dst"
+      ],
+      "phases": [
+        {
+          "phase_index": 1,
+          "initial_capital": "10000",
+          "currency": "USD",
+          "profit_target": {
+            "threshold": {
+              "amount": null,
+              "percent": "10",
+              "percent_base": "initial_capital"
+            },
+            "basis": "balance",
+            "comparator": "gte"
+          },
+          "daily_loss": {
+            "threshold": {
+              "amount": null,
+              "percent": "5",
+              "percent_base": "initial_capital"
+            },
+            "basis": "equity",
+            "comparator": "lt"
+          },
+          "daily_anchor_basis": "balance",
+          "overall_drawdown": {
+            "threshold": {
+              "amount": null,
+              "percent": "10",
+              "percent_base": "initial_capital"
+            },
+            "basis": "equity",
+            "comparator": "lt",
+            "kind": "static",
+            "trailing_granularity": null,
+            "lock_floor_at_initial": false
+          },
+          "reset_timezone": "Europe/Prague",
+          "reset_local_time": "00:00:00",
+          "reset_order": "fees_then_reset",
+          "min_qualifying_days": 4,
+          "max_calendar_days": null,
+          "carry_policy": "reset",
+          "position_policy": "must_be_flat"
+        },
+        {
+          "phase_index": 2,
+          "initial_capital": "10000",
+          "currency": "USD",
+          "profit_target": {
+            "threshold": {
+              "amount": null,
+              "percent": "5",
+              "percent_base": "initial_capital"
+            },
+            "basis": "balance",
+            "comparator": "gte"
+          },
+          "daily_loss": {
+            "threshold": {
+              "amount": null,
+              "percent": "5",
+              "percent_base": "initial_capital"
+            },
+            "basis": "equity",
+            "comparator": "lt"
+          },
+          "daily_anchor_basis": "balance",
+          "overall_drawdown": {
+            "threshold": {
+              "amount": null,
+              "percent": "10",
+              "percent_base": "initial_capital"
+            },
+            "basis": "equity",
+            "comparator": "lt",
+            "kind": "static",
+            "trailing_granularity": null,
+            "lock_floor_at_initial": false
+          },
+          "reset_timezone": "Europe/Prague",
+          "reset_local_time": "00:00:00",
+          "reset_order": "fees_then_reset",
+          "min_qualifying_days": 4,
+          "max_calendar_days": null,
+          "carry_policy": "reset",
+          "position_policy": "must_be_flat"
+        }
+      ]
+    },
+    "status": "running"
+  },
+  "attempt": {
+    "workspace_id": "offline-fixture",
+    "session_id": "forex-prop-pilot",
+    "attempt_id": "fixture-attempt",
+    "profile_hash": "sha256:64658f9df09064b60203b8f3d171a758fc46a70e04cbf2291e35e3ae68943700",
+    "profile_id": "ftmo-2step-swing-offline-20261102",
+    "terms_version": "public-rules-observed-20261102",
+    "data_version": "synthetic-no-market-data",
+    "cost_version": "synthetic-cost-fixture",
+    "engine_version": "prop-session-v1",
+    "status": "running",
+    "revision": 1,
+    "virtual_start_utc": "2026-01-01T12:00:00+00:00",
+    "virtual_cutoff_utc": "2026-12-31T00:00:00+00:00"
+  },
+  "phase": {
+    "workspace_id": "offline-fixture",
+    "session_id": "forex-prop-pilot",
+    "attempt_id": "fixture-attempt",
+    "profile_hash": "sha256:64658f9df09064b60203b8f3d171a758fc46a70e04cbf2291e35e3ae68943700",
+    "phase_index": 1,
+    "initial_balance": "10000",
+    "balance": "10000",
+    "floating_pl": "0",
+    "equity": "10000",
+    "high_water_mark": "10000",
+    "daily_anchor": "10000",
+    "qualifying_days": 0,
+    "virtual_time_utc": "2026-01-01T22:59:59+00:00",
+    "last_event_sequence": 0,
+    "open_positions": 0,
+    "pending_orders": 0,
+    "evaluation_quality": "full_for_declared_model"
+  },
+  "event": {
+    "workspace_id": "offline-fixture",
+    "session_id": "forex-prop-pilot",
+    "attempt_id": "fixture-attempt",
+    "profile_hash": "sha256:64658f9df09064b60203b8f3d171a758fc46a70e04cbf2291e35e3ae68943700",
+    "operation_id": "midnight-reset",
+    "expected_revision": 1,
+    "event_sequence": 1,
+    "kind": "calendar_boundary",
+    "virtual_time_utc": "2026-01-01T23:00:00+00:00",
+    "balance_before_separate_costs": "10200",
+    "floating_pl": "-100",
+    "fees": "0",
+    "swap": "0",
+    "conversion_adjustment": "0",
+    "accounting": "costs_separate",
+    "open_positions": 1,
+    "pending_orders": 0,
+    "evaluation_quality": "full_for_declared_model",
+    "qualifying_day": false
+  },
+  "resume_state": {}
+}

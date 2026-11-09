@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTestingLocale } from './testingLocale.jsx'
 import './session-actions.css'
@@ -20,7 +21,7 @@ export default function SessionDuplicateDialog({ item, onClose, onSubmit, pendin
     const bounds = event.currentTarget.getBoundingClientRect()
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close()
   }}>
-    <header><h2 id={`${id}-title`}>{t('Tạo bản sao phiên')}</h2><button type="button" className="wm-dialog-close" aria-label={t('Đóng hộp thoại phiên')} disabled={pending} onClick={close}>×</button></header>
+    <header><h2 id={`${id}-title`}>{t('Tạo bản sao phiên')}</h2><button type="button" className="wm-dialog-close" aria-label={t('Đóng hộp thoại phiên')} disabled={pending} onClick={close}><AppIcon name="close" size={16} /></button></header>
     <form onSubmit={event => { event.preventDefault(); if (!pending && !blocked) onSubmit('duplicate', item, { history }) }}>
       <p className="fxs-duplicate-name">{item.name || item.record_id}</p>
       <fieldset disabled={pending}>

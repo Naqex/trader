@@ -42,10 +42,10 @@ fn error(code: &str) -> ApiError {
     ApiError::detail(StatusCode::UNPROCESSABLE_ENTITY, code)
 }
 fn root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.runtime/mt5-connectors")
+    crate::config::mt5_adapter_root().join(".runtime/mt5-connectors")
 }
 fn python() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.venv/Scripts/python.exe")
+    crate::config::mt5_adapter_root().join(".venv/Scripts/python.exe")
 }
 pub fn available() -> bool {
     cfg!(windows)
@@ -254,9 +254,11 @@ async fn connect(
     let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued',$10) ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,requested_mode=EXCLUDED.requested_mode,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.snapshot ELSE CASE WHEN mt5_connections.snapshot->'balance_baseline' IS NULL THEN NULL ELSE jsonb_build_object('status','unavailable','balance_baseline',mt5_connections.snapshot->'balance_baseline') END END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential,&draft.requested_mode]).await.map_err(|_|ApiError::database())?;
     tx.execute("INSERT INTO mt5_connection_requests(workspace_id,request_id,connection_id,fingerprint) VALUES($1,$2,$3,$4)",&[&scope.workspace_id,&draft.request_id,&id,&fingerprint]).await.map_err(|_|ApiError::database())?;
     tx.commit().await.map_err(|_| ApiError::database())?;
+    let generation = row.get::<_, i64>("generation");
+    log_action(&scope.workspace_id, id, generation, "connect", "queued");
     let workspace = scope.workspace_id.clone();
     tokio::spawn(async move {
-        crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+        crate::demo_trading::revoke_managed_worker(&workspace, id, Some(generation)).await;
     });
     Ok((StatusCode::ACCEPTED, Json(public(&row))))
 }
@@ -327,16 +329,31 @@ async fn action(
         .await
         .map_err(|_| ApiError::database())?;
         tx.commit().await.map_err(|_| ApiError::database())?;
+        tracing::info!(event="mt5_connection_action",workspace_id=%scope.workspace_id,connection_id=%id,action="remove");
         let workspace = scope.workspace_id.clone();
         tokio::spawn(async move {
-            crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+            crate::demo_trading::revoke_managed_worker(&workspace, id, None).await;
         });
         return Ok(Json(
             json!({"id":id,"removed":true,"execution_capability":false}),
         ));
     }
+    if action == "sync" {
+        let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+        // Refresh data on the existing authenticated session. Changing generation
+        // here needlessly restarts every terminal on each "Sync all" click.
+        let row = conn.query_opt("UPDATE mt5_connections SET status='queued',full_sync=true,error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND credential IS NOT NULL AND status IN ('queued','syncing','connected','error') RETURNING *", &[&scope.workspace_id,&id]).await.map_err(|_|ApiError::database())?.ok_or_else(||ApiError::detail(StatusCode::NOT_FOUND,"mt5_connection_missing_or_credentials_required"))?;
+        log_action(
+            &scope.workspace_id,
+            id,
+            row.get("generation"),
+            "sync",
+            "queued",
+        );
+        return Ok(Json(public(&row)));
+    }
     let status = match action.as_str() {
-        "sync" | "resume" => "queued",
+        "resume" => "queued",
         "pause" => "paused",
         "disconnect" => "disconnected",
         _ => return Err(error("invalid_mt5_action")),
@@ -344,8 +361,10 @@ async fn action(
     let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
     let row=conn.query_opt("UPDATE mt5_connections SET status=$3,generation=generation+1,error_code=NULL,credential=CASE WHEN $3='disconnected' THEN NULL ELSE credential END,full_sync=CASE WHEN $3='queued' THEN true ELSE full_sync END,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND ($3 IN ('paused','disconnected') OR credential IS NOT NULL) RETURNING *",&[&scope.workspace_id,&id,&status]).await.map_err(|_|ApiError::database())?.ok_or_else(||ApiError::detail(StatusCode::NOT_FOUND,"mt5_connection_missing_or_credentials_required"))?;
     let workspace = scope.workspace_id.clone();
+    let generation = row.get::<_, i64>("generation");
+    log_action(&scope.workspace_id, id, generation, &action, status);
     tokio::spawn(async move {
-        crate::demo_trading::revoke_managed_worker(&workspace, id).await;
+        crate::demo_trading::revoke_managed_worker(&workspace, id, Some(generation)).await;
     });
     Ok(Json(public(&row)))
 }
@@ -510,8 +529,8 @@ async fn adapter(input: Value, timeout: Duration) -> Result<Value, String> {
         &python(),
         &[
             "-I".into(),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                .join("../scripts/mt5_connector.py")
+            crate::config::mt5_adapter_root()
+                .join("scripts/mt5_connector.py")
                 .to_string_lossy()
                 .into(),
         ],
@@ -706,7 +725,15 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
     }
     let id: Uuid = row.get("connection_id");
     let generation: i64 = row.get("generation");
-    if conn.execute("UPDATE mt5_connections SET status=CASE WHEN status='connected' THEN status ELSE 'syncing' END,updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable")?!=1{return Ok(())}
+    let updated = conn.query_opt("WITH previous AS MATERIALIZED (SELECT status,error_code FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3 FOR UPDATE)
+        UPDATE mt5_connections c SET status=CASE WHEN c.status='connected' THEN c.status ELSE 'syncing' END,updated_at=CURRENT_TIMESTAMP FROM previous
+        WHERE c.workspace_id=$1 AND c.connection_id=$2 AND c.generation=$3
+        RETURNING previous.status AS previous_status,previous.error_code AS previous_error_code,c.status,c.error_code",
+        &[&workspace,&id,&generation]).await.map_err(|_|"mt5_database_unavailable")?;
+    let Some(updated) = updated else {
+        return Ok(());
+    };
+    log_transition(&workspace, id, generation, &updated);
     let date: NaiveDate = row.get("start_date");
     let history = format!("{date}T00:00:00Z");
     let last: Option<chrono::DateTime<Utc>> = if row.get::<_, bool>("full_sync") {
@@ -782,8 +809,9 @@ async fn run_one(state: &Arc<AppState>) -> Result<(), String> {
                 .map_err(|_| "mt5_database_unavailable")?;
         }
         Err(code) => {
-            let retry_seconds = retry_seconds(&code);
-            conn.execute("UPDATE mt5_connections SET status='error',error_code=$4,next_sync_at=CURRENT_TIMESTAMP+make_interval(secs=>$5),updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3",&[&workspace,&id,&generation,&code,&retry_seconds]).await.map_err(|_|"mt5_database_unavailable")?;
+            persist_read_failure(&conn, &workspace, id, generation, &code)
+                .await
+                .map_err(|_| "mt5_database_unavailable")?;
         }
     }
     Ok(())
@@ -815,11 +843,73 @@ pub async fn persist_snapshot(
     snapshot: &Value,
 ) -> Result<u64, tokio_postgres::Error> {
     let baseline = balance_baseline(snapshot);
-    conn.execute("UPDATE mt5_connections SET status='connected',full_sync=false,snapshot=$4 || jsonb_build_object('balance_baseline',COALESCE(NULLIF(snapshot->'balance_baseline','null'::jsonb),$5)),error_code=NULL,last_synced_at=CURRENT_TIMESTAMP,next_sync_at=CURRENT_TIMESTAMP+interval '10 seconds',updated_at=CURRENT_TIMESTAMP WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3", &[&workspace,&id,&generation,snapshot,&baseline]).await
+    let row = conn.query_opt("WITH previous AS MATERIALIZED (SELECT status,error_code FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3 FOR UPDATE)
+        UPDATE mt5_connections c SET status='connected',full_sync=false,snapshot=$4 || jsonb_build_object('balance_baseline',COALESCE(NULLIF(c.snapshot->'balance_baseline','null'::jsonb),$5)),error_code=NULL,last_synced_at=CURRENT_TIMESTAMP,next_sync_at=CURRENT_TIMESTAMP+interval '10 seconds',updated_at=CURRENT_TIMESTAMP FROM previous
+        WHERE c.workspace_id=$1 AND c.connection_id=$2 AND c.generation=$3
+        RETURNING previous.status AS previous_status,previous.error_code AS previous_error_code,c.status,c.error_code",
+        &[&workspace,&id,&generation,snapshot,&baseline]).await?;
+    if let Some(row) = &row {
+        log_transition(workspace, id, generation, row);
+    }
+    Ok(u64::from(row.is_some()))
+}
+
+pub async fn persist_read_failure(
+    conn: &tokio_postgres::Client,
+    workspace: &str,
+    id: Uuid,
+    generation: i64,
+    code: &str,
+) -> Result<u64, tokio_postgres::Error> {
+    // Another native read owns the terminal lock; no broker health check ran.
+    // Defer the collector without replacing its last verified status or journal.
+    let row = conn.query_opt("WITH previous AS MATERIALIZED (SELECT status,error_code FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2 AND generation=$3 FOR UPDATE)
+        UPDATE mt5_connections c SET status=CASE WHEN $4='mt5_terminal_busy' THEN c.status ELSE 'error' END,error_code=CASE WHEN $4='mt5_terminal_busy' THEN c.error_code ELSE $4 END,next_sync_at=CURRENT_TIMESTAMP+make_interval(secs=>$5),updated_at=CURRENT_TIMESTAMP FROM previous
+        WHERE c.workspace_id=$1 AND c.connection_id=$2 AND c.generation=$3
+        RETURNING previous.status AS previous_status,previous.error_code AS previous_error_code,c.status,c.error_code",
+        &[&workspace, &id, &generation, &code, &retry_seconds(code)]).await?;
+    if let Some(row) = &row {
+        log_transition(workspace, id, generation, row);
+    }
+    Ok(u64::from(row.is_some()))
+}
+
+fn diagnostic_code(code: Option<&str>) -> &str {
+    match code {
+        None => "none",
+        Some(code)
+            if code.len() <= 100
+                && (code.starts_with("mt5_") || code.starts_with("demo_"))
+                && code
+                    .bytes()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_') =>
+        {
+            code
+        }
+        _ => "unclassified",
+    }
+}
+
+fn log_transition(workspace: &str, id: Uuid, generation: i64, row: &tokio_postgres::Row) {
+    let previous: &str = row.get("previous_status");
+    let status: &str = row.get("status");
+    let previous_error: Option<&str> = row.get("previous_error_code");
+    let error: Option<&str> = row.get("error_code");
+    // Read the before/after pair in the same locked update, never a racy poll.
+    if previous != status || previous_error != error {
+        tracing::info!(event="mt5_connection_transition",workspace_id=workspace,connection_id=%id,generation,
+            from_status=previous,to_status=status,previous_error_code=diagnostic_code(previous_error),
+            error_code=diagnostic_code(error));
+    }
+}
+
+fn log_action(workspace: &str, id: Uuid, generation: i64, action: &str, status: &str) {
+    tracing::info!(event="mt5_connection_action",workspace_id=workspace,connection_id=%id,generation,action,to_status=status);
 }
 
 fn retry_seconds(code: &str) -> f64 {
     match code {
+        "mt5_terminal_busy" => 2.0,
         "mt5_disconnected"
         | "mt5_terminal_stopped"
         | "mt5_operation_timeout"
@@ -834,6 +924,26 @@ fn retry_seconds(code: &str) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn diagnostics_only_accept_bounded_machine_codes() {
+        assert_eq!(diagnostic_code(None), "none");
+        assert_eq!(
+            diagnostic_code(Some("mt5_disconnected")),
+            "mt5_disconnected"
+        );
+        assert_eq!(
+            diagnostic_code(Some("demo_terminal_busy")),
+            "demo_terminal_busy"
+        );
+        for value in [
+            "private text",
+            "mt5_password=secret",
+            "mt5_line\nbreak",
+            &"mt5_".repeat(30),
+        ] {
+            assert_eq!(diagnostic_code(Some(value)), "unclassified");
+        }
+    }
     #[test]
     fn journal_placement_is_account_bound_and_exposes_only_display_facts() {
         let command = json!({"action":"place","account_id":"12345","server":"Broker-Demo","symbol":"EURUSD","side":"BUY","order_type":"market","volume":0.01,"stop_loss":1.1,"take_profit":1.2,"private_field":"secret"});
@@ -867,6 +977,7 @@ mod tests {
     }
     #[test]
     fn terminal_or_network_failures_retry_quickly_without_authentication_loop() {
+        assert_eq!(retry_seconds("mt5_terminal_busy"), 2.0);
         assert_eq!(retry_seconds("mt5_terminal_stopped"), 15.0);
         assert_eq!(retry_seconds("mt5_disconnected"), 15.0);
         assert_eq!(retry_seconds("mt5_auth_failed"), 300.0);

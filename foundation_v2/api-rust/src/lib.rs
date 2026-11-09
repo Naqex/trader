@@ -12,6 +12,7 @@ mod ai_workflows;
 pub mod analytics;
 pub mod artifact_data;
 pub mod auth;
+pub mod automation_grants;
 pub mod catalog;
 pub mod commands;
 pub mod config;
@@ -22,11 +23,15 @@ pub mod demo_trading;
 pub mod events;
 pub mod jobs;
 pub mod live_ledger;
+mod live_note_folders;
+pub mod local_auth;
 pub mod metadata_mutations;
 pub mod middleware;
 pub mod mt5_connector;
 pub mod native_contracts;
 pub mod native_mutation;
+pub mod note_library;
+pub mod note_types;
 pub mod notion_oauth;
 pub mod owned_process;
 pub mod prop_core;
@@ -43,6 +48,7 @@ pub mod session_presets;
 pub mod session_trading_options;
 pub mod state;
 pub mod telemetry;
+pub mod trade_groups;
 pub mod trade_labels;
 
 use auth::ApiError;
@@ -71,6 +77,9 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(session_presets::routes())
         .merge(live_ledger::routes())
         .merge(trade_labels::routes())
+        .merge(trade_groups::routes())
+        .merge(note_library::routes())
+        .merge(note_types::routes())
         .merge(mt5_connector::routes())
         .merge(demo_trading::routes())
         .merge(replay_service::routes())
@@ -83,6 +92,7 @@ fn domain_routes_for(native_runtime: bool) -> Router<Arc<AppState>> {
         .merge(research_jobs::routes())
         .merge(data_routes::routes())
         .merge(provider_routes::routes())
+        .merge(local_auth::routes())
 }
 
 pub fn runtime_domain_routes(state: &Arc<AppState>) -> Result<Router<Arc<AppState>>, String> {

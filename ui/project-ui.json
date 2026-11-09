@@ -15,8 +15,8 @@
   ],
   "activeReviewArtifact": "foundation_v2/web/index.html",
   "legacyExplorationArtifacts": [
-    "static/u1-design-preview.html",
-    "static/u1-fxreplay-preview.html"
+    "archive/legacy/flask/static/u1-design-preview.html",
+    "archive/legacy/flask/static/u1-fxreplay-preview.html"
   ],
   "reviewMode": "wmreplay-implementation-qa",
   "referenceProduct": "FX Replay",

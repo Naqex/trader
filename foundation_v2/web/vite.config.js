@@ -5,6 +5,7 @@ import { readFile, realpath, stat } from 'node:fs/promises'
 import { compatibleAdvancedCharts } from './advancedChartCompatibility.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { localPaperclip } from './paperclipBridge.mjs'
 
 // Authorized vendor distribution stays outside Git and the application bundle.
 function localAdvancedCharts() {
@@ -36,7 +37,7 @@ function localAdvancedCharts() {
 }
 
 export default defineConfig(() => ({
-  plugins: [react(), localAdvancedCharts()],
+  plugins: [react(), localAdvancedCharts(), localPaperclip()],
   // Open tabs still import chunks from the build they initially loaded.
   build: { emptyOutDir: false },
   server: {

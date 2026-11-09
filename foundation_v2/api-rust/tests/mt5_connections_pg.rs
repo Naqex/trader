@@ -5,8 +5,40 @@ use axum::{
     http::Request,
 };
 use serde_json::{Value, json};
+use std::{
+    io::Write,
+    sync::{Arc, Mutex},
+};
 use tower::ServiceExt;
 use trading_workspace_api::{config::Config, state::AppState};
+
+#[derive(Clone, Default)]
+struct LogBuffer(Arc<Mutex<Vec<u8>>>);
+impl Write for LogBuffer {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+impl<'a> tracing_subscriber::fmt::MakeWriter<'a> for LogBuffer {
+    type Writer = Self;
+    fn make_writer(&'a self) -> Self {
+        self.clone()
+    }
+}
+impl LogBuffer {
+    fn transitions(&self) -> Vec<Value> {
+        String::from_utf8(self.0.lock().unwrap().clone())
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str::<Value>(line).unwrap())
+            .filter(|event| event["fields"]["event"] == "mt5_connection_transition")
+            .collect()
+    }
+}
 async fn request(
     app: &Router,
     method: &str,
@@ -41,6 +73,12 @@ async fn request(
 #[tokio::test]
 #[ignore = "owned disposable PostgreSQL via mt5_connections_pg.py"]
 async fn secrets_retries_isolation_and_lifecycle() {
+    let logs = LogBuffer::default();
+    let subscriber = tracing_subscriber::fmt()
+        .json()
+        .with_writer(logs.clone())
+        .finish();
+    let _logging = tracing::subscriber::set_default(subscriber);
     let state = AppState::connect(Config::from_environment().unwrap())
         .await
         .unwrap();
@@ -155,6 +193,28 @@ async fn secrets_retries_isolation_and_lifecycle() {
         .1["status"],
         "paused"
     );
+    // Sync is not resume, and repeated refresh must not rotate credentials or
+    // generation (which would restart an already authenticated terminal).
+    let generation_before_sync: i64 = db
+        .query_one(
+            "SELECT generation FROM mt5_connections WHERE workspace_id='tenant-a'",
+            &[],
+        )
+        .await
+        .unwrap()
+        .get(0);
+    assert_eq!(
+        request(
+            &app,
+            "POST",
+            &format!("{base}/{id}/sync"),
+            "tenant-a",
+            Value::Null
+        )
+        .await
+        .0,
+        404
+    );
     assert_eq!(
         request(
             &app,
@@ -166,6 +226,30 @@ async fn secrets_retries_isolation_and_lifecycle() {
         .await
         .1["status"],
         "queued"
+    );
+    for _ in 0..2 {
+        assert_eq!(
+            request(
+                &app,
+                "POST",
+                &format!("{base}/{id}/sync"),
+                "tenant-a",
+                Value::Null
+            )
+            .await
+            .1["status"],
+            "queued"
+        );
+    }
+    assert_eq!(
+        db.query_one(
+            "SELECT generation FROM mt5_connections WHERE workspace_id='tenant-a'",
+            &[]
+        )
+        .await
+        .unwrap()
+        .get::<_, i64>(0),
+        generation_before_sync + 1
     );
     let status = request(
         &app,
@@ -217,7 +301,155 @@ async fn secrets_retries_isolation_and_lifecycle() {
         .unwrap(),
         1
     );
+    let before_busy = db
+        .query_one(
+            "SELECT snapshot,last_synced_at FROM mt5_connections WHERE connection_id=$1",
+            &[&connection_id],
+        )
+        .await
+        .unwrap();
+    let transition_count = logs.transitions().len();
+    for (workspace, version) in [("tenant-b", generation), ("tenant-a", generation - 1)] {
+        assert_eq!(
+            trading_workspace_api::mt5_connector::persist_read_failure(
+                &db,
+                workspace,
+                connection_id,
+                version,
+                "mt5_terminal_busy"
+            )
+            .await
+            .unwrap(),
+            0
+        );
+    }
+    assert_eq!(
+        trading_workspace_api::mt5_connector::persist_read_failure(
+            &db,
+            "tenant-a",
+            connection_id,
+            generation,
+            "mt5_terminal_busy"
+        )
+        .await
+        .unwrap(),
+        1
+    );
+    let after_busy = db.query_one("SELECT status,error_code,snapshot,last_synced_at,next_sync_at>CURRENT_TIMESTAMP AND next_sync_at<=CURRENT_TIMESTAMP+interval '2 seconds' FROM mt5_connections WHERE connection_id=$1", &[&connection_id]).await.unwrap();
+    assert_eq!(after_busy.get::<_, String>(0), "connected");
+    assert!(after_busy.get::<_, Option<String>>(1).is_none());
+    assert_eq!(
+        after_busy.get::<_, Value>(2),
+        before_busy.get::<_, Value>(0)
+    );
+    assert_eq!(
+        after_busy.get::<_, chrono::DateTime<chrono::Utc>>(3),
+        before_busy.get::<_, chrono::DateTime<chrono::Utc>>(1)
+    );
+    assert!(after_busy.get::<_, bool>(4));
+    assert_eq!(
+        logs.transitions().len(),
+        transition_count,
+        "busy and revoked writes must not emit state changes"
+    );
+    db.execute(
+        "UPDATE mt5_connections SET status='syncing' WHERE connection_id=$1",
+        &[&connection_id],
+    )
+    .await
+    .unwrap();
+    trading_workspace_api::mt5_connector::persist_read_failure(
+        &db,
+        "tenant-a",
+        connection_id,
+        generation,
+        "mt5_terminal_busy",
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        db.query_one(
+            "SELECT status FROM mt5_connections WHERE connection_id=$1",
+            &[&connection_id]
+        )
+        .await
+        .unwrap()
+        .get::<_, String>(0),
+        "syncing"
+    );
+    trading_workspace_api::mt5_connector::persist_read_failure(
+        &db,
+        "tenant-a",
+        connection_id,
+        generation,
+        "mt5_disconnected",
+    )
+    .await
+    .unwrap();
+    let events = logs.transitions();
+    assert_eq!(events.len(), transition_count + 1);
+    let event = events.last().unwrap();
+    assert!(event["timestamp"].is_string());
+    assert_eq!(event["fields"]["connection_id"], id);
+    assert_eq!(event["fields"]["generation"], generation);
+    assert_eq!(event["fields"]["from_status"], "syncing");
+    assert_eq!(event["fields"]["to_status"], "error");
+    assert_eq!(event["fields"]["error_code"], "mt5_disconnected");
+    trading_workspace_api::mt5_connector::persist_read_failure(
+        &db,
+        "tenant-a",
+        connection_id,
+        generation,
+        "mt5_disconnected",
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        logs.transitions().len(),
+        events.len(),
+        "unchanged error polling is silent"
+    );
+    trading_workspace_api::mt5_connector::persist_read_failure(
+        &db,
+        "tenant-a",
+        connection_id,
+        generation,
+        "mt5_terminal_busy",
+    )
+    .await
+    .unwrap();
+    let failed = db
+        .query_one(
+            "SELECT status,error_code FROM mt5_connections WHERE connection_id=$1",
+            &[&connection_id],
+        )
+        .await
+        .unwrap();
+    assert_eq!(failed.get::<_, String>(0), "error");
+    assert_eq!(failed.get::<_, String>(1), "mt5_disconnected");
+    trading_workspace_api::mt5_connector::persist_snapshot(
+        &db,
+        "tenant-a",
+        connection_id,
+        generation,
+        &snapshot,
+    )
+    .await
+    .unwrap();
     let mut updated_snapshot = snapshot.clone();
+    let events = logs.transitions();
+    let recovery = events.last().unwrap();
+    assert_eq!(recovery["fields"]["from_status"], "error");
+    assert_eq!(recovery["fields"]["to_status"], "connected");
+    assert_eq!(
+        recovery["fields"]["previous_error_code"],
+        "mt5_disconnected"
+    );
+    assert_eq!(recovery["fields"]["error_code"], "none");
+    let log_text = String::from_utf8(logs.0.lock().unwrap().clone()).unwrap();
+    assert!(!log_text.contains("synthetic-private"));
+    assert!(!log_text.contains("credential"));
+    assert!(!log_text.contains("balance"));
     updated_snapshot["account"]["balance"] = json!(2000);
     updated_snapshot["captured_at_utc"] = json!("2026-10-22T00:00:00Z");
     trading_workspace_api::mt5_connector::persist_snapshot(

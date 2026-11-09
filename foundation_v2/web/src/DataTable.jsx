@@ -1,9 +1,10 @@
+import AppIcon from './AppIcon.jsx'
 import './data-table.css'
 import { useTestingLocale } from './testingLocale.jsx'
 
 export function SortResetColumn({ active, onClear, disabled = false }) {
   const { t } = useTestingLocale()
-  return <th scope="col" className="wm-table-row-number" data-sort-reset={active || undefined}>{active ? <button type="button" className="wm-table-sort-clear-all" disabled={disabled} onClick={onClear} aria-label={t('Xóa tất cả sắp xếp')} title={t('Xóa tất cả sắp xếp')}>×</button> : '#'}</th>
+  return <th scope="col" className="wm-table-row-number" data-sort-reset={active || undefined}>{active ? <button type="button" className="wm-table-sort-clear-all" disabled={disabled} onClick={onClear} aria-label={t('Xóa tất cả sắp xếp')} title={t('Xóa tất cả sắp xếp')}><AppIcon name="close" size={16} /></button> : '#'}</th>
 }
 
 // Keep one native table inside one viewport so horizontal scrolling cannot
@@ -26,6 +27,6 @@ export function SortableColumn({ children, help, active = false, direction = 'as
       </span>
     </button>
   return <th {...props} scope="col" className={className} data-sort-active={active || undefined} aria-sort={active && (!priority || priority === 1) ? direction === 'asc' ? 'ascending' : 'descending' : undefined}>
-    {multi || help ? <div className="wm-table-sort-control">{button}{multi && active && <button type="button" className="wm-table-sort-clear" onClick={onClear} aria-label={clearLabel} title={clearLabel} disabled={disabled}>×</button>}{help}</div> : button}
+    {multi || help ? <div className="wm-table-sort-control">{button}{multi && active && <button type="button" className="wm-table-sort-clear" onClick={onClear} aria-label={clearLabel} title={clearLabel} disabled={disabled}><AppIcon name="close" size={16} /></button>}{help}</div> : button}
   </th>
 }

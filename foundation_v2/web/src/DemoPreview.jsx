@@ -3,11 +3,13 @@ import { previewReadRecovery } from './demoMode.js'
 import { navigate } from './clientNavigation.js'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useMemo, useState } from 'react'
-import { buildAnalyticsModel } from './AnalyticsWorkspace.jsx'
+import { buildAnalyticsModel, ProvenanceInspector } from './AnalyticsWorkspace.jsx'
 import { FxAnalyticsFilters, FxAnalyticsReport, Metric } from './FxAnalytics.jsx'
 import FxTradeLedger, { TradeInspector } from './FxTradeLedger.jsx'
 import FxSelect from './FxSelect.jsx'
 import TestingIcon from './TestingIcon.jsx'
+import ChartIcon from './ChartIcon.jsx'
+import { TradeDetailHeading } from './TradeDetailContent.jsx'
 import SessionFilter from './SessionFilter.jsx'
 import SessionPerformance from './SessionPerformance.jsx'
 import DashboardSessions from './DashboardSessions.jsx'
@@ -57,16 +59,18 @@ function DemoReports({ workspace, ledgerOnly, prop = false, query, state = 'demo
     anchor.href = url; anchor.download = 'demo-trades.csv'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   const Inspector = ledgerOnly ? TradeInspector : 'section'
+  const tradeHeading = row && <TradeDetailHeading title={`${row.symbol}, ${t(String(row.side).toLowerCase() === 'buy' ? 'Buy' : 'Sell')}`} entryAt={row.open_time_utc} exitAt={row.close_time_utc} subtitle={row.session_name} net={row.status === 'open' ? null : row.net_pnl} currency={row.account_currency || model.result?.account_currency}/>
   // Keep partial semantics in the preview model and table empty state, but
   // avoid adding a persistent partial badge to the trade toolbar.
   const statusControl = <TestingResourceStatus textSummary={ledgerOnly} state={ledgerOnly && state === 'partial' ? undefined : state} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} recovery={previewReadRecovery(state)} />
   const readNotice = state === 'error' ? <TestingResourceNotice state="error" recovery={previewReadRecovery(state)} resource={ledgerOnly ? 'bảng giao dịch' : 'báo cáo phân tích'} /> : null
-  const renderFilters = columnControl => <FxAnalyticsFilters statusControl={statusControl} persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} facets={facets} onExport={exportCsv} sessionControl={<SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
+  const sessionFilter = <SessionFilter items={sessions} multiple={ledgerOnly} value={ids} onChange={value => { setIds(value); setSelected('') }} />
+  const renderFilters = (columnControl,journalControl) => <FxAnalyticsFilters statusControl={statusControl} persistInUrl={false} sourceType={prop ? 'Prop firm' : 'Backtesting'} columnControl={columnControl} ledgerOnly={ledgerOnly} filters={filters} onChange={patch => { setFilters(value => ({ ...value, ...patch })); setSelected('') }} extra={extra} onExtra={patch => setExtra(value => ({ ...value, ...patch }))} rows={model.ledger} facets={facets} onExport={exportCsv} sessionControl={ledgerOnly ? <>{sessionFilter}{journalControl}</> : sessionFilter} onClearSessions={() => setIds(ledgerOnly ? null : sessions[0].record_id)} />
   return <section className="wm-page as-page" aria-label={ledgerOnly ? t("Trades") : t("Analytics")}>
     <h1 className="sr-only">{ledgerOnly ? t("Trades") : t("Analytics")}</h1>
     {ledgerOnly ? <FxTradeLedger preferenceWorkspace={workspace} hidden={state === 'error'} model={model} extra={extra} selected={selected} onSelect={setSelected} renderFilters={renderFilters} readNotice={readNotice} /> : <>{renderFilters()}{readNotice}</>}
     {!ledgerOnly && state !== 'error' && <FxAnalyticsReport propReport={propReport} model={model} extra={extra} experiments={experiments} experimentStatus="unavailable" config={config} loadExperiment={(request) => Promise.resolve(demoAnalyticsExperiment(model.ledger, request))} selected={selected} onSelect={setSelected} />}
-    {row && <Inspector onClose={() => setSelected('')} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}><div className="fxa-section-heading"><h2>{row.session_name} · {row.symbol}</h2><button className="fxa-button" type="button" onClick={() => setSelected('')}>{t("Đóng chi tiết")}</button></div><div className="fxa-metrics"><Metric label={t("Net PnL")} value={fmt(row.net_pnl, t(" USD"))} /><Metric label={t("Return (R)")} value={fmt(row.realized_r, t(" R"))} /><Metric label={t("Entry")} value={fmt(row.price_open, '', 6)} /><Metric label={t("Exit")} value={fmt(row.price_close, '', 6)} /></div></Inspector>}
+    {row && <Inspector onClose={() => setSelected('')} {...ledgerOnly && {heading:tradeHeading}} className="fxa-trade-inspector" aria-label={t("Chi tiết giao dịch")}>{!ledgerOnly && <>{tradeHeading}<button type="button" className="fxa-button fx-trade-drawer-close" onClick={() => setSelected('')} aria-label={t('Đóng chi tiết')}><ChartIcon name="close" /></button></>}<ProvenanceInspector key={row.tradeId} model={model} selectedTrade={row} journalCount={null} links={{}}/></Inspector>}
   </section>
 }
 

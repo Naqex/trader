@@ -82,7 +82,8 @@ export function buildAnalyticsModel(result, reportKind = 'app', timezone = getTi
       return out
     }, {})
     : {}
-  const startBalance = firstKnown(metrics.starting_balance, result?.starting_balance, curve[0]?.value)
+  // A balance curve can begin after the first trade; it is not opening capital.
+  const startBalance = firstKnown(metrics.starting_balance, result?.starting_balance)
   const endingBalance = firstKnown(metrics.ending_closed_trade_balance, metrics.ending_balance, curve[curve.length - 1]?.value)
   const strategy = result?.strategy_version || result?.playbook_id || result?.engine_version || '-'
   const activityScope = result?.scope?.time_basis === 'activity'

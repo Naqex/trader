@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { useTestingLocale } from './testingLocale.jsx'
 import { useEffect, useId, useRef } from 'react'
 import './session-actions.css'
@@ -30,7 +31,7 @@ export function SessionActionDialog({ mode, item, onClose, onSubmit, pending, bl
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
   }} onClick={event => { if (event.target !== event.currentTarget || pending) return; const bounds = event.currentTarget.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose() }}>
-    <header><h2>{t(title)}</h2><button type="button" className="wm-dialog-close" aria-label={t("Đóng hộp thoại phiên")} disabled={pending} onClick={onClose}>×</button></header>
+    <header><h2>{t(title)}</h2><button type="button" className="wm-dialog-close" aria-label={t("Đóng hộp thoại phiên")} disabled={pending} onClick={onClose}><AppIcon name="close" size={16} /></button></header>
     {preview && <small className="fx-dashboard-dialog-preview">{t("Bản xem thử · thay đổi chỉ ở chế độ demo")}</small>}
     <form onSubmit={event => { event.preventDefault(); if (!pending && !blocked) onSubmit(mode, item, deleting ? name : '') }}>
       <p id={messageId}>{deleting ? t('Bạn có chắc muốn xóa “{name}” không? Hành động này không thể hoàn tác.', { name }) : t("Tạo bản sao “{name}” ở vị trí replay hiện tại.", { name })}</p>

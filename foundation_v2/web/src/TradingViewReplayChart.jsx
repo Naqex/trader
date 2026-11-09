@@ -468,7 +468,7 @@ export default function TradingViewReplayChart(props) {
       try { const success = await latest.current.onOrderClose(quantity); if (success) setCloseTarget(null); return Boolean(success) } finally { setClosing(false) }
     }} />}
     {closeTarget && !closeTarget.partial && <LegacyModal theme={theme} label={t(closeTarget.levels.state === 'queued' ? 'Hủy lệnh chờ?' : 'Đóng vị thế?')} className="chart-order-close-dialog" onClose={() => { if (!closing) setCloseTarget(null) }}>
-      <div className="chart-order-close-summary"><strong>{closeTarget.levels.side} · {symbol}</strong><span>{t('Khối lượng')} {closeTarget.levels.quantity}</span></div>
+      <div className="chart-order-close-summary"><strong>{t(closeTarget.levels.side)} · {symbol}</strong><span>{t('Khối lượng')} {closeTarget.levels.quantity}</span></div>
       <footer><button type="button" className="wm-button" disabled={closing} onClick={() => setCloseTarget(null)}>{t('Hủy')}</button><button type="button" className="wm-button is-destructive" disabled={closing || !latest.current.orderCloseable} onClick={async () => {
         if (closeTarget.generation !== latest.current.orderGeneration) { setCloseTarget(null); return }
         setClosing(true)

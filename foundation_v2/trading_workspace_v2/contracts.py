@@ -249,11 +249,20 @@ class PlaybookForkRequest(BaseModel):
     strategy_spec: StrategyResearchSpec | None = None
 
 
+class NoteDocument(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    format: Literal["blocknote"]
+    version: Literal[1]
+    blocks: list[dict] = Field(min_length=1, max_length=256)
+
+
 class JournalDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     entry_type: Literal["observation", "hypothesis", "decision", "no-trade", "missed-trade"]
     note: str = Field(min_length=1, max_length=10_000)
+    note_document: NoteDocument | None = None
     source: dict
     tags: list[str] = Field(default_factory=list, max_length=32)
     # These fields keep the decision story structured without making the

@@ -30,7 +30,7 @@ def hashes():
     paths = list((V2 / "trading_workspace_v2").glob("*.py")) + [V2 / "uv.lock", Path(__file__)]
     paths += [V2 / "engine_runtime" / name for name in ("adapter.py", "limits.py", "run.py", "pyproject.toml", "uv.lock")]
     paths += [V2 / "tests" / f"{name}.py" for name in MODULES]
-    paths += [PROJECT / name for name in ("data_contracts.py", "data_costs.py", "evidence_metrics.py")]
+    paths += [V2 / "trading_workspace_v2" / "semantics" / name for name in ("data_contracts.py", "data_costs.py", "evidence_metrics.py")]
     return {path.relative_to(PROJECT).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
 
 

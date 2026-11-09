@@ -23,6 +23,16 @@ test('MT5 names use verified login and environment with an optional owner label'
   assert.equal(mt5AccountName({...connection,name:'MT5 464104926 - demo'}),'MT5 464104926 - demo')
 })
 
+test('MT5 broker names take precedence over connection labels and omit server/company',()=>{
+  const connection={name:'My connection',account_login:'1234567',login_hint:'…4567',account_environment:'demo',server:'Fixture-Demo',account:{name:'$10k Fixture Free Trial Swing 2-Step',company:'Fixture Markets Ltd'}}
+  const expected='MT5 1234567 - demo - $10k Fixture Free Trial Swing 2-Step'
+  assert.equal(mt5AccountName(connection),expected)
+  assert.equal(liveAccountRows([],[],{connections:[connection]})[0].name,expected)
+  assert.equal(mt5AccountName({...connection,account:{name:'Standard'},account_environment:'real'}),'MT5 1234567 - real - Standard')
+  assert.equal(mt5AccountName({...connection,account:{name:'Standard'},account_environment:'contest'}),'MT5 1234567 - contest - Standard')
+  assert.equal(mt5AccountName({...connection,name:'MetaTrader 5',account:{name:''}}),'MT5 1234567 - demo')
+})
+
 test('account metadata validates type, UTC date and exact decimal input',()=>{
   const draft={name:'New',currency:'USD',account_type:'prop',opening_balance:'0',opening_at_utc:'2026-09-01T10:20'}
   assert.deepEqual(accountDraftErrors(draft),{})

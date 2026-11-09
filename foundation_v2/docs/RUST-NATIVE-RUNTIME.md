@@ -1,5 +1,55 @@
 # Rust-native candidate runtime
 
+03 November local API update: [MT5 account lifecycle receipt](../evidence/owner-system-audit-20261031/ACCOUNT-LIFECYCLE-20261103.md)
+records background terminal desktops, refresh without reconnect, generation-bound
+cleanup and verification on the two existing demo accounts. Schema20, storage,
+installed adapter root and research/admin capabilities are retained.
+
+31 October latest local update: reversible journal groups migration0020 and the
+matching API + research worker are deployed on native/compact. The owner approved
+this migration and local cutover separately. Existing source trades, notes/tags
+and analytics remain unchanged; trade deletion is deferred. Database/artifact
+backups, exact hashes and deployed GET-only browser checks are recorded in the
+[UI-system receipt](../evidence/ui-system-audit-20261031/REPORT.md).
+Do not launch the retained schema19 binaries against schema20. The prepared
+rollback removes0020 only while its catalog is empty and its checksum matches;
+otherwise retain the schema and review recovery using the verified backup.
+The earlier0019 note-type rollout and transient MT5 retry recovery remain in
+the same receipt.
+
+Trade panel navigation, groups and Live journal details:
+[30 October parity receipt](../evidence/trade-panel-parity-20261030/RECEIPT.md).
+Records the no-migration local API/UI rollout, autosave-gated navigation,
+isolated persistence tests and deployed GET-only checks. Synced MT5 Delete trade
+is a disabled UI preview; it never deletes broker data or sends an order.
+
+Trade note template library/media local rollout:
+[30 October note workspace receipt](../evidence/note-workspace-20261030/RECEIPT.md).
+Migration0018 is additive. API, admin and research worker must all understand its
+migration ledger; reusing the older research worker fails readiness. The receipt
+records that failed startup, recovery with the matching worker, database/artifact
+backup, deployed GET-only checks and preserved connection mode. An older binary
+without migration18 cannot be used directly as rollback.
+
+Trade note block editor local rollout:
+[30 October block editor receipt](../evidence/trade-note-blocks-20261030/RECEIPT.md).
+API8010 and UI5180 support versioned note documents with the retained plain-text
+projection and shared autosave. The receipt records disposable persistence,
+independent review, guarded native/compact cutover, deployed read-only browser QA
+and restoration of the existing MT5 connection. API rollback after structured
+writes needs compatibility review even though no SQL migration was needed.
+
+Shared label management and Live analytics UI:
+[29 October shared labels receipt](../evidence/shared-trade-labels-20261029/RECEIPT.md).
+
+When source checkouts move, `TW_V2_MT5_ADAPTER_ROOT` can retain an installed MT5
+adapter independently of the compiled API location. It must be an absolute
+`foundation_v2` directory and is validated at startup. MT5 Python, scripts and
+owned terminal folders resolve from this same root; other storage/capabilities
+retain their existing configuration. Without an override the compiled foundation
+root remains the default. Set it on the scoped supervisor/API environment, not
+through a workspace request. An API update does not migrate terminal folders.
+
 Latest UI chart calculation/display rollout:
 [27 October Analytics chart logic](../evidence/fxreplay-chart-logic-20261027/RECEIPT.md).
 Canonical realizedR, missing-trade chart gaps, signed radar scales, ready-only
@@ -177,6 +227,13 @@ atomically with prior assets retained. The owner authorized reconnect of account
 Native MCP remains optional and unconfigured after terminal restart. See
 [read-tools receipt](../evidence/mt5-read-tools-20261024/RECEIPT.md), including the
 transient reconnect error and recovery rather than a lifecycle stability claim.
+
+On 1 November the owner requested startup. UI5218 serves the reviewed Studio
+build and connects to retained schema20 API8010; Paperclip17860 also runs with
+its existing data. Runtime ownership remains in the previous checkout; this
+does not deploy canonical-source audit backend changes. See the
+[startup receipt](../evidence/runtime-start-20261101/RECEIPT.md) for exact scope,
+manifest, read-only readiness and the initial preflight timeout.
 
 The native flow is `React → Axum → native domain → PostgreSQL transaction and
 revision/receipt → HTTP response`. Research and downloads use bounded background
@@ -647,3 +704,107 @@ Source review/unit tests are separate from persisted and production-chart accept
 the execution checkpoint records the measured scope and failed attempts. The owner
 runtime was not switched during those fixture runs; the later owner cutover is
 documented above.
+
+For a binary built from a relocated checkout, set
+`TW_V2_SCIENTIFIC_ADAPTER_ROOT` to the existing absolute `foundation_v2`
+installation used by its capability descriptor. This selects the installation;
+its descriptor root, code, interpreter and dependency hashes are still verified.
+The compile-time checkout remains the default when the variable is absent.
+
+For opt-in local Owner authentication and bounded Demo runner authority, see
+[Local capabilities](LOCAL-CAPABILITIES.md). Preserve the current launch profile;
+the new authentication flag does not authorize migration or broker execution.
+
+### Owned MT5 startup and recovery
+
+The persistent broker worker starts its isolated terminal with `/config`, then
+waits up to 10 seconds for Windows `WaitForInputIdle` before calling the SDK.
+The [SDK may launch a terminal itself](https://www.mql5.com/en/docs/python_metatrader5/mt5initialize_py);
+attaching while the explicit launch is still starting can race that launch and
+lose its access settings. The [Windows wait](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-waitforinputidle)
+is only a startup barrier. SDK initialization, account/server, access mode,
+terminal path and generation checks still determine readiness and authority.
+Timeout or a stopped process fails closed; there is no initialization/send retry
+inside the worker.
+
+On failure the worker disconnects its SDK and stops the explicitly launched
+process. Its native job owner stops all descendants. Do not delete terminal files
+from the worker while SDK/WebView descendants may still hold locks: this can
+replace an authentication/permission error with a sharing-violation exception.
+The next `prepare_terminal` cleans the private owned folder before a cold launch;
+it preserves only the approved terminal binaries. Forced native shutdown already
+uses this deferred-cleanup boundary. Never copy a saved account/profile directory
+into the next session.
+
+Cold history can still be incomplete after login. The existing history guard
+retains the previous journal and reports `mt5_history_warming` until the scheduled
+read recovers it; empty history is not proof that previous trades disappeared.
+If another native reader holds the terminal lock, the collector defers for two
+seconds while preserving status, journal and last successful synchronization time.
+Contention never marks a queued/syncing connection ready or clears a prior error.
+Only PostgreSQL's lock-timeout code uses this path; database failures and genuine
+broker/identity failures remain errors. No execution command is retried.
+Bounded reconnect evidence is separate from unattended operation over days and
+does not authorize broker orders or a new execution grant.
+
+The instrument adapter reloads symbol specifications after a cold subscription;
+the tuple obtained before `symbol_select` may still contain uninitialized values.
+Invalid Bid/Ask, tick size, point or lot limits remain fail-closed. Invalid quotes
+return `demo_quote_unavailable`; invalid specifications return `demo_invalid_number`.
+Both include `data_quality.invalid_field` and the positive/finite requirement,
+without raw SDK values. Native snapshot failures
+preserve that diagnostic instead of discarding it. A successful later read alone
+does not explain an earlier failure; capture the field before changing any guard.
+
+[Broker clock decoding](MT5-BROKER-CLOCK.md) defines the verified FTMO-Demo
+server-time exception, raw timestamp provenance and shared UTC decoding for
+quotes, bars, collection and reconciliation. It never infers an offset from the
+age of the latest tick. Grant expiry and Prop reset zones keep their own semantics.
+
+### Demo reliability qualification before unattended operation
+
+Use the existing session, forward reducer, native grant ledger and backup helpers.
+Fast checks exercise production logic with synthetic external boundaries; they
+cannot establish years of uptime or reproduce every Windows/MT5/provider fault.
+Do not tune strategy returns to make a system fixture pass.
+
+| Gate | What it verifies |
+|---|---|
+| Virtual UTC time | Session and native grant expiry boundaries for each day in 2027–2028, including leap day and equivalent offset representations; no OS clock changes or broker calls |
+| Session fault matrix | Failures before/after open/close submission, lost responses, partial/mismatched receipts, disk write/replace failures, repeated reconcile and expired checkpoint recovery; no ambiguous intent repost |
+| Forward replay | 256 synthetic hourly events, 32 intermediate checkpoint restores and duplicate event replay match uninterrupted execution; this is system parity, not historical strategy validation |
+| Bounded repeated failure | 64 unknown-session resumes retain the checkpoint size cap and do not resend; 64 readiness outage/recovery cycles only publish transitions and never restart children |
+| Database crash/restore | Real disposable PostgreSQL immediate stop/restart and checked DB/artifact restore preserve committed rows; the native grant loader still rejects revoked/expired authority |
+
+From `foundation_v2`, run changed/focused tests first. The Python CI job includes
+the offline session/SDK admission/worker/forward contracts; ordinary Rust CI runs
+the native virtual-time test. The owned PostgreSQL rehearsal is explicit:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_mt5_demo_session.py tests/test_api_platform_launcher.py tests/test_artifact_storage_architecture.py tests/test_forex_forward.py -q
+cargo test --locked --manifest-path api-rust/Cargo.toml --lib automation_grants::tests::two_calendar_years_preserve_exact_expiry_and_timezone_equivalence -- --exact
+.\.venv\Scripts\python.exe scripts/demo_recovery_rehearsal.py --pg-bin <installed-PostgreSQL-bin> --output-dir <new-private-evidence-directory>
+```
+
+The rehearsal accepts no DSN: it allocates its own loopback cluster and strips
+inherited application/PostgreSQL configuration. It reuses the grant lifecycle
+fixture's exact disposable role/database identity. `receipt.json` and subprocess
+logs retain failure/completion; the cluster is stopped and temporary data removed.
+The checked synthetic backup bundle remains in the output directory. Its measured
+restore time is not an RTO claim for the owner's larger database or a whole machine.
+
+After offline gates, use bounded real Demo observation to validate SDK/Windows,
+reconnection, quote quality and resource behavior. Connection health alone is not
+quote/send readiness. Observing does not grant orders; each sending session still
+needs the registered account/symbol/time/risk authority. Stop new sends and
+reconcile on an unknown outcome. Never turn restore, retry or restart into an
+automatic renewal of trading authority.
+
+Owner chose local-only completion on 04 November. Existing readiness monitoring
+is local; off-machine backup, external alerts and unattended boot/failover are not
+enabled by this qualification. For recovery, use a matching quiesced DB/artifact
+bundle and runtime version, restore into a new owned target, verify hashes and
+native authorization, then reconcile broker inventory before enabling execution.
+Keep owner-data restore separate from disposable rehearsals. Do not restore roles,
+machine-bound credentials or execution capabilities blindly, overwrite the active
+database, or launch a second sender as a shortcut to availability.

@@ -1,4 +1,5 @@
-import { sessionNavigationHref } from './sessionCatalog.js'
+import AppIcon from './AppIcon.jsx'
+import { canResumeSession, fetchReplaySessions, readLastSession, recentSessions, rememberSession as persistSession, sessionNavigationHref } from './sessionCatalog.js'
 import { navigate } from './clientNavigation.js'
 import { scopedMutation } from './scopedMutation.js'
 import { canUseReplayMutationView, mergeReplayMutationView, replayMutationEventsAfter } from './replayMutationView.js'
@@ -127,7 +128,6 @@ export default function ReplayWorkspace({ workspace, query }) {
 
   const { updateMarketContext, appearance, applyAppearance } = useFxReplayContext()
   const theme = appearance?.theme || 'dark'
-  const storageKey = `tw:replay:last:${workspace}`
   const requestedSession = query.get('session') || ''
   const requestedDataset = query.get('dataset') || ''
   const propSessionId = query.get('prop_session') || ''
@@ -258,9 +258,9 @@ export default function ReplayWorkspace({ workspace, query }) {
     const locationCursor = propMode ? null : cursor
     lastResolvedLocation.current = `${nextSessionId}:${locationCursor ?? ''}`
     setSessionId(nextSessionId)
-    window.localStorage.setItem(storageKey, nextSessionId)
+    persistSession(workspace, nextSessionId)
     replaceSessionInUrl(nextSessionId, preserveCursor, locationCursor, dataset)
-  }, [propMode, storageKey])
+  }, [propMode, workspace])
 
   const loadSession = useCallback(async (targetSessionId, targetCursor = null, options = {}) => {
     if (!targetSessionId || actionLock.current) return
@@ -315,11 +315,13 @@ export default function ReplayWorkspace({ workspace, query }) {
   }, [rememberSession, workspace])
 
   const createSession = useCallback(async () => {
+    if (actionLock.current) return
     const datasetId = datasetDraft.trim()
     if (!datasetId) {
       setState({ status: 'error', payload: null, error: 'Cần dataset id để tạo replay.' })
       return
     }
+    actionLock.current = true
     setPendingAction('create')
     setConflict(false)
     try {
@@ -392,15 +394,28 @@ export default function ReplayWorkspace({ workspace, query }) {
       loadDatasets()
       return
     }
-    const persisted = window.localStorage.getItem(storageKey)
+    if (requestedDataset) {
+      loadDatasets()
+      const controller = new AbortController()
+      setState({ status: 'loading', payload: null, error: null })
+      fetchReplaySessions(workspace, controller.signal).then(items => {
+        if (controller.signal.aborted) return
+        const matching = recentSessions(items.filter(item => item.dataset_id === requestedDataset && canResumeSession(item) && !item.prop_attempt_id && item.session_kind !== 'prop'))[0]
+        if (matching) loadSession(matching.record_id)
+        else setState({ status: 'idle', payload: null, error: null })
+      }).catch(error => {
+        if (!controller.signal.aborted) setState({ status: 'error', payload: null, error: String(error.message || error), errorStatus: error.status })
+      })
+      return () => controller.abort()
+    }
+    const persisted = readLastSession(workspace)
     if (persisted) {
       loadDatasets()
       loadSession(persisted)
       return
     }
     loadDatasets()
-    if (requestedDataset) createSession()
-  }, []) // Resolve the initial resume once from URL -> persisted session -> dataset.
+  }, []) // Dataset links read existing sessions; only the create button writes.
 
   useEffect(() => {
     const location = `${requestedSession}:${requestedCursorParam ?? ''}`
@@ -1121,7 +1136,7 @@ export default function ReplayWorkspace({ workspace, query }) {
 
               {advancedChart ? <LegacyTradingBar key={`${workspace}:${sessionId}`} workspace={workspace} sessionId={sessionId} order={order} onPresetChange={publishScalperPreset} analyticsHref={propAnalyticsHref || routeHref('analytics', { surface: 'workspace' })} propRulesAction={propMode ? { label: t('Prop Firm Rules'), onClick: () => setPropRulesOpen(true) } : null} symbol={replayContext.instrument} theme={theme} readStatus={<TestingResourceStatus state={state.status === 'loading' ? 'refreshing' : state.status === 'error' ? 'stale' : 'ready'} resource="phiên replay" detail={state.status === 'error' ? `${t('Không đọc được replay:')} ${t(state.error)} · ${t('Đang giữ cutoff {cutoff} UTC.', { cutoff: replay.cutoff_timestamp })}` : undefined} />} /> : <div className="chart-trading-bar" role="group" aria-label={t("Giao dịch mô phỏng")}>
                 <div className="chart-trading-actions">
-                  {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={order.disabled || Boolean(order.active)} onClick={() => beginOrder(side)} data-tooltip={`${side === 'BUY' ? 'Ask' : 'Bid'} mô phỏng tại cutoff; khớp tại giá hiện tại`}>{side === 'BUY' ? t("Buy") : t("Sell")} <strong>{formatPrice(side === 'BUY' ? quotes.ask : quotes.bid)}</strong></button>)}
+                  {['BUY', 'SELL'].map(side => <button key={side} type="button" className={side.toLowerCase()} disabled={order.disabled || Boolean(order.active)} onClick={() => beginOrder(side)} data-tooltip={t('{quote} mô phỏng tại cutoff; khớp tại giá hiện tại', { quote: side === 'BUY' ? 'Ask' : 'Bid' })}>{side === 'BUY' ? t("Buy") : t("Sell")} <strong>{formatPrice(side === 'BUY' ? quotes.ask : quotes.bid)}</strong></button>)}
                   <label>{t("Size")}<input aria-label={t("Khối lượng nhanh")} type="number" min={order.instrument?.quantity_min || '0'} step={order.instrument?.quantity_step || 'any'} value={order.draft.quantity} disabled={order.disabled || Boolean(order.active)} onChange={event => order.setDraft(current => ({ ...current, quantity: event.target.value }))} /></label>
                   <span className="chart-sim-tag">{t("SIM")}</span><button type="button" aria-expanded={sideOpen && sidePanel === 'order'} onClick={() => openPanel('order')}>{t("Lệnh")}{order.active ? '· 1' : ''}</button>
                 </div>
@@ -1129,7 +1144,7 @@ export default function ReplayWorkspace({ workspace, query }) {
               </div>}
               <NotificationSlot>
                 {activityWaiting && <div className="wm-notification" role="status"><p>{t('Chưa lưu được thời gian luyện tập. Đang thử lại…')}</p></div>}
-                {chartNotice && <NotificationSurface key={chartNotice} role="status" onDismiss={()=>setChartNotice('')}><p>{t(chartNotice)}</p><button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}>×</button></NotificationSurface>}
+                {chartNotice && <NotificationSurface key={chartNotice} role="status" onDismiss={()=>setChartNotice('')}><p>{t(chartNotice)}</p><button type="button" aria-label={t("Đóng thông báo")} onClick={() => setChartNotice('')}><AppIcon name="close" size={16} /></button></NotificationSurface>}
               </NotificationSlot>
 
               <div className="replay-evidence-strip" role="group" aria-label={t("Bằng chứng chart")}>

@@ -24,7 +24,9 @@ fn file_hash(path: &Path) -> Result<String, String> {
     Ok(format!("{:x}", digest.finalize()))
 }
 pub fn foundation_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..")
+    std::env::var_os("TW_V2_SCIENTIFIC_ADAPTER_ROOT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(".."))
 }
 pub fn engine_code_hash(root: &Path) -> Result<String, String> {
     let package = root.join("trading_workspace_v2");

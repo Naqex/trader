@@ -50,6 +50,84 @@ fn python() -> std::path::PathBuf {
         .unwrap();
     Path::new(home).join("python.exe")
 }
+
+#[tokio::test]
+async fn background_desktop_contains_windows_and_sdk_style_descendants() {
+    let code = r#"
+import ctypes,json,os,subprocess,sys,time
+from ctypes import wintypes as w
+u=ctypes.WinDLL('user32',use_last_error=True); k=ctypes.WinDLL('kernel32')
+u.GetThreadDesktop.argtypes=[w.DWORD];u.GetThreadDesktop.restype=w.HANDLE
+u.GetUserObjectInformationW.argtypes=[w.HANDLE,ctypes.c_int,ctypes.c_void_p,w.DWORD,ctypes.POINTER(w.DWORD)]
+def desktop():
+    b=ctypes.create_unicode_buffer(256);n=w.DWORD()
+    assert u.GetUserObjectInformationW(u.GetThreadDesktop(k.GetCurrentThreadId()),2,b,ctypes.sizeof(b),ctypes.byref(n))
+    return b.value
+name=desktop()
+assert name.startswith('Naqex-MT5-'), 'refuse to show a fixture window on the interactive desktop'
+u.CreateWindowExW.restype=w.HWND
+u.CreateWindowExW.argtypes=[w.DWORD,w.LPCWSTR,w.LPCWSTR,w.DWORD,ctypes.c_int,ctypes.c_int,ctypes.c_int,ctypes.c_int,w.HWND,w.HMENU,w.HINSTANCE,ctypes.c_void_p]
+u.IsWindowVisible.argtypes=[w.HWND]
+u.GetWindowThreadProcessId.argtypes=[w.HWND,ctypes.POINTER(w.DWORD)]
+h=u.CreateWindowExW(0,'STATIC','Naqex background fixture',0x10CF0000,0,0,200,100,None,None,None,None)
+assert h and u.IsWindowVisible(h)
+u.OpenDesktopW.argtypes=[w.LPCWSTR,w.DWORD,w.BOOL,w.DWORD];u.OpenDesktopW.restype=w.HANDLE
+u.CloseDesktop.argtypes=[w.HANDLE]
+default=u.OpenDesktopW('Default',0,False,0x41);assert default
+found=[]
+callback=ctypes.WINFUNCTYPE(w.BOOL,w.HWND,w.LPARAM)
+@callback
+def visit(hwnd,_):
+    pid=w.DWORD();u.GetWindowThreadProcessId(hwnd,ctypes.byref(pid))
+    if pid.value==os.getpid():found.append(int(hwnd))
+    return True
+u.EnumDesktopWindows.argtypes=[w.HANDLE,callback,w.LPARAM]
+assert u.EnumDesktopWindows(default,visit,0)
+u.CloseDesktop(default)
+assert not found, 'background window leaked onto Default'
+child_code='''import ctypes,time
+from ctypes import wintypes as w
+u=ctypes.WinDLL('user32');k=ctypes.WinDLL('kernel32')
+u.GetThreadDesktop.argtypes=[w.DWORD];u.GetThreadDesktop.restype=w.HANDLE
+u.GetUserObjectInformationW.argtypes=[w.HANDLE,ctypes.c_int,ctypes.c_void_p,w.DWORD,ctypes.POINTER(w.DWORD)]
+b=ctypes.create_unicode_buffer(256);n=w.DWORD()
+assert u.GetUserObjectInformationW(u.GetThreadDesktop(k.GetCurrentThreadId()),2,b,ctypes.sizeof(b),ctypes.byref(n))
+print(b.value,flush=True);time.sleep(60)'''
+p=subprocess.Popen([sys.executable,'-I','-c',child_code],stdout=subprocess.PIPE,text=True)
+descendant=p.stdout.readline().strip()
+print(json.dumps({'desktop':name,'descendant':descendant,'pid':p.pid}),flush=True)
+time.sleep(60)
+"#;
+    let mut child = spawn_background_with_stdin(
+        &python(),
+        &["-I".into(), "-c".into(), code.into()],
+        None,
+        &[],
+        Limits::default(),
+        true,
+    )
+    .unwrap();
+    let output = line(&mut child).await;
+    let report: serde_json::Value = serde_json::from_str(&output).expect(&output);
+    assert_eq!(report["desktop"], report["descendant"]);
+    let descendant = hold(report["pid"].as_u64().unwrap() as u32);
+    child.kill().await.unwrap();
+    exited(&descendant).await;
+    drop(child);
+    let name = wide(OsStr::new(report["desktop"].as_str().unwrap())).unwrap();
+    assert!(
+        unsafe {
+            windows_sys::Win32::System::StationsAndDesktops::OpenDesktopW(
+                name.as_ptr(),
+                0,
+                0,
+                DESKTOP_READOBJECTS,
+            )
+        }
+        .is_null(),
+        "background desktop survived its owned process tree"
+    );
+}
 fn launch(code: &str, limits: Limits) -> Child {
     spawn(
         &python(),

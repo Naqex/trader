@@ -203,30 +203,58 @@ fn parse(raw: &str) -> R<(Value, Tz, bool)> {
     let empty = f.get("reportKinds").is_some_and(|v| !truth(v)) && original["reportKinds"] != "";
     Ok((f, zone, empty))
 }
-pub(crate) fn decorate(raw: &Value, journals: &[Value]) -> Value {
+/// Request-local lookup of journals by their exact source identity aliases.
+pub(crate) struct JournalIndex<'a> {
+    journals: &'a [Value],
+    by_source: HashMap<(String, String), Vec<usize>>,
+}
+impl<'a> JournalIndex<'a> {
+    pub(crate) fn new(journals: &'a [Value]) -> Self {
+        let mut by_source: HashMap<_, Vec<usize>> = HashMap::new();
+        for (i, j) in journals.iter().enumerate() {
+            let s = &j["payload"]["source"];
+            // Serialized JSON keeps Value equality, including missing fields as null.
+            for session in ["session_id", "replay_session_id"] {
+                for trade in ["trade_id", "id"] {
+                    let ids = by_source
+                        .entry((s[session].to_string(), s[trade].to_string()))
+                        .or_default();
+                    if ids.last() != Some(&i) {
+                        ids.push(i);
+                    }
+                }
+            }
+        }
+        Self {
+            journals,
+            by_source,
+        }
+    }
+    fn matching(&self, row: &Value) -> impl Iterator<Item = &'a Value> + '_ {
+        self.by_source
+            .get(&(row["session_id"].to_string(), row["trade_id"].to_string()))
+            .into_iter()
+            .flatten()
+            .map(|&i| &self.journals[i])
+    }
+}
+pub(crate) fn decorate(raw: &Value, journals: &JournalIndex) -> Value {
     let mut r = raw.clone();
     r["report_kind"] = json!("app");
     let mut tags = strings(&r["tags"]);
     let mut notes = truth(&r["note"]) && !text(&r["note"]).trim().is_empty()
         || truth(&r["notes"]) && !text(&r["notes"]).trim().is_empty();
-    for j in journals {
+    for j in journals.matching(raw) {
         let p = &j["payload"];
-        let s = &p["source"];
-        if ["session_id", "replay_session_id"]
-            .iter()
-            .any(|k| s[k] == r["session_id"])
-            && ["trade_id", "id"].iter().any(|k| s[k] == r["trade_id"])
-        {
-            if r["labels_authoritative"] != true {
-                tags.extend(strings(&p["tags"]));
-            }
-            let n = if truth(&p["note"]) {
-                &p["note"]
-            } else {
-                &p["notes"]
-            };
-            notes |= !text(n).trim().is_empty()
+        if r["labels_authoritative"] != true {
+            tags.extend(strings(&p["tags"]));
         }
+        let n = if truth(&p["note"]) {
+            &p["note"]
+        } else {
+            &p["notes"]
+        };
+        notes |= !text(n).trim().is_empty()
     }
     let mut seen = HashSet::new();
     tags.retain(|t| seen.insert(t.clone()));
@@ -482,9 +510,10 @@ pub(super) fn build_trades_page_sorted(
     let (f, zone, empty) = parse(extra_filters)?;
     let facet = facet_report.unwrap_or(report);
     let rows = array(&report["ledger"])?;
+    let index = JournalIndex::new(journals);
     let faceted: Vec<_> = array(&facet["ledger"])?
         .iter()
-        .map(|r| decorate(r, journals))
+        .map(|r| decorate(r, &index))
         .collect();
     let mut assets = BTreeSet::new();
     let (mut tags, mut strategies, mut years, mut types) = (
@@ -524,7 +553,7 @@ pub(super) fn build_trades_page_sorted(
     dates.sort();
     let mut filtered = vec![];
     for (i, r) in rows.iter().enumerate() {
-        let r = decorate(r, journals);
+        let r = decorate(r, &index);
         if matches(&r, &f, zone, empty)? {
             let val: Vec<_> = sorts
                 .iter()
@@ -594,6 +623,67 @@ pub(super) fn build_trades_page_sorted(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn journal_index_matches_previous_linear_scan() {
+        // Previous decorate loop, kept as the oracle for alias/order semantics.
+        let linear = |raw: &Value, journals: &[Value]| {
+            let mut r = raw.clone();
+            r["report_kind"] = json!("app");
+            let mut tags = strings(&r["tags"]);
+            let mut notes = truth(&r["note"]) && !text(&r["note"]).trim().is_empty()
+                || truth(&r["notes"]) && !text(&r["notes"]).trim().is_empty();
+            for j in journals {
+                let (p, s) = (&j["payload"], &j["payload"]["source"]);
+                if ["session_id", "replay_session_id"]
+                    .iter()
+                    .any(|k| s[k] == r["session_id"])
+                    && ["trade_id", "id"].iter().any(|k| s[k] == r["trade_id"])
+                {
+                    if r["labels_authoritative"] != true {
+                        tags.extend(strings(&p["tags"]));
+                    }
+                    let n = if truth(&p["note"]) {
+                        &p["note"]
+                    } else {
+                        &p["notes"]
+                    };
+                    notes |= !text(n).trim().is_empty()
+                }
+            }
+            let mut seen = HashSet::new();
+            tags.retain(|t| seen.insert(t.clone()));
+            r["tags"] = json!(tags);
+            r["has_notes"] = json!(notes);
+            r
+        };
+        let journals = vec![
+            json!({"payload":{"source":{"session_id":"s","trade_id":"t1"},"tags":["B","A"],"note":"x"}}),
+            json!({"payload":{"source":{"replay_session_id":"s","id":"t1"},"tags":["A","C"],"notes":"  "}}),
+            json!({"payload":{"source":{"session_id":"s","replay_session_id":"s","trade_id":"t1","id":"t1"},"tags":["D"]}}),
+            json!({"payload":{"source":{"session_id":"other","trade_id":"t1"},"tags":["X"],"note":"x"}}),
+            json!({"payload":{"source":{"session_id":"s","trade_id":1},"tags":["N"],"note":"n"}}),
+            json!({"payload":{"source":{},"tags":["Null"],"note":"null source"}}),
+            json!({"payload":{"source":{"session_id":"s","trade_id":"t2"},"tags":[],"note":null,"notes":"text"}}),
+            json!({"payload":{"tags":["NoSource"]}}),
+        ];
+        let rows = vec![
+            json!({"session_id":"s","trade_id":"t1","tags":["A"]}),
+            json!({"session_id":"s","trade_id":"t1","tags":["Z"],"labels_authoritative":true}),
+            json!({"session_id":"s","trade_id":"t2","note":" "}),
+            json!({"session_id":"s","trade_id":1}),
+            json!({"session_id":"s","trade_id":"1"}),
+            json!({"tags":[]}),
+            json!({"session_id":"missing","trade_id":"t1","notes":"own"}),
+        ];
+        let index = JournalIndex::new(&journals);
+        for row in &rows {
+            assert_eq!(decorate(row, &index), linear(row, &journals), "{row}");
+        }
+        assert_eq!(
+            decorate(&rows[0], &index)["tags"],
+            json!(["A", "B", "C", "D"])
+        );
+    }
     #[test]
     fn multi_sort_python_oracle_matches_full_response_and_snapshot() {
         let fixture: Value =

@@ -10,6 +10,8 @@
   --wm-control-hover: var(--project-hover);
   --wm-row-hover: var(--project-row-hover);
   --wm-row-selected: var(--project-row-selected);
+  /* Selected rows stay recognizably selected while hovered. */
+  --wm-row-selected-hover: color-mix(in srgb, var(--project-row-selected) 78%, var(--project-hover));
   --wm-hover: var(--wm-control-hover);
   --wm-selected: var(--project-control);
   --wm-selected-border: var(--project-border-strong);
@@ -39,7 +41,8 @@
   --fx-line-strong: var(--fx-shell-line-strong);
   --fx-green: var(--project-positive);
   --fx-red: var(--project-negative);
-  --wm-popup: var(--project-raised);
+  /* Preserve the pre-palette menu surface independently of panels and controls. */
+  --wm-popup: #1D1D1D;
   --ui-bg: var(--project-canvas);
   --ui-surface: var(--project-surface);
   --ui-surface-2: var(--project-raised);
@@ -82,6 +85,7 @@
   --wm-space-8: var(--ds-space-8);
   font-size: var(--wm-text-body);
 }
+:is(.fx-app.fx-shell-story, .legacy-order-overlay, .legacy-scalper-settings, .wm-ui-portal)[data-theme='light'] { --wm-popup:#FAFAFA; }
 /* Dialog dismissal is a quiet icon action; retain a separate keyboard focus cue. */
 .fx-app.fx-shell-story[data-theme] :is(dialog, [role='dialog']) button.wm-dialog-close,
 .legacy-order-modal button.wm-dialog-close {

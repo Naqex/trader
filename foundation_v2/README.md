@@ -48,6 +48,11 @@ Managed MT5 charts additionally use a shared SSE market stream with incremental
 bar updates and reconnect; the warm terminal SDK adapter is sampled rather than
 broker tick-pushed. See [market stream contract and limits](docs/LIVE-MARKET-STREAM.md).
 
+The fixed offline Forex candidate also has a
+[restartable QDM quote consumer](docs/FOREX-FORWARD.md), with pinned experiment
+artifacts and checkpointed H4/risk/accounting state. This is historical replay,
+not autonomous broker execution or observed-market forward acceptance.
+
 Connection pools, queue admission, leases/fencing, mutation idempotency receipts,
 checksum migrations and owned-process shutdown are bounded. Browser navigation
 preserves the shell; stale readers cancel and healthy SSE replaces repeated
@@ -109,6 +114,17 @@ or opening a bare replay URL restores the same attempt. Existing records use
 their persisted replay binding, with an exact legacy generated-name match only
 for unbound first attempts. Renaming those records preserves the identity.
 Old `view=testing`/`view=prop` setup links open the shared dialog.
+
+Offline rule profiles can set `daily_anchor_basis` independently of
+`daily_loss.basis`; absent/null preserves the existing loss basis. The sourced
+`tests/fixtures/ftmo-swing-offline.json` exercises a balance anchor with equity
+loss limits in Python and native Rust. It is a synthetic conformance fixture,
+not a complete firm preset, market backtest or deployed runtime change.
+
+For Forex history, reuse the licensed QDM CLI and existing cache first; see
+[QDM setup, current local path and bounded export](../docs/quantdatamanager.md).
+The current adapter imports M1 OHLC, not verified tick Bid/Ask. A direct-source
+access challenge does not establish that QDM is unavailable.
 
 Creating a Prop session persists the session and attempt as `running` together;
 there is no second Start action in the chart. Opening an older `ready` attempt

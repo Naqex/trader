@@ -1,12 +1,12 @@
 """Explicit PATH-2 semantic reuse from framework-independent legacy modules."""
 
-from data_contracts import CostModel, DataContractError, InstrumentSpec, NewsEvent, SourceSpec
-from data_costs import calculate_round_trip_cost
-from data_news import visible_events
-from ai_provider import FakeProvider, OfflineProvider
-from ai_service import AIInvalidRequest, AIService
-from evidence_metrics import compute_metrics_v2
-from prop_profile import PropProfileValidationError, evaluate_prop_profile
+from .semantics.data_contracts import CostModel, DataContractError, InstrumentSpec, NewsEvent, SourceSpec
+from .semantics.data_costs import calculate_round_trip_cost
+from .semantics.data_news import visible_events
+from .semantics.ai_provider import FakeProvider, OfflineProvider
+from .semantics.ai_service import AIInvalidRequest, AIService
+from .semantics.evidence_metrics import compute_metrics_v2
+from .semantics.prop_profile import PropProfileValidationError, evaluate_prop_profile
 
 __all__ = [
     "AIInvalidRequest",

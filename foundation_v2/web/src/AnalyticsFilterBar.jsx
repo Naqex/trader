@@ -1,3 +1,4 @@
+import AppIcon from './AppIcon.jsx'
 import { navigate } from './clientNavigation.js'
 import { displayDate } from './dateFormat.js'
 import { useTestingLocale } from './testingLocale.jsx'
@@ -19,6 +20,7 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
   const fixedPropSource = sourceType === 'Prop firm' || live
   const [draft, setDraft] = useState({ ...filters }), [draftExtra, setDraftExtra] = useState({ ...extra })
   const [timezoneNotice, setTimezoneNotice] = useState('')
+  const [validDates, setValidDates] = useState(true)
   const sessionProps = sessionControl?.props
   const [draftSession, setDraftSession] = useState(sessionProps?.value)
   const appliedFilters = JSON.stringify(filters), appliedExtra = JSON.stringify(extra)
@@ -80,6 +82,9 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
   const hasDates = Boolean(filters.from || filters.to), hasTime = Boolean(extra.timeStart || extra.timeEnd)
   const activeFilters = chips.length > 0 || hasDates || hasTime
   const sessionName = sessionProps?.items?.find(item => item.record_id === sessionProps.value)?.name
+  const draftSessionName = sessionProps?.items?.find(item => item.record_id === draftSession)?.name
+  const scopeLabel = t(live ? 'Accounts' : 'Session')
+  const scopeDetail = live || sessionProps?.multiple ? draftSession?.length : draftSessionName
   const invalidDates = draft.from && draft.to && draft.from > draft.to
   return <section className="fxa-filters fxa-analytics-filters" inert={disabled || undefined} aria-disabled={disabled || undefined} aria-label={t('Bộ lọc analytics')} data-testid="analytics-filters">
     <div className="fxa-analytics-filter-row">
@@ -88,13 +93,13 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
       {multi('Side', 'sides', [{ value: 'buy', label: 'Buy' }, { value: 'sell', label: 'Sell' }], 'side', true)}
       {multi('Outcome', 'outcomes', Object.entries(OUTCOMES).map(([value, label]) => ({ value, label })), 'outcome', true)}
       {multi('Tags', 'tagInclude', choices(labelNames), 'tag', false, option => <span className="wm-trade-label" data-color={labels.find(item => item.name === option.value)?.color || 'gray'}>{option.label}</span>)}
-      {sessionControl && React.cloneElement(sessionControl, { value: draftSession, onChange: setDraftSession, triggerContent: live ? t('Accounts') + (draftSession?.length ? ` · ${draftSession.length}` : '') : 'Session', compact: true })}
+      {sessionControl && React.cloneElement(sessionControl, { value: draftSession, onChange: setDraftSession, triggerContent: scopeLabel + (scopeDetail ? ` · ${scopeDetail}` : ''), compact: true })}
       {!fixedPropSource && <FxSelect label="Strategy" triggerContent="Strategy" value={draftExtra.strategy} options={[{ value: 'all', label: 'Tất cả strategies' }, ...choices(unique('playbook_id'))]} searchable onChange={value => changeExtra({ strategy: value })} />}
       {multi('Ngày', 'days', DAYS, 'weekday')}
       {!live && <TimeFilter value={draftExtra} onChange={changeExtra} />}
       <FxSelect className="fxa-timezone-filter" label="Múi giờ" triggerContent={`${t('Múi giờ')} (${timezoneLabel(draftExtra.timezone)})`} value={draftExtra.timezone} localizeOptions={false} searchable options={timezoneOptions} onChange={value => changeExtra({ timezone: value })} />
-      <DateFilter value={draft} onChange={change} label={live ? 'Date range' : 'Ngày đóng lệnh'} title="Lọc ngày đóng lệnh" calendarLabel="Chọn khoảng ngày đóng" />
-      <button type="button" className="fxa-button fxa-apply-button" disabled={Boolean(invalidDates)} onClick={() => apply()}>{t('Apply')}</button>
+      <DateFilter value={draft} onChange={change} onValidityChange={setValidDates} label={live ? 'Date range' : 'Ngày đóng lệnh'} title="Lọc ngày đóng lệnh" calendarLabel="Chọn khoảng ngày đóng" />
+      <button type="button" className="fxa-button fxa-apply-button" disabled={!validDates || Boolean(invalidDates)} onClick={() => apply()}>{t('Apply')}</button>
       <span className="fxa-analytics-filter-status">{statusControl}</span>
       {onExport && <button className="fxa-button fxa-icon-button fxa-export-button" type="button" aria-label={t('Xuất CSV')} disabled={pending} onClick={onExport}><TestingIcon kind="download" size={16} /></button>}
     </div>
@@ -102,9 +107,9 @@ export default function AnalyticsFilterBar({ filters, onChange, extra, onExtra, 
     {timezoneNotice && <p role="status">{timezoneNotice}</p>}
     {(sessionName || activeFilters) && <div className="fxa-filter-chips" aria-label={t('Bộ lọc đã áp dụng')}>
       {sessionName && <span className="fxa-filter-chip" data-tooltip={sessionName}>{t('Session')} · {sessionName}</span>}
-      {chips.map(([key, label, value, server]) => <button key={key} type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => apply(server ? { ...filters, [key]: 'all' } : filters, server ? extra : { ...extra, [key]: DEFAULT_EXTRA_FILTERS[key] }, sessionProps?.value)}><span>{t(label)} · {describe(key, value)}</span><span aria-hidden="true">×</span></button>)}
-      {hasTime && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc Giờ')} onClick={() => apply(filters, { ...extra, timeStart: '', timeEnd: '', hour: 'all' }, sessionProps?.value)}>{t('Time')} · {extra.timeStart || '00:00'}–{extra.timeEnd || '23:59'}<span aria-hidden="true">×</span></button>}
-      {hasDates && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc ngày đóng lệnh')} onClick={() => apply({ ...filters, from: '', to: '' }, extra, sessionProps?.value)}>{filters.from ? displayDate(filters.from) : '…'} → {filters.to ? displayDate(filters.to) : '…'}<span aria-hidden="true">×</span></button>}
+      {chips.map(([key, label, value, server]) => <button key={key} type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc {label}', { label: t(label) })} onClick={() => apply(server ? { ...filters, [key]: 'all' } : filters, server ? extra : { ...extra, [key]: DEFAULT_EXTRA_FILTERS[key] }, sessionProps?.value)}><span>{t(label)} · {describe(key, value)}</span><span aria-hidden="true"><AppIcon name="close" size={16} /></span></button>)}
+      {hasTime && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc Giờ')} onClick={() => apply(filters, { ...extra, timeStart: '', timeEnd: '', hour: 'all' }, sessionProps?.value)}>{t('Time')} · {extra.timeStart || '00:00'}–{extra.timeEnd || '23:59'}<span aria-hidden="true"><AppIcon name="close" size={16} /></span></button>}
+      {hasDates && <button type="button" className="fxa-filter-chip" aria-label={t('Bỏ lọc ngày đóng lệnh')} onClick={() => apply({ ...filters, from: '', to: '' }, extra, sessionProps?.value)}>{filters.from ? displayDate(filters.from) : '…'} → {filters.to ? displayDate(filters.to) : '…'}<span aria-hidden="true"><AppIcon name="close" size={16} /></span></button>}
       {activeFilters && <button type="button" className="fxa-clear-filters" onClick={() => apply({ ...filters, side: 'all', outcome: 'all', from: '', to: '' }, { ...DEFAULT_EXTRA_FILTERS, timezone }, sessionProps?.value)}><TestingIcon kind="delete" size={16} />{t('Clear filters')}</button>}
     </div>}
   </section>

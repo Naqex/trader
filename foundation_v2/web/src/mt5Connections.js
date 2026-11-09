@@ -1,3 +1,4 @@
+import { ownerFetch } from './ownerSession.js'
 export const MT5_STATUS = {
   queued:'Đang chờ đồng bộ', syncing:'Đang đồng bộ', connected:'Đã kết nối',
   error:'Lỗi kết nối', paused:'Đã tạm dừng', disconnected:'Đã ngắt kết nối',
@@ -46,11 +47,12 @@ export async function syncMt5Connections(workspace, connections, request = mt5Re
 export async function mt5Request(workspace, path, body) {
   let response
   try {
-    response = await fetch(`/api/v2/live/connections${path}`, {
+    response = await ownerFetch(`/api/v2/live/connections${path}`, {
       method:'POST', headers:{'X-Workspace-Id':workspace,'Content-Type':'application/json'},
       body:body ? JSON.stringify(body) : undefined, signal:AbortSignal.timeout(20000),
     })
-  } catch {
+  } catch (failure) {
+    if (failure?.outcomeKnown === true) { failure.uncertain = false; throw failure }
     const error = new Error('Chưa xác nhận được kết quả. Bấm thử lại để kiểm tra cùng yêu cầu.'); error.uncertain=true; throw error
   }
   const value = await response.json().catch(() => null)

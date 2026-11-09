@@ -24,7 +24,7 @@ def main():
     args = parser.parse_args()
     sources = [API / 'src/mt5_connector.rs', API / 'tests/mt5_connections_pg.rs', V2 / 'scripts/mt5_connector.py', Path(__file__),
                API / 'src/lib.rs', API / 'src/commands.rs', API / 'src/rust_runtime.rs',
-               API / 'src/native_mutation.rs',
+               API / 'src/native_mutation.rs', API / 'src/demo_trading.rs',
                V2 / 'migrations/0009_mt5_connections.sql']
     fingerprints = {str(path.relative_to(V2)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
     with tempfile.TemporaryDirectory(prefix='mt5-connections-fixture-') as directory:

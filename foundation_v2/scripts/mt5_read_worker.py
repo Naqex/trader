@@ -63,6 +63,10 @@ def collect(args):
         raise RuntimeError('mt5_disconnected')
     if account.server != args.server or account.trade_mode != 0:
         raise RuntimeError('mt5_account_scope_denied')
+    if account.server == 'FTMO-Demo' and args.command != 'snapshot':
+        # This legacy exporter has a separate UTC file contract, not the live
+        # adapter's broker-clock decoder. Never mislabel server-local history.
+        raise RuntimeError('mt5_export_clock_not_supported')
     key = account_key(account)
     if args.account_key and key != args.account_key:
         raise RuntimeError('mt5_account_changed')

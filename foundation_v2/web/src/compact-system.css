@@ -7,7 +7,7 @@
   --wm-action-bg:var(--project-primary); --wm-action-hover:var(--project-primary-hover); --wm-on-primary:var(--project-on-primary);
 }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.wm-button.is-success) {
-  --wm-action-bg:var(--project-positive); --wm-action-hover:color-mix(in srgb, var(--project-positive) 85%, var(--project-text)); --wm-on-primary:var(--project-on-primary);
+  --wm-action-bg:var(--wm-success-solid); --wm-action-hover:color-mix(in srgb, var(--project-positive) 85%, var(--project-text)); --wm-on-primary:var(--wm-on-success);
 }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.rs-field, .rd-field, .prop-field, .risk-form, .trade-init-form, .trade-draft-form, .settings-appearance-form, .quick-session-fields) :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea):not(:where(.fx-select-menu > input, .fxa-session-menu > input, .quick-session-balance > input)),
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field {
@@ -15,7 +15,7 @@
   font-size:var(--wm-text-control); line-height:var(--ds-line-control);
 }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field {
-  padding:7px 12px; border:1px solid var(--wm-control-border); background:transparent; color:var(--wm-content); font-family:inherit;
+  padding:var(--wm-field-padding-block,7px) 12px; border:1px solid var(--wm-control-border); background:transparent; color:var(--wm-content); font-family:inherit;
 }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field:hover:not(:disabled):not(:focus) { border-color:var(--wm-control-hover-border); }
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-balance input { border-radius:0; }
@@ -23,24 +23,27 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-field:focus-visible { outline:none; box-shadow:none; border-color:var(--wm-focus); }
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-select-trigger:focus-visible,
 .fx-app.fx-shell-story[data-theme] .fx-content .quick-session-dialog .quick-session-field .fx-select .fx-select-trigger:focus-visible { outline:none; box-shadow:none; border-color:transparent; background:var(--wm-hover); }
-/* Native fields and menu marks share one drawing; their original input/ARIA behavior remains. */
-.fx-app.fx-shell-story[data-theme] .fx-content :is(input[type=checkbox]:not([role=switch]),.fx-select-checkbox) {
+/* The highlight shade darkens in light mode; its mark needs its own paired foreground. */
+.fx-app.fx-shell-story[data-theme], .wm-ui-portal[data-theme] { --wm-on-check:#121212; }
+.fx-app.fx-shell-story[data-theme=light], .wm-ui-portal[data-theme=light] { --wm-on-check:#FFFFFF; }
+/* Native fields and menu marks share one drawing inside the shell and portals. */
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) :is(input[type=checkbox]:not([role=switch]),.fx-select-checkbox) {
   appearance:none; position:relative; display:inline-block; box-sizing:border-box;
   width:16px; height:16px; min-width:16px; min-height:16px; flex:0 0 16px;
   margin:0; padding:0; border:1px solid var(--wm-control-hover-border); border-radius:2px;
-  background:var(--wm-canvas); font-size:0; vertical-align:middle;
+  background:var(--wm-canvas,var(--project-canvas)); font-size:0; vertical-align:middle;
   transition:background-color var(--ds-motion-hover) var(--ds-ease-standard),border-color var(--ds-motion-hover) var(--ds-ease-standard);
 }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(input[type=checkbox]:not([role=switch]):checked,input[type=checkbox]:not([role=switch]):indeterminate,.fx-select-checkbox.is-checked,.fx-select-checkbox.is-mixed) {
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) :is(input[type=checkbox]:not([role=switch]):checked,input[type=checkbox]:not([role=switch]):indeterminate,.fx-select-checkbox.is-checked,.fx-select-checkbox.is-mixed) {
   background:var(--project-highlight); border-color:var(--project-highlight);
 }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(input[type=checkbox]:not([role=switch]):checked,.fx-select-checkbox.is-checked)::after {
-  content:''; position:absolute; inset:2px; background:var(--project-on-action);
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) :is(input[type=checkbox]:not([role=switch]):checked,.fx-select-checkbox.is-checked)::after {
+  content:''; position:absolute; inset:2px; background:var(--wm-on-check);
   mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='m2 6 2.5 2.5L10 3' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat;
 }
-.fx-app.fx-shell-story[data-theme] .fx-content :is(input[type=checkbox]:not([role=switch]):indeterminate,.fx-select-checkbox.is-mixed)::after { content:''; position:absolute; inset:6px 3px; background:var(--project-on-action); border-radius:1px; }
-.fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):disabled { opacity:1; background:var(--project-control); border-color:var(--project-disabled); }
-.fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):disabled::after { background:var(--project-disabled); }
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) :is(input[type=checkbox]:not([role=switch]):indeterminate,.fx-select-checkbox.is-mixed)::after { content:''; position:absolute; inset:6px 3px; background:var(--wm-on-check); border-radius:1px; }
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) :is(input[type=checkbox]:not([role=switch]):disabled,button:disabled .fx-select-checkbox) { opacity:1; background:var(--project-control); border-color:var(--project-disabled); }
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) :is(input[type=checkbox]:not([role=switch]):disabled,button:disabled .fx-select-checkbox)::after { background:var(--project-disabled); }
 /* Disabled content stays legible on near-black surfaces without dimming its box. */
 .fx-app.fx-shell-story[data-theme] .fx-content :is(button,input,select,textarea):disabled,
 .wm-ui-portal :is(button,input,select,textarea):disabled {
@@ -52,21 +55,21 @@
 .wm-ui-portal :is(input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea):disabled {
   background:var(--project-control); -webkit-text-fill-color:var(--project-disabled);
 }
-.fx-app.fx-shell-story[data-theme] .fx-content input[type=checkbox]:not([role=switch]):focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; box-shadow:none; }
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) input[type=checkbox]:not([role=switch]):focus-visible { outline:2px solid var(--wm-focus); outline-offset:2px; box-shadow:none; }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs { min-height:var(--ds-nav); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-select-check, .dataset-asset-check) { color:var(--project-highlight); }
-.fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button { min-height:var(--wm-control-height); padding:7px 12px; line-height:20px; font-weight:500; }
+.fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button { min-height:var(--wm-control-height); padding:var(--wm-field-padding-block,7px) 12px; line-height:20px; font-weight:500; }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button:hover:not(:disabled) { background:transparent; color:var(--wm-content); }
 .fx-app.fx-shell-story[data-theme] .fx-content .prop-tabs button[aria-selected=true] { color:var(--wm-content); }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-button.is-text {
   padding-inline:0; border:0; border-radius:0; background:transparent; color:var(--project-primary);
 }
 .fx-app.fx-shell-story[data-theme] .fx-content .wm-button.is-text:hover:not(:disabled) { background:transparent; text-decoration:underline; }
-.fx-app.fx-shell-story[data-theme] .fx-content .wm-button.is-icon {
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) .wm-button.is-icon {
   width:var(--wm-icon-action-size); height:var(--wm-icon-action-size); min-height:var(--wm-icon-action-size); padding:0; border-radius:50%; flex:0 0 var(--wm-icon-action-size);
 }
-.fx-app.fx-shell-story[data-theme] .fx-content .wm-button > svg { display:block; width:var(--ds-icon); height:var(--ds-icon); flex:0 0 var(--ds-icon); }
-.fx-app.fx-shell-story[data-theme] .fx-content .wm-button.is-icon > svg { width:var(--ds-icon-small); height:var(--ds-icon-small); flex-basis:var(--ds-icon-small); }
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) .wm-button > svg { display:block; width:var(--ds-icon); height:var(--ds-icon); flex:0 0 var(--ds-icon); }
+:is(.fx-app.fx-shell-story[data-theme] .fx-content,.wm-ui-portal) .wm-button.is-icon > svg { width:var(--ds-icon-small); height:var(--ds-icon-small); flex-basis:var(--ds-icon-small); }
 /* Shared icon/text alignment: keep the hit box and text baseline stable, then
    center the drawable glyph inside its fixed box for optical balance. */
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fxa-button,.fxr-button,.ja-button,.rs-button,.rd-button,.as-primary-button,.as-secondary-button):has(> svg) { display:inline-flex; align-items:center; }
@@ -76,7 +79,7 @@
 .fx-app.fx-shell-story[data-theme] .fx-content .fx-dashboard-chart-panel h3 { font-size:var(--ds-font-section); margin-bottom:var(--ds-space-6); }
 .fx-app.fx-shell-story[data-theme] .fx-content :is(.fx-dashboard-chart-axis,.fx-dashboard-month-label,.fx-dashboard-symbol-axis,.fxa-curve-axis) { font-size:var(--ds-font-meta); color:var(--wm-content-muted); }
 .fx-app.fx-shell-story[data-theme] :is(.fx-select-menu, .fxa-session-menu, .fx-filter-popover, .data-library-action-menu) {
-  border-radius:var(--ds-radius-menu); animation:wm-menu-enter var(--ds-motion-menu) var(--ds-ease-enter);
+  border:0; border-radius:var(--ds-radius-menu); animation:wm-menu-enter var(--ds-motion-menu) var(--ds-ease-enter);
 }
 .fx-app.fx-shell-story[data-theme] :is(.quick-session-dialog, .data-library-dialog, .fxs-action-dialog, .fxa-trade-inspector)[open] {
   animation:wm-overlay-enter var(--ds-motion-dialog) var(--ds-ease-enter);
