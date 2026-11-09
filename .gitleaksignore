@@ -1,6 +1,10 @@
 # Reviewed historical false positives: source hashes, API run IDs, environment names,
 # public error-code identifiers and deterministic offline idempotency fixtures.
 # Exact commit/file/rule/line fingerprints only; no path-wide or rule-wide suppression.
+# Reviewed API binary SHA256s and a runtime run ID; none is an authentication secret.
+0b980948874c77f5fab52f667e952d134dec432a:foundation_v2/evidence/owner-system-audit-20261031/ACCOUNT-LIFECYCLE-20261103.md:generic-api-key:59
+354f7d4fb6bd10f25084ae2dd2fbcd4ee70c2bbd:foundation_v2/evidence/trade-panel-parity-20261030/RECEIPT.md:generic-api-key:91
+f8f97427498b4511db4f5b770bb21671d70aca25:foundation_v2/evidence/trade-note-blocks-20261030/RECEIPT.md:generic-api-key:70
 0295be4d383f1a5d0db6850d26ba57c4f6ac0c1e:foundation_v2/evidence/dukascopy-catalog-20261008/independent/review.json:generic-api-key:1216
 0295be4d383f1a5d0db6850d26ba57c4f6ac0c1e:foundation_v2/evidence/dukascopy-catalog-20261008/independent/review.json:generic-api-key:1219
 05c1da655bb3933fb4c58286aa25af206d5b5c1e:foundation_v2/evidence/analytics-performance-20261028/RECEIPT.md:generic-api-key:20

@@ -16,7 +16,11 @@ use chrono::{DateTime, SecondsFormat, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{collections::{HashMap, HashSet}, str::FromStr, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+    sync::Arc,
+};
 use tokio_postgres::{Row, Transaction};
 use uuid::Uuid;
 
@@ -137,21 +141,47 @@ struct NoteTrade {
 }
 
 fn note_metadata(note: &Note) -> bool {
-    let date = |s: &str| s.len() == 10 && chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").is_ok_and(|date| date.format("%Y-%m-%d").to_string() == s);
+    let date = |s: &str| {
+        s.len() == 10
+            && chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                .is_ok_and(|date| date.format("%Y-%m-%d").to_string() == s)
+    };
     let range = match (&note.review_from, &note.review_to, &note.review_timezone) {
         (None, None, None) => true,
-        (Some(from), Some(to), Some(zone)) => date(from) && date(to) && from <= to && zone.parse::<chrono_tz::Tz>().is_ok(),
+        (Some(from), Some(to), Some(zone)) => {
+            date(from) && date(to) && from <= to && zone.parse::<chrono_tz::Tz>().is_ok()
+        }
         _ => false,
     };
-    range && note.note_type.as_deref().is_none_or(crate::note_types::valid_id)
-        && note.note_document.as_ref().is_none_or(|doc| crate::note_library::document_ok(doc) && crate::note_library::document_text(doc) == note.note)
+    range
+        && note
+            .note_type
+            .as_deref()
+            .is_none_or(crate::note_types::valid_id)
+        && note.note_document.as_ref().is_none_or(|doc| {
+            crate::note_library::document_ok(doc)
+                && crate::note_library::document_text(doc) == note.note
+        })
         && note.linked_trades.len() <= 500
         && note.linked_trades.iter().all(|link| {
             if let Some(id) = link.account_id.strip_prefix("broker:") {
-                Uuid::parse_str(id).is_ok_and(|uuid| uuid.to_string() == id) && link.trade_id.strip_prefix("position:").and_then(|id| id.parse::<u64>().ok()).is_some_and(|id| id > 0 && format!("position:{id}") == link.trade_id)
-            } else { Uuid::parse_str(&link.account_id).is_ok() && Uuid::parse_str(&link.trade_id).is_ok() }
+                Uuid::parse_str(id).is_ok_and(|uuid| uuid.to_string() == id)
+                    && link
+                        .trade_id
+                        .strip_prefix("position:")
+                        .and_then(|id| id.parse::<u64>().ok())
+                        .is_some_and(|id| id > 0 && format!("position:{id}") == link.trade_id)
+            } else {
+                Uuid::parse_str(&link.account_id).is_ok() && Uuid::parse_str(&link.trade_id).is_ok()
+            }
         })
-        && note.linked_trades.iter().map(|l| (&l.account_id, &l.trade_id)).collect::<HashSet<_>>().len() == note.linked_trades.len()
+        && note
+            .linked_trades
+            .iter()
+            .map(|l| (&l.account_id, &l.trade_id))
+            .collect::<HashSet<_>>()
+            .len()
+            == note.linked_trades.len()
 }
 
 fn text(value: &str, maximum: usize, required: bool, multiline: bool) -> bool {
@@ -383,7 +413,10 @@ async fn linked_trade_references(
     links: &[Value],
     previous: &[Value],
 ) -> Result<(), ApiError> {
-    let added: Vec<_> = links.iter().filter(|link| !previous.contains(link)).collect();
+    let added: Vec<_> = links
+        .iter()
+        .filter(|link| !previous.contains(link))
+        .collect();
     let mut connections = HashSet::new();
     let mut manual_ids = HashSet::new();
     for link in &added {
@@ -418,15 +451,31 @@ async fn linked_trade_references(
         let trade = link["trade_id"].as_str().unwrap();
         if let Some(id) = account.strip_prefix("broker:") {
             let connection = Uuid::parse_str(id).unwrap();
-            let position = trade.strip_prefix("position:").unwrap().parse::<u64>().unwrap();
-            if !broker_positions.get(&connection).is_some_and(|ids| ids.contains(&position)) {
-                return Err(ApiError::detail(StatusCode::NOT_FOUND, "label_trade_not_found"));
+            let position = trade
+                .strip_prefix("position:")
+                .unwrap()
+                .parse::<u64>()
+                .unwrap();
+            if !broker_positions
+                .get(&connection)
+                .is_some_and(|ids| ids.contains(&position))
+            {
+                return Err(ApiError::detail(
+                    StatusCode::NOT_FOUND,
+                    "label_trade_not_found",
+                ));
             }
         } else {
-            if !manual.get(account).is_some_and(|(kind, _)| kind == "account") {
+            if !manual
+                .get(account)
+                .is_some_and(|(kind, _)| kind == "account")
+            {
                 return Err(invalid("live_account_not_found"));
             }
-            if !manual.get(trade).is_some_and(|(kind, parent)| kind == "trade" && parent.as_deref() == Some(account)) {
+            if !manual
+                .get(trade)
+                .is_some_and(|(kind, parent)| kind == "trade" && parent.as_deref() == Some(account))
+            {
                 return Err(invalid("live_note_trade_not_found"));
             }
         }
@@ -538,9 +587,15 @@ async fn execute(
     };
     references(tx, &scope.workspace_id, &payload).await?;
     if kind == "note" {
-        if let Some(id) = payload["note_type"].as_str().filter(|id| id.starts_with("custom_")) {
+        if let Some(id) = payload["note_type"]
+            .as_str()
+            .filter(|id| id.starts_with("custom_"))
+        {
             let types = crate::note_types::catalog(tx, &scope.workspace_id).await?;
-            if !types["items"].as_array().unwrap().iter().any(|item| item["id"] == id && (item["archived"] != true || previous_type.as_deref() == Some(id))) {
+            if !types["items"].as_array().unwrap().iter().any(|item| {
+                item["id"] == id
+                    && (item["archived"] != true || previous_type.as_deref() == Some(id))
+            }) {
                 return Err(invalid("note_type_not_found"));
             }
         }
@@ -600,16 +655,35 @@ mod tests {
     fn review_notes_preserve_document_and_validate_metadata() {
         let doc = json!({"format":"blocknote","version":1,"blocks":[{"type":"heading","content":[{"type":"text","text":"Review","styles":{"bold":true}}]},{"type":"table","content":{"type":"tableContent","rows":[{"cells":[[{"type":"text","text":"a"}],{"type":"tableCell","content":"b"}]}]}},{"type":"paragraph","content":"","children":[{"type":"paragraph","content":"Child"}]}]});
         let body = json!({"title":"Review","note":"Review\na\tb\nChild","note_document":doc,"note_type":"weekly_review","review_from":"2026-10-01","review_to":"2026-10-30","review_timezone":"Asia/Ho_Chi_Minh"});
-        let valid = validate("note",body.clone()).unwrap();
-        assert_eq!(valid["note_document"],body["note_document"]);
-        for (field,value) in [("note",json!("wrong")),("note_type",json!("made_up")),("review_from",json!("2026-02-30")),("review_to",json!("2026-09-01")),("review_timezone",json!("bad")),("linked_trades",json!([{"account_id":"bad","trade_id":"bad"}]))] {
-            let mut bad=body.clone();bad[field]=value;
-            assert!(validate("note",bad).is_err(),"{field}");
+        let valid = validate("note", body.clone()).unwrap();
+        assert_eq!(valid["note_document"], body["note_document"]);
+        for (field, value) in [
+            ("note", json!("wrong")),
+            ("note_type", json!("made_up")),
+            ("review_from", json!("2026-02-30")),
+            ("review_to", json!("2026-09-01")),
+            ("review_timezone", json!("bad")),
+            (
+                "linked_trades",
+                json!([{"account_id":"bad","trade_id":"bad"}]),
+            ),
+        ] {
+            let mut bad = body.clone();
+            bad[field] = value;
+            assert!(validate("note", bad).is_err(), "{field}");
         }
-        let mut bad=body.clone();bad["note_document"]["blocks"][0]["type"]=json!("script");assert!(validate("note",bad).is_err());
-        let link=json!({"account_id":format!("broker:{}",Uuid::new_v4()),"trade_id":"position:123"});
-        let mut bad=body.clone();bad["linked_trades"]=json!([link.clone(),link.clone()]);assert!(validate("note",bad).is_err());
-        let mut bad=body;bad["linked_trades"]=json!([{ "trade_id":"position:00123", "account_id":link["account_id"] }]);assert!(validate("note",bad).is_err());
+        let mut bad = body.clone();
+        bad["note_document"]["blocks"][0]["type"] = json!("script");
+        assert!(validate("note", bad).is_err());
+        let link =
+            json!({"account_id":format!("broker:{}",Uuid::new_v4()),"trade_id":"position:123"});
+        let mut bad = body.clone();
+        bad["linked_trades"] = json!([link.clone(), link.clone()]);
+        assert!(validate("note", bad).is_err());
+        let mut bad = body;
+        bad["linked_trades"] =
+            json!([{ "trade_id":"position:00123", "account_id":link["account_id"] }]);
+        assert!(validate("note", bad).is_err());
     }
     #[test]
     fn accounts_notes_and_strategy_pairs_are_typed() {

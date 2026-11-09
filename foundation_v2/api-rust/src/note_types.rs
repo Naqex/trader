@@ -5,14 +5,14 @@ use crate::{
     state::AppState,
 };
 use axum::{
+    Json, Router,
     extract::{OriginalUri, State},
     http::{HeaderMap, StatusCode},
     response::Response,
     routing::get,
-    Json, Router,
 };
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::{collections::HashSet, sync::Arc};
 use tokio_postgres::{GenericClient, Transaction};
 use uuid::Uuid;
