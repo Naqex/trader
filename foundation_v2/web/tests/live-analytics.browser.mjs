@@ -19,7 +19,7 @@ const origin = `http://127.0.0.1:${port}`
 let browser, output = ''
 preview.stdout.on('data', data => { output += data })
 preview.stderr.on('data', data => { output += data })
-const report = {scope:'Synthetic manual journal; external requests and every API write blocked',cases:[],errors:[],mutations:[]}
+const report = {scope:'Synthetic manual journal; session discovery mocked; external requests and domain writes blocked',cases:[],errors:[],mutations:[]}
 try {
   for (let i=0;;i++) {
     try { if ((await fetch(origin)).ok) break } catch {}
@@ -41,6 +41,10 @@ try {
       const request=route.request(),url=new URL(request.url())
       if(url.origin!==origin && !['blob:','data:'].includes(url.protocol)) return route.abort()
       if(!url.pathname.startsWith('/api/'))return route.continue()
+      if(url.pathname==='/api/v2/auth/local/session' && request.method()==='POST') {
+        assert.equal(request.postData(),'{}')
+        return route.fulfill({json:{mode:'local-trusted-identity'}})
+      }
       if(request.method()!=='GET'){report.mutations.push(url.pathname);return route.abort()}
       if(url.pathname==='/api/v2/live/status')return route.fulfill({json:{status:'unavailable',connections:[]}})
       if(url.pathname==='/api/v2/live/records') {
@@ -49,6 +53,7 @@ try {
         return route.fulfill({json:{version:'live-records-v1',items}})
       }
       if(url.pathname==='/api/v2/trade-labels')return route.fulfill({json:{schema_version:'trade-labels-v1',items:[{id:'london',name:'London',color:'purple'},{id:'ny',name:'New York',color:'blue'}]}})
+      if(url.pathname==='/api/v2/trade-groups')return route.fulfill({json:{version:'trade-groups-v1',revision:0,items:[]}})
       return route.fulfill({json:{items:[],sessions:[],datasets:[],accounts:[],connections:[],total:0}})
     })
     const href=section=>`${origin}/?workspace=fixture&view=live&area=live&section=${section}&lang=${lang}&live_account=${fixtureAccount}`
@@ -64,10 +69,12 @@ try {
     assert.match(await london.locator('strong').textContent(),/3/)
     assert.match(await london.locator('.live-tag-results > span').textContent(),/50/)
     if(width===1920 && theme==='dark')await page.screenshot({path:path.join(out,'readme-trades.png')})
-    const gear=overview.getByRole('button')
-    assert.equal(await gear.getAttribute('aria-disabled'),'true')
-    await gear.press('Enter')
-    assert.equal(await page.getByRole('dialog').count(),0)
+    const gear=overview.getByRole('link')
+    const settingsUrl=new URL(await gear.getAttribute('href'),origin)
+    assert.equal(settingsUrl.origin,origin)
+    assert.equal(settingsUrl.searchParams.get('workspace'),'fixture')
+    assert.equal(settingsUrl.searchParams.get('view'),'settings')
+    assert.equal(settingsUrl.searchParams.get('settings_tab'),'labels')
     const controls=panel.locator('.live-analytics-controls'), select=controls.locator('.fx-select-trigger')
     await select.click()
     await page.getByRole('option',{name:lang==='vi'?'Phần trăm':'Percentage',exact:true}).click()
@@ -85,6 +92,7 @@ try {
     const style=await london.evaluate(element=>({radius:getComputedStyle(element).borderRadius,bottom:getComputedStyle(element).borderBottomWidth,left:getComputedStyle(element).borderLeftWidth}))
     assert.deepEqual(style,{radius:'0px',bottom:'1px',left:'0px'})
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No document overflow')
+    assert.equal(await page.getByText('Dữ liệu nhóm giao dịch không hợp lệ.',{exact:true}).count(),0)
     await page.screenshot({path:path.join(out,`${theme}-${width}-${lang}.png`),fullPage:true})
     await page.goto(href('calendar'),{waitUntil:'networkidle'})
     await page.locator('.live-analytics-controls').waitFor()
