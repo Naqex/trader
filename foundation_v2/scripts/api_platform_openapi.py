@@ -214,6 +214,19 @@ def extend_local_capabilities(schema, operation, json_response):
         body={'type':'object','additionalProperties':False,'required':['request_id'],
             'properties':{'request_id':uid,'connection_id':uid}},security=automation+owner,
         description='Native read-only reconciliation for a request owned by this grant; no order_send. Does not restore send rights after expiry or reconnect.')}
+    schema['paths']['/api/v2/automation/trading/snapshot']={'get':{
+        'summary':'Read the grant-bound Demo account snapshot and closed-bar inputs',
+        'operationId':'automation_trading_snapshot',
+        'description':'Automation credential only. Fixed H1 and at most 300 native Bid bars. Account/generation/symbol fenced; no grant renewal or send authority. Reads remain available after expiry/revocation. Other-symbol exposure is represented by a flag. Forming bars are not qualified as closed inputs.',
+        'parameters':[{'name':'symbol','in':'query','required':True,
+            'schema':{'type':'string','maxLength':64}}],
+        'responses':{
+            '200':{'description':'Native broker snapshot with grant and source binding'},
+            '403':{'description':'Automation credential or scope denied'},
+            '423':{'description':'Account/generation no longer matches'},
+            '503':{'description':'Broker snapshot unavailable'},
+        },
+    }}
     schema['paths']['/api/v2/auth/local/bootstrap']={'post':native('local_owner_bootstrap',scoped=False,
         body={'type':'object','additionalProperties':False,'required':['nonce'],
             'properties':{'nonce':{'type':'string','minLength':43,'maxLength':256}}},

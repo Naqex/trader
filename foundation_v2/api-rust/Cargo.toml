@@ -27,8 +27,8 @@ futures-util = { version = "0.3", default-features = false, features = ["std"] }
 subtle = "2"
 form_urlencoded = "1"
 percent-encoding = "2"
-jsonschema = { version = "=0.58.6", default-features = false }
-bigdecimal = "=0.4.10"
+jsonschema = { version = "=0.60.2", default-features = false }
+bigdecimal = "=0.4.11"
 num-bigint = "0.4"
 csv = "=1.4.0"
 chrono-tz = "=0.10.4"
@@ -36,7 +36,7 @@ parquet = { version = "=59.3.0", default-features = false, features = ["snap", "
 reqwest = { version = "=0.12.28", default-features = false, features = ["json", "rustls-tls"] }
 getrandom = "=0.4.3"
 base64 = "=0.22.1"
-rmcp = { version = "=3.7.0", default-features = false, features = ["client", "transport-streamable-http-client-reqwest"] }
+rmcp = { version = "=3.8.0", default-features = false, features = ["client", "transport-streamable-http-client-reqwest"] }
 reqwest-mcp = { package = "reqwest", version = "=0.13.2", default-features = false, features = ["json", "stream"] }
 
 [target.'cfg(windows)'.dependencies]

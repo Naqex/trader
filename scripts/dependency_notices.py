@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SUPPLEMENTAL = {
     ("jsonschema-regex", "0.58.6"): "jsonschema-MIT.txt",
     ("jsonschema-value", "0.58.6"): "jsonschema-MIT.txt",
+    ("jsonschema-regex", "0.60.2"): "jsonschema-MIT.txt",
+    ("jsonschema-value", "0.60.2"): "jsonschema-MIT.txt",
     ("uuid-simd", "0.8.0"): "simd-MIT.txt",
     ("vsimd", "0.8.0"): "simd-MIT.txt",
     ("fancy-canvas", "2.1.0"): "fancy-canvas-MIT.txt",

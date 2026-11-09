@@ -37,10 +37,16 @@ fn open_unlinked_file(path: &Path) -> Result<File, String> {
     #[cfg(windows)]
     {
         use std::os::windows::fs::OpenOptionsExt;
-        use windows_sys::Win32::Storage::FileSystem::FILE_FLAG_OPEN_REPARSE_POINT;
+        use windows_sys::Win32::Storage::FileSystem::{
+            FILE_FLAG_OPEN_REPARSE_POINT, FILE_SHARE_DELETE, FILE_SHARE_READ,
+        };
         // Inspect the named object itself, rather than following a substituted
         // final-component link between enumeration and opening the file.
-        options.custom_flags(FILE_FLAG_OPEN_REPARSE_POINT);
+        // USNs describe completed changes. Reject an existing writer and keep
+        // new writers out while checking the generation and reading its bytes.
+        options
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_DELETE);
     }
     #[cfg(not(windows))]
     regular(path, false)?;
@@ -361,7 +367,16 @@ mod tests {
         std::fs::create_dir(&root).unwrap();
         let path = root.join("file");
         std::fs::write(&path, b"x").unwrap();
-        let identity = reliable_file_identity(&File::open(&path).unwrap()).unwrap();
+        let Some(identity) = reliable_file_identity(&File::open(&path).unwrap()) else {
+            // Unsupported volumes must not populate a content cache at all.
+            let cache = Mutex::new(HashMap::new());
+            let (_, stats) =
+                tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
+            assert_eq!(stats.read_bytes, 2);
+            assert!(cache.lock().unwrap().is_empty());
+            std::fs::remove_dir_all(root).unwrap();
+            return;
+        };
         let cache = Mutex::new(
             (0..MAX_CACHED_FILES)
                 .map(|index| {
@@ -398,15 +413,16 @@ mod tests {
         let path = root.join("compiled.pyd");
         std::fs::write(&path, b"original").unwrap();
         let cache = Mutex::new(HashMap::new());
+        let cache_supported = reliable_file_identity(&File::open(&path).unwrap()).is_some();
         let (initial, cold) =
             tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
         let (warm, warm_bytes) =
             tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
         assert_eq!(initial, warm);
-        assert_eq!(cold.read_bytes, 8);
+        assert_eq!(cold.read_bytes, if cache_supported { 8 } else { 16 });
         assert_eq!(cold.cache_misses, 1);
-        assert_eq!(warm_bytes.read_bytes, 0);
-        assert_eq!(warm_bytes.cache_hits, 1);
+        assert_eq!(warm_bytes.read_bytes, if cache_supported { 0 } else { 16 });
+        assert_eq!(warm_bytes.cache_hits, u64::from(cache_supported));
         let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
         std::fs::write(&path, b"modified").unwrap();
         File::options()
@@ -419,7 +435,8 @@ mod tests {
             tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
         assert_ne!(initial, changed);
         assert_eq!(
-            read.read_bytes, 8,
+            read.read_bytes,
+            if cache_supported { 8 } else { 16 },
             "restoring mtime must not authorize a cache hit"
         );
         std::fs::remove_file(&path).unwrap();
@@ -433,7 +450,7 @@ mod tests {
         let (replaced, read) =
             tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
         assert_ne!(changed, replaced);
-        assert_eq!(read.read_bytes, 8);
+        assert_eq!(read.read_bytes, if cache_supported { 8 } else { 16 });
         std::fs::write(root.join("extra.dll"), b"x").unwrap();
         let (added, _) =
             tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
@@ -499,6 +516,94 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(error, "scientific dependency changed during verification");
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    #[cfg(windows)]
+    #[test]
+    fn dependency_verification_excludes_open_writers() {
+        let root = std::env::temp_dir().join(format!("scientific-writer-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&root).unwrap();
+        let path = root.join("compiled.pyd");
+        std::fs::write(&path, b"original").unwrap();
+        let writer = File::options().write(true).open(&path).unwrap();
+        assert!(open_unlinked_file(&path).is_err());
+        drop(writer);
+        let reader = open_unlinked_file(&path).unwrap();
+        assert!(File::options().write(true).open(&path).is_err());
+        drop(reader);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    #[cfg(windows)]
+    #[test]
+    fn restored_windows_change_time_cannot_reuse_old_content() {
+        use std::os::windows::io::AsRawHandle;
+        #[repr(C)]
+        struct BasicInfo {
+            times: [i64; 4],
+            attributes: u32,
+        }
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn GetFileInformationByHandleEx(
+                handle: *mut std::ffi::c_void,
+                class: i32,
+                data: *mut std::ffi::c_void,
+                size: u32,
+            ) -> i32;
+            fn SetFileInformationByHandle(
+                handle: *mut std::ffi::c_void,
+                class: i32,
+                data: *const std::ffi::c_void,
+                size: u32,
+            ) -> i32;
+        }
+        let root = std::env::temp_dir().join(format!(
+            "scientific-clock-collision-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir(&root).unwrap();
+        let path = root.join("compiled.pyd");
+        std::fs::write(&path, b"original").unwrap();
+        let mut basic = BasicInfo {
+            times: [0; 4],
+            attributes: 0,
+        };
+        let file = File::open(&path).unwrap();
+        assert_ne!(
+            unsafe {
+                GetFileInformationByHandleEx(
+                    file.as_raw_handle(),
+                    0,
+                    &mut basic as *mut _ as _,
+                    std::mem::size_of::<BasicInfo>() as u32,
+                )
+            },
+            0
+        );
+        drop(file);
+        let cache = Mutex::new(HashMap::new());
+        let (before, _) =
+            tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
+        std::fs::write(&path, b"modified").unwrap();
+        let file = File::options().write(true).open(&path).unwrap();
+        // Deterministically model a clock collision, including restored mtime.
+        assert_ne!(
+            unsafe {
+                SetFileInformationByHandle(
+                    file.as_raw_handle(),
+                    0,
+                    &basic as *const _ as _,
+                    std::mem::size_of::<BasicInfo>() as u32,
+                )
+            },
+            0
+        );
+        drop(file);
+        let (after, stats) =
+            tree_with_cache(&root, &|| Ok(()), &cache, reliable_file_identity).unwrap();
+        assert_ne!(before, after);
+        assert_eq!(stats.cache_hits, 0);
+        assert!(stats.read_bytes >= 8);
         std::fs::remove_dir_all(root).unwrap();
     }
     #[test]
