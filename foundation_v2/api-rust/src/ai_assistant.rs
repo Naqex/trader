@@ -17,6 +17,7 @@ use tokio::{io::AsyncReadExt, sync::Mutex};
 
 /// Product transport harness. Public run state and admission live in ai_runs.
 pub struct AiAssistant {
+    integrations_disabled: bool,
     source: PathBuf,
     home: PathBuf,
     bun: PathBuf,
@@ -218,6 +219,9 @@ async fn catalog(
 
 impl AiAssistant {
     pub(crate) async fn validate_selection(&self, selection: &Value) -> Result<(), ApiError> {
+        if self.integrations_disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         selection_shape(selection)?;
         let account = match Provider::parse(selection["provider"].as_str().unwrap())? {
             Provider::Web => self.web_status().await?,
@@ -249,6 +253,9 @@ impl AiAssistant {
         Arc::new(value)
     }
     pub fn from_environment() -> Result<Self, String> {
+        let integrations_disabled = crate::ai_gateway::integrations_disabled(
+            std::env::var_os("TW_AI_INTEGRATIONS_DISABLED").as_deref(),
+        )?;
         let workspace = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .ancestors()
             .nth(4)
@@ -280,6 +287,7 @@ impl AiAssistant {
         )
         .map_err(|_| "invalid TW_AI_PROVIDER")?;
         Ok(Self {
+            integrations_disabled,
             source,
             home,
             bun,
@@ -296,6 +304,9 @@ impl AiAssistant {
         })
     }
     fn token(&self) -> Result<String, ApiError> {
+        if self.integrations_disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         let bytes = std::fs::read(self.home.join("config.json"))
             .map_err(|_| unavailable("chatgpt_profile_unavailable"))?;
         let value: Value =
@@ -313,6 +324,9 @@ impl AiAssistant {
         &self,
         child: &mut Option<owned_process::Child>,
     ) -> Result<(), ApiError> {
+        if self.integrations_disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         if let Some(process) = child {
             if process
                 .try_wait()
@@ -432,6 +446,12 @@ impl AiAssistant {
             .map_err(|_| unavailable("chatgpt_invalid_response"))
     }
     async fn web_status(&self) -> Result<Value, ApiError> {
+        if self.integrations_disabled {
+            return Ok(
+                json!({"status":"unavailable","error":"ai_integrations_disabled",
+                "login_state_present":false,"models":[],"selection":null,"operation":null}),
+            );
+        }
         let mut child = self.child.lock().await;
         if child
             .as_ref()
@@ -486,9 +506,14 @@ impl AiAssistant {
         self.connection(provider, refresh).await
     }
     async fn connection(&self, provider: Provider, refresh: bool) -> Result<Value, ApiError> {
-        let mut value = match provider {
-            Provider::Web => self.web_status().await?,
-            Provider::Gateway => self.gateway.status(refresh).await,
+        let mut value = if self.integrations_disabled {
+            json!({"status":"unavailable","error":"ai_integrations_disabled",
+                "ready":false,"login_state_present":false,"models":[],"selection":null,"operation":null})
+        } else {
+            match provider {
+                Provider::Web => self.web_status().await?,
+                Provider::Gateway => self.gateway.status(refresh).await,
+            }
         };
         if provider == Provider::Web {
             value["ready"] = json!(
@@ -500,7 +525,8 @@ impl AiAssistant {
         value["provider"] = json!(provider.id());
         value["providers"] = json!([{"id":"local-gateway","name":"CLIProxyAPI local"},{"id":"chatgpt-web","name":"ChatGPT Web"}]);
         value["account_scope"] = json!("local-machine");
-        value["capabilities"] = json!({"text":true,"tools":false,"agents":false});
+        value["capabilities"] =
+            json!({"text":!self.integrations_disabled,"tools":false,"agents":false});
         Ok(value)
     }
     async fn account_action(
@@ -509,6 +535,9 @@ impl AiAssistant {
         action: &str,
         body: Value,
     ) -> Result<Value, ApiError> {
+        if self.integrations_disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         if !legacy && action == "provider" {
             if body.as_object().is_none_or(|v| v.len() != 1) {
                 return Err(ApiError::detail(
@@ -536,6 +565,9 @@ impl AiAssistant {
         action: &str,
         body: Value,
     ) -> Result<Value, ApiError> {
+        if self.integrations_disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         if provider == Provider::Gateway
             && self.gateway.busy().await
             && !["cancel", "stop"].contains(&action)
@@ -557,6 +589,9 @@ impl AiAssistant {
         messages: Value,
         context: &Value,
     ) -> Result<reqwest::RequestBuilder, ApiError> {
+        if self.integrations_disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         selection_shape(selection)?;
         let provider = Provider::parse(selection["provider"].as_str().unwrap())?;
         if provider == Provider::Gateway {
@@ -892,6 +927,69 @@ async fn cancel_chat(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn disabled_integrations_never_start_or_read_a_web_account() {
+        let mut service = AiAssistant::from_environment().unwrap();
+        service.integrations_disabled = true;
+        let root = std::env::temp_dir().join(format!("disabled-ai-{}", uuid::Uuid::new_v4()));
+        service.source = root.join("core");
+        service.home = root.join("account");
+        service.bun = root.join("bun.exe");
+        for provider in [Provider::Web, Provider::Gateway] {
+            let state = service.connection(provider, true).await.unwrap();
+            assert_eq!(state["error"], "ai_integrations_disabled");
+            assert_eq!(state["ready"], false);
+            assert_eq!(state["capabilities"]["text"], false);
+            for action in ["start", "login", "refresh", "cancel", "stop"] {
+                assert_eq!(
+                    service
+                        .connection_action(provider, action, json!({}))
+                        .await
+                        .unwrap_err()
+                        .1["detail"],
+                    "ai_integrations_disabled"
+                );
+            }
+            let selection = json!({"provider":provider.id(),"model":"fixture","effort":null});
+            assert_eq!(
+                service.validate_selection(&selection).await.unwrap_err().1["detail"],
+                "ai_integrations_disabled"
+            );
+            assert_eq!(
+                service
+                    .prepare(&selection, json!([]), &json!({}))
+                    .await
+                    .unwrap_err()
+                    .1["detail"],
+                "ai_integrations_disabled"
+            );
+        }
+        assert_eq!(
+            service
+                .account_action(false, "provider", json!({"provider":"local-gateway"}))
+                .await
+                .unwrap_err()
+                .1["detail"],
+            "ai_integrations_disabled"
+        );
+        assert_eq!(
+            service.token().unwrap_err().1["detail"],
+            "ai_integrations_disabled"
+        );
+        assert_eq!(
+            service.call("GET", "", None).await.unwrap_err().1["detail"],
+            "ai_integrations_disabled"
+        );
+        let mut child = None;
+        assert_eq!(
+            service.ensure_started(&mut child).await.unwrap_err().1["detail"],
+            "ai_integrations_disabled"
+        );
+        assert!(child.is_none());
+        assert!(service.child.lock().await.is_none());
+        assert!(!root.exists());
+    }
 
     #[tokio::test]
     async fn explicit_connection_management_never_changes_the_default_provider() {
