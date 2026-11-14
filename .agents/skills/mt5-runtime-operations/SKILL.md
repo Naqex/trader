@@ -12,7 +12,13 @@ account/action; ask only for a missing boundary, not the same approved step twic
 
 ## Establish current ownership
 
-From the product root, inspect Git HEAD/WIP and the current
+Verify `git rev-parse --show-toplevel` resolves to the intended product checkout
+before inspecting or changing files. A linked worktree does not isolate runtime
+state. If Git reports another root or mass deletions, resolve the path mismatch;
+do not reset or restore to make the status clean. For concurrent work, first read
+[source and runtime separation](references/rollout.md#source-and-runtime-separation).
+
+From the verified product root, inspect Git HEAD/WIP and the selected runtime's
 `foundation_v2/.runtime/api-platform/native-owner.json` (or selected profile's
 manifest). Verify PID, creation identity, executable path/hash and current profile.
 Historical receipt ports/binary paths/account IDs are examples, never defaults
@@ -26,10 +32,12 @@ and requested account; do not sync/reconnect merely to test the skill.
 ## Keep the active contract
 
 Use existing `scripts/restart_offline_api.ps1` and
-`foundation_v2/scripts/run_api_platform.py` guards. Preserve explicit profile,
-storage mode, database/artifact roots, download configuration, installed
-scientific/legacy descriptors and optional AI workflow interpreter. Do not
-replace native/compact with launcher compatibility defaults.
+`foundation_v2/scripts/run_api_platform.py` guards. Preserve the selected profile's
+explicit storage mode, database/artifact roots, download configuration and
+capabilities. The isolated worktree profile clears inherited optional worker and
+provider selections and disables ChatGPT Web/gateway integrations; unavailable
+AI is expected there, not a reason to adopt another checkout's credentials or
+services. Do not replace native/compact with launcher compatibility defaults.
 
 Before a requested cutover, check active jobs/downloads/AI runs and unresolved
 broker submissions; save a concrete rollback. Migration additionally needs the
@@ -53,9 +61,15 @@ attempts and recovery. A recovered `connected` state does not prove the root cau
 was fixed or long-duration stability. Link the receipt to existing runtime docs;
 do not create a new plan/ledger.
 
-For strategy evidence or promotion proposals, use workspace
-`tooling/ai-engines/STRATEGY-WORKFLOW.md` and `strategy-qualification` when
-available. Runtime health does not qualify edge. Research/read-only sessions may
+For strategy evidence or promotion proposals, use the supplied dossier and the
+[research contract](../../../foundation_v2/docs/FOREX-RESEARCH.md). When the task
+identifies a workspace, resolve its actual root before reading
+`tooling/ai-engines/STRATEGY-WORKFLOW.md`, `strategy-research`,
+`strategy-qualification` and `evidence-continuity` there. A standalone checkout
+does not require `../../planning`; do not copy workspace skills/plans into it or
+select another active campaign merely to satisfy a relative path. Save findings
+with the current task's evidence owner; missing qualification evidence remains a
+gap, not runtime approval. Runtime health does not qualify edge. Read-only sessions may
 run concurrently; execution on one workspace/server/login retains one existing
 grant owner and account-wide reservations, including unknown submissions.
 Do not create another grant or independent risk guard to multiply that budget.

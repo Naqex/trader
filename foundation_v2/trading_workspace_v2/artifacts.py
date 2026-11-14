@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import hashlib
+import errno
 import json
 import os
 import stat
 from bisect import bisect_right
 from collections import OrderedDict
 from collections.abc import Iterable
+from contextlib import contextmanager
 from pathlib import Path
 from threading import Lock
 from uuid import uuid4
@@ -17,6 +19,14 @@ import pyarrow.parquet as pq
 
 class ArtifactConflict(RuntimeError):
     pass
+
+
+def _io_path(path: Path) -> Path:
+    """Use native Windows long paths for I/O, never for relative manifest keys."""
+    absolute = str(path.absolute())
+    if os.name != "nt" or absolute.startswith("\\\\?\\"):
+        return path
+    return Path("\\\\?\\UNC\\" + absolute[2:] if absolute.startswith("\\\\") else "\\\\?\\" + absolute)
 
 
 def _path_identity(path: Path) -> Path:
@@ -111,37 +121,102 @@ def _file_identity(value: os.stat_result) -> tuple:
     return (value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns, value.st_ctime_ns)
 
 
-def _descriptor_change_time(handle) -> int | None:
+def _descriptor_revision(handle) -> int | tuple[int, int] | None:
     if os.name != 'nt':
         return os.fstat(handle.fileno()).st_ctime_ns
-    # Python's Windows st_ctime is creation time. Native ChangeTime also detects
-    # an in-place edit followed by restoring the original modification time.
+    # Rapid edits can share a ChangeTime even after restoring mtime. The USN
+    # distinguishes closed write episodes; readers deny concurrent writers.
     import ctypes
     import msvcrt
+    import struct
     from ctypes import wintypes
 
     class FileBasicInfo(ctypes.Structure):
         _fields_ = [(name, ctypes.c_longlong) for name in ('created', 'accessed', 'written', 'changed')] + [('attributes', wintypes.DWORD)]
 
     try:
-        query = ctypes.WinDLL('kernel32', use_last_error=True).GetFileInformationByHandleEx
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        query = kernel.GetFileInformationByHandleEx
         query.argtypes = (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD)
         query.restype = wintypes.BOOL
         info = FileBasicInfo()
-        if query(msvcrt.get_osfhandle(handle.fileno()), 0, ctypes.byref(info), ctypes.sizeof(info)):
-            return info.changed if info.changed > 0 else None
+        native = msvcrt.get_osfhandle(handle.fileno())
+        if not query(native, 0, ctypes.byref(info), ctypes.sizeof(info)) or info.changed <= 0:
+            return None
+        control = kernel.DeviceIoControl
+        control.argtypes = (wintypes.HANDLE, wintypes.DWORD, ctypes.c_void_p, wintypes.DWORD,
+                           ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD), ctypes.c_void_p)
+        control.restype = wintypes.BOOL
+        data, count = ctypes.create_string_buffer(2048), wintypes.DWORD()
+        # FSCTL_READ_FILE_USN_DATA defaults to V2. Unsupported volumes use full
+        # verification; this never creates or changes a filesystem journal.
+        if not control(native, 0x000900EB, None, 0, data, len(data), ctypes.byref(count), None):
+            return None
+        length, major, _ = struct.unpack_from('<IHH', data.raw)
+        if major != 2 or not 60 <= length <= count.value:
+            return None
+        usn = struct.unpack_from('<q', data.raw, 24)[0]
+        return (info.changed, usn) if usn > 0 else None
     except (OSError, ValueError, AttributeError):
         pass
     return None
 
 
 def _descriptor_identity(handle) -> tuple:
-    return (*_file_identity(os.fstat(handle.fileno())), _descriptor_change_time(handle))
+    return (*_file_identity(os.fstat(handle.fileno())), _descriptor_revision(handle))
+
+
+@contextmanager
+def _open_dataset(path: Path):
+    if os.name != 'nt':
+        with path.open('rb') as handle:
+            yield handle
+        return
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    create = kernel.CreateFileW
+    create.argtypes = (wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD, ctypes.c_void_p,
+                       wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE)
+    create.restype = wintypes.HANDLE
+    # Request read/delete sharing, but deny in-place writers during verification
+    # and decoding. Replacements are either denied by Windows or detected by the
+    # pathname check. USNs alone may coalesce while handles stay open.
+    native = create(str(path), 0x80000000, 0x1 | 0x4, None, 3, 0x80, None)
+    if native == ctypes.c_void_p(-1).value:
+        error = ctypes.get_last_error()
+        if error in (32, 33):
+            raise ArtifactConflict('dataset busy with a writer')
+        raise ctypes.WinError(error)
+    try:
+        fd = msvcrt.open_osfhandle(native, os.O_RDONLY | os.O_BINARY)
+    except BaseException:
+        close = kernel.CloseHandle
+        close.argtypes = (wintypes.HANDLE,)
+        close(native)
+        raise
+    with os.fdopen(fd, 'rb') as handle:
+        try:
+            yield handle
+        except PermissionError as error:
+            # CRT writes expose EACCES without winerror; MoveFileEx can report
+            # the target as filename2. Do not relabel an unrelated policy error.
+            filenames = (error.filename, getattr(error, 'filename2', None))
+            if ((error.errno in (errno.EACCES, errno.EPERM) or getattr(error, 'winerror', None) in (5, 32, 33)) and
+                    any(name and _path_identity(Path(name).resolve()) == _path_identity(path.resolve())
+                        for name in filenames)):
+                raise ArtifactConflict('dataset changed during read') from error
+            raise
 
 
 class ArtifactStore:
     def __init__(self, root: str | Path):
-        self.root = Path(root).resolve()
+        # Candidate temporary names can exceed MAX_PATH even when the final
+        # path fits. Keep all I/O in one native path domain; returned keys stay
+        # relative to this root, including quarantine and backup consumers.
+        self.root = _io_path(Path(root).resolve())
         self.root.mkdir(parents=True, exist_ok=True)
         _sync_directory(self.root.parent)
         self._verified_datasets = OrderedDict()
@@ -295,7 +370,7 @@ class ArtifactStore:
 
     def read_dataset(self, relative_path: str, expected_sha256: str) -> list[dict]:
         path = self._path(relative_path)
-        with path.open("rb") as handle:
+        with _open_dataset(path) as handle:
             identity = self._verify_dataset(handle, expected_sha256)
             rows = pq.ParquetFile(handle).read().to_pylist()
             self._verify_unchanged(path, handle, identity)
@@ -346,7 +421,7 @@ class ArtifactStore:
             raise ValueError("invalid dataset range budget")
         path = self._path(relative_path)
         rows = []
-        with path.open("rb") as handle:
+        with _open_dataset(path) as handle:
             identity = self._verify_dataset(handle, expected_sha256, continue_check)
             parquet = pq.ParquetFile(handle)
             timestamp_column = parquet.schema_arrow.get_field_index("timestamp")
@@ -374,7 +449,7 @@ class ArtifactStore:
             raise ValueError('invalid dataset index range')
         path = self._path(relative_path)
         rows = []
-        with path.open('rb') as handle:
+        with _open_dataset(path) as handle:
             identity = self._verify_dataset(handle, expected_sha256)
             parquet = pq.ParquetFile(handle)
             if end_index > parquet.metadata.num_rows:
@@ -406,7 +481,7 @@ class ArtifactStore:
             if cutoff is not None and (isinstance(cutoff, bool) or not isinstance(cutoff, int)):
                 raise ValueError('invalid replay timestamp')
         path = self._path(relative_path)
-        with path.open('rb') as handle:
+        with _open_dataset(path) as handle:
             identity = self._verify_dataset(handle, expected_sha256)
             parquet = pq.ParquetFile(handle)
             total = parquet.metadata.num_rows
@@ -470,7 +545,7 @@ class ArtifactStore:
         buckets = {}
         cutoff = None
         exhausted = True
-        with path.open('rb') as handle:
+        with _open_dataset(path) as handle:
             identity = self._verify_dataset(handle, expected_sha256)
             parquet = pq.ParquetFile(handle)
             if cursor_index >= parquet.metadata.num_rows:
@@ -518,7 +593,7 @@ class ArtifactStore:
         """First native bar at/after UTC time, never beyond the persisted replay cursor."""
         path = self._path(relative_path)
         target = None
-        with path.open('rb') as handle:
+        with _open_dataset(path) as handle:
             identity = self._verify_dataset(handle, expected_sha256)
             parquet = pq.ParquetFile(handle)
             if not 0 <= canonical_cursor < parquet.metadata.num_rows:

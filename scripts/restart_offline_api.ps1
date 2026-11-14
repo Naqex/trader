@@ -8,7 +8,7 @@ param(
     [string]$ArtifactRoot, [string]$ManifestPath, [string]$BinaryDirectory,
     [ValidateSet('qdm', 'dukascopy', 'none')][string]$DownloadEngine = 'qdm',
     [string]$QdmHome, [string]$ScientificCapability, [string]$LegacyCodecCapability,
-    [string]$LocalCapabilityFile
+    [string]$LocalCapabilityFile, [string]$WorktreeRuntimeRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -17,14 +17,21 @@ $foundationRoot = Join-Path $projectRoot 'foundation_v2'
 $pythonPath = Join-Path $foundationRoot '.venv\Scripts\python.exe'
 $launcherPath = Join-Path $foundationRoot 'scripts\run_api_platform.py'
 $legacyPath = Join-Path $foundationRoot 'scripts\serve_exness_history.py'
+if ($WorktreeRuntimeRoot) {
+    $WorktreeRuntimeRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($WorktreeRuntimeRoot)
+    if (-not $ArtifactRoot) { $ArtifactRoot = Join-Path $WorktreeRuntimeRoot 'artifacts' }
+    if (-not $QdmHome) { $QdmHome = Join-Path $WorktreeRuntimeRoot 'quantdatamanager' }
+}
 if (-not $ManifestPath) {
     $ownerName = if ($RuntimeProfile -eq 'native') { 'native-owner.json' } else { 'owner.json' }
-    $ManifestPath = Join-Path $foundationRoot ".runtime\api-platform\$ownerName"
+    $manifestRoot = if ($WorktreeRuntimeRoot) { Join-Path $WorktreeRuntimeRoot 'api-platform' } else { Join-Path $foundationRoot '.runtime\api-platform' }
+    $ManifestPath = Join-Path $manifestRoot $ownerName
 }
 $ManifestPath = [IO.Path]::GetFullPath($ManifestPath)
 if (-not $BinaryDirectory) {
-    $target = if ($RuntimeProfile -eq 'native') { 'api-rust\target\native-candidate\release' } else { 'api-rust\target\release' }
-    $BinaryDirectory = Join-Path $foundationRoot $target
+    $target = if ($RuntimeProfile -eq 'native') { 'target\native-candidate\release' } else { 'target\release' }
+    $buildRoot = if ($WorktreeRuntimeRoot) { $WorktreeRuntimeRoot } else { Join-Path $foundationRoot 'api-rust' }
+    $BinaryDirectory = Join-Path $buildRoot $target
 }
 $BinaryDirectory = [IO.Path]::GetFullPath($BinaryDirectory)
 $apiUrl = "http://127.0.0.1:$Port"
@@ -35,6 +42,7 @@ $profileArgs = @('--runtime-profile', $RuntimeProfile, '--replay-storage-profile
     '--rust-binary', (Join-Path $BinaryDirectory 'trading-workspace-api.exe'),
     '--rust-admin-binary', (Join-Path $BinaryDirectory 'rust_runtime_admin.exe'),
     '--rust-research-binary', (Join-Path $BinaryDirectory 'rust_research_worker.exe'))
+if ($WorktreeRuntimeRoot) { $profileArgs += @('--worktree-runtime-root', $WorktreeRuntimeRoot) }
 foreach ($option in @(@('--artifact-root', $ArtifactRoot), @('--qdm-home', $QdmHome),
     @('--scientific-capability', $ScientificCapability), @('--legacy-codec-capability', $LegacyCodecCapability))) {
     # The detached supervisor runs in foundation_v2, unlike the preflight.
@@ -131,6 +139,9 @@ try {
     foreach ($path in @($pythonPath, $launcherPath)) {
         if (-not (Test-Path -LiteralPath $path)) { throw "Required local path is missing: $path" }
     }
+    # Reject a worktree's inherited/default targets before touching a listener,
+    # loading owner capabilities or compiling a candidate.
+    Invoke-Platform -ActionArgs @('--check-isolation-only')
     $selectedCapability = Resolve-LocalCapabilityFile -SelectedPath $LocalCapabilityFile -OwnerManifest $ManifestPath `
         -Profile $RuntimeProfile -OwnedProject $projectRoot -ListenPort $Port
     if ($selectedCapability) { $profileArgs += @('--local-capability-file', $selectedCapability) }

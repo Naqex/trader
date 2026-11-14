@@ -41,6 +41,35 @@ def test_backup_long_windows_destination_preserves_manifest_paths(tmp_path):
     assert all(not entry['path'].startswith('\\\\?\\') for entry in manifest['files'])
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows extended-length artifact I/O regression")
+def test_long_windows_candidate_roundtrip_quarantine_and_restore(tmp_path):
+    root = tmp_path / "artifacts"
+    while len(str(root)) < 180:
+        root /= "nested-artifact-storage"
+    store = ArtifactStore(root)
+    payload = {"fixture": "long-path", "result": 18}
+    job = "job-" + "j" * 60
+    relative, checksum = store.write_result_candidate("restore-tenant", job, 1, "lease", payload)
+    assert len(str(root / relative)) > 260
+    assert not Path(relative).is_absolute()
+    assert store.read_json(relative, checksum) == payload
+    with pytest.raises(ArtifactConflict, match="already exists"):
+        store.write_result_candidate("restore-tenant", job, 1, "lease", {"changed": True})
+
+    quarantined = store.quarantine_result_candidate(relative)
+    assert quarantined == store.quarantine_result_candidate(relative)
+    assert store.read_json(quarantined, checksum) == payload
+    dump = tmp_path / "metadata.dump"
+    dump.write_bytes(b"synthetic dump")
+    bundle = tmp_path / "bundle"
+    manifest = create_backup_bundle(store.root, dump, bundle,
+        artifact_references={quarantined: checksum}, snapshot_id="long-path", mutations_quiesced=True)
+    assert all(not Path(entry["path"]).is_absolute() for entry in manifest["files"])
+    restored = tmp_path / "restored"
+    restore_backup_files(bundle, restored)
+    assert ArtifactStore(restored / "artifacts").read_json(quarantined, checksum) == payload
+
+
 def test_range_prunes_row_groups_projects_and_keeps_cutoff(tmp_path):
     store = ArtifactStore(tmp_path)
     relative, checksum = store.write_dataset_iter("w", "d", rows(), batch_size=10)

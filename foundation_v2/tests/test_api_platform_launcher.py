@@ -3,6 +3,8 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -90,7 +92,8 @@ class RuntimeReadinessTests(unittest.TestCase):
 
     def test_supervisor_stop_during_startup_never_publishes_ready(self):
         with tempfile.TemporaryDirectory() as folder:
-            args = launcher.parser().parse_args(['--manifest', str(Path(folder) / 'owner.json')])
+            args = launcher.parser().parse_args(['--manifest', str(Path(folder) / 'owner.json'),
+                '--worktree-runtime-root', folder, '--artifact-root', str(Path(folder) / 'artifacts')])
             child = MagicMock(pid=42)
             child.poll.return_value = None
             capability = str(Path(folder) / 'private-capabilities.json')
@@ -118,6 +121,9 @@ class RuntimeReadinessTests(unittest.TestCase):
             self.assertFalse(writes[-1]['stopping'])
             self.assertTrue(all(item['auth_mode'] == 'local-capability' for item in writes))
             self.assertTrue(all(item['local_capability_file'] == capability for item in writes))
+            self.assertTrue(all(item['worktree_runtime'] == {
+                'root': str(Path(folder).resolve()), 'database_name': args.database_name,
+                'artifact_root': str(args.artifact_root.resolve())} for item in writes))
             child.wait.assert_called_once()
             child.kill.assert_not_called()
             monitor.assert_not_called()
@@ -200,6 +206,13 @@ class LocalCapabilityLauncherTests(unittest.TestCase):
 
 
 class LauncherTests(unittest.TestCase):
+    def setUp(self):
+        # These fixtures exercise the unchanged primary-checkout contract;
+        # linked checkout admission is covered separately below.
+        guard = patch.object(launcher, 'linked_worktree', return_value=False)
+        guard.start()
+        self.addCleanup(guard.stop)
+
     def test_storage_profile_overrides_inherited_environment_and_rejects_compatibility_compact(self):
         for profile, storage in [('compatibility', 'full'), ('native', 'full'), ('native', 'compact')]:
             args = launcher.parser().parse_args(['--runtime-profile', profile, '--replay-storage-profile', storage])
@@ -579,6 +592,278 @@ class LauncherTests(unittest.TestCase):
                         self.fail("second supervisor acquired the runtime lock")
             with launcher.runtime_lock(manifest):
                 pass
+
+
+class LinkedWorktreeIsolationTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.project = self.root / 'project'
+        self.metadata = self.root / 'metadata' / 'worktrees' / 'child'
+        self.project.mkdir()
+        self.metadata.mkdir(parents=True)
+        (self.project / '.git').write_text('gitdir: ' + self.metadata.as_posix())
+        (self.metadata / 'HEAD').write_text('ref: refs/heads/fixture\n')
+        (self.metadata / 'commondir').write_text('../..')
+        self.runtime = self.root / 'private-runtime'
+        for name, value in (('PROJECT', self.project), ('FOUNDATION', self.project / 'foundation_v2')):
+            change = patch.object(launcher, name, value)
+            change.start()
+            self.addCleanup(change.stop)
+
+    def selection(self, *extra):
+        return ['--runtime-profile', 'native', '--download-engine', 'none',
+                '--worktree-runtime-root', str(self.runtime), '--database-name', 'lane_fixture',
+                '--port', '19081', *extra]
+
+    def test_defaults_cannot_reach_inherited_database_from_linked_worktree(self):
+        with patch.object(launcher, 'configuration', return_value={}) as config, \
+             patch.object(launcher, 'validate_paths'), \
+             patch.object(launcher, 'native_database_preflight', return_value={}) as database, \
+             patch.object(launcher, 'port_is_free', return_value=True):
+            with self.assertRaises(launcher.PreflightError):
+                launcher.main(['--runtime-profile', 'native', '--download-engine', 'none', '--check-only'])
+            config.assert_not_called()
+            database.assert_not_called()
+
+    def test_external_runtime_root_rebases_outputs_without_creating_or_connecting(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(self.selection()))
+        self.assertEqual(args.artifact_root, self.runtime / 'artifacts')
+        self.assertEqual(args.manifest, self.runtime / 'api-platform/native-owner.json')
+        self.assertTrue(args.rust_binary.is_relative_to(self.runtime / 'target'))
+        with patch.object(launcher, 'configuration') as config, \
+             patch.object(launcher, 'build_candidate') as build, \
+             patch.object(launcher, 'supervise') as supervise, \
+             patch.object(launcher, 'port_is_free') as port:
+            self.assertEqual(launcher.main(self.selection('--check-isolation-only')), 0)
+        config.assert_not_called()
+        build.assert_not_called()
+        supervise.assert_not_called()
+        port.assert_not_called()
+        self.assertFalse(self.runtime.exists())
+
+    def test_build_only_requires_output_isolation_but_not_database_or_port(self):
+        with patch.object(launcher, 'configuration') as config, patch.object(launcher, 'build_candidate') as build:
+            self.assertEqual(launcher.main(['--runtime-profile', 'native', '--build-only',
+                                          '--worktree-runtime-root', str(self.runtime)]), 0)
+            self.assertTrue(build.call_args.args[0].rust_binary.is_relative_to(self.runtime))
+            config.assert_not_called()
+        with patch.object(launcher, 'build_candidate') as build:
+            with self.assertRaises(launcher.PreflightError):
+                launcher.main(['--build-only'])
+            build.assert_not_called()
+
+    def test_relative_output_selections_are_bound_before_child_working_directory_changes(self):
+        with patch('os.getcwd', return_value=str(self.project)):
+            args = launcher.resolve_profile_paths(launcher.parser().parse_args([
+                '--build-only', '--worktree-runtime-root', '.artifacts/private',
+                '--rust-binary', '.artifacts/private/target/release/trading-workspace-api.exe']))
+            launcher.worktree_isolation_preflight(args)
+        self.assertEqual(args.worktree_runtime_root, self.project / '.artifacts/private')
+        self.assertTrue(all(getattr(args, name).is_absolute() for name in
+                            ('manifest', 'artifact_root', 'rust_binary', 'rust_admin_binary', 'rust_research_binary')))
+        with patch.object(launcher.subprocess, 'run') as run:
+            launcher.build_candidate(args)
+        command = run.call_args.args[0]
+        self.assertEqual(command[command.index('--target-dir') + 1],
+                         str(self.project / '.artifacts/private/target'))
+
+    def test_default_and_ambiguous_database_names_or_port_are_rejected(self):
+        for option, value in (('--port', '8010'), ('--database-name', 'trading_workspace_v2_exness_history'),
+                              ('--database-name', ''), ('--database-name', 'a' * 64),
+                              ('--database-name', 'postgres'), ('--database-name', 'name with spaces')):
+            with self.subTest(option=option, value=value), patch.object(launcher, 'configuration') as config:
+                with self.assertRaises(launcher.PreflightError):
+                    launcher.main(self.selection(option, value, '--check-only'))
+                config.assert_not_called()
+
+    def test_runtime_check_can_intentionally_use_its_selected_database_in_dsn(self):
+        from psycopg.conninfo import conninfo_to_dict
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(self.selection()))
+        launcher.worktree_isolation_preflight(args)
+        inherited = {'TW_V2_DATABASE_URL': 'host=localhost dbname=lane_fixture user=fixture',
+                     'TW_V2_MT5_ADAPTER_ROOT': 'foreign-adapter', 'TW_V2_MT5_TERMINAL': 'foreign-terminal',
+                     'TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY': 'foreign-scientific',
+                     'TW_V2_LEGACY_PARQUET_CODEC_CAPABILITY': 'foreign-codec',
+                     'TW_AI_WORKFLOW_PYTHON': 'foreign-workflow'}
+        with patch.dict('os.environ', inherited), patch('psycopg.connect') as connect:
+            env = launcher.configuration(args)
+            connect.assert_not_called()
+        self.assertEqual(conninfo_to_dict(env['TW_V2_DATABASE_URL'])['dbname'], 'lane_fixture')
+        self.assertEqual(env['TW_V2_MT5_ADAPTER_ROOT'], str(launcher.FOUNDATION.resolve()))
+        self.assertEqual(env['TW_V2_SCIENTIFIC_ADAPTER_ROOT'], str(launcher.FOUNDATION.resolve()))
+        for key in ('TW_V2_MT5_TERMINAL', 'TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY',
+                    'TW_V2_LEGACY_PARQUET_CODEC_CAPABILITY', 'TW_AI_WORKFLOW_PYTHON'):
+            self.assertNotIn(key, env)
+        self.assertEqual(env['TW_V2_ARTIFACT_ROOT'], str(args.artifact_root.resolve()))
+
+    def test_explicit_capabilities_stay_selected_in_isolated_profile(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(self.selection(
+            '--scientific-capability', str(self.runtime / 'scientific.json'),
+            '--legacy-codec-capability', str(self.runtime / 'codec.json'))))
+        with patch.dict('os.environ', {'TW_V2_DATABASE_URL': 'host=localhost user=fixture'}):
+            env = launcher.configuration(args)
+        self.assertEqual(env['TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY'], str((self.runtime / 'scientific.json').resolve()))
+        self.assertEqual(env['TW_V2_LEGACY_PARQUET_CODEC_CAPABILITY'], str((self.runtime / 'codec.json').resolve()))
+
+    def test_dirty_ai_environment_is_disabled_without_shared_account_or_mcp_bindings(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(self.selection()))
+        dirty = {'TW_V2_DATABASE_URL': 'host=localhost dbname=lane_fixture user=fixture',
+                 'TW_CHATGPT_WEB_HOME': str(self.root / 'foreign-home'),
+                 'TW_CHATGPT_WEB_CORE': str(self.root / 'foreign-core'),
+                 'TW_CHATGPT_WEB_BUN': str(self.root / 'foreign-bun.exe'),
+                 'TW_CHATGPT_WEB_PORT': '17851', 'TW_AI_INTEGRATIONS_DISABLED': '0',
+                 'TW_AI_GATEWAY_BASE_URL': 'http://127.0.0.1:17852/v1',
+                 'TW_AI_GATEWAY_KEY_FILE': str(self.root / 'foreign-inference.key'),
+                 'TW_AI_GATEWAY_MODEL': 'external-model', 'TW_AI_PROVIDER': 'local-gateway',
+                 'TW_MT5_MCP_CONFIG': str(self.root / 'foreign-mcp.json'),
+                 'TW_MT5_MCP_KEY_FIXTURE': 'fixture-not-a-real-credential'}
+        with patch.dict('os.environ', dirty), patch.object(Path, 'read_bytes', side_effect=AssertionError('no credential reads')):
+            env = launcher.configuration(args)
+            self.assertEqual(launcher.os.environ['TW_AI_INTEGRATIONS_DISABLED'], '0')
+            self.assertEqual(launcher.os.environ['TW_CHATGPT_WEB_HOME'], dirty['TW_CHATGPT_WEB_HOME'])
+        for key in ('TW_CHATGPT_WEB_HOME', 'TW_CHATGPT_WEB_CORE', 'TW_CHATGPT_WEB_BUN', 'TW_AI_GATEWAY_KEY_FILE'):
+            self.assertTrue(Path(env[key]).is_relative_to(self.runtime))
+        for key in ('TW_CHATGPT_WEB_PORT', 'TW_AI_GATEWAY_BASE_URL', 'TW_AI_GATEWAY_MODEL',
+                    'TW_AI_PROVIDER', 'TW_MT5_MCP_CONFIG', 'TW_MT5_MCP_KEY_FIXTURE'):
+            self.assertNotIn(key, env)
+        self.assertEqual(env['TW_AI_INTEGRATIONS_DISABLED'], '1')
+        self.assertFalse(self.runtime.exists())
+
+    def test_primary_configuration_keeps_explicit_ai_integration_environment(self):
+        args = launcher.parser().parse_args([])
+        original = {'TW_V2_DATABASE_URL': 'host=localhost user=fixture',
+                    'TW_CHATGPT_WEB_HOME': str(self.root / 'owner-home'),
+                    'TW_AI_GATEWAY_BASE_URL': 'http://127.0.0.1:17852/v1',
+                    'TW_AI_GATEWAY_KEY_FILE': str(self.root / 'owner-key'),
+                    'TW_MT5_MCP_CONFIG': str(self.root / 'owner-mcp.json')}
+        with patch.dict('os.environ', original, clear=True):
+            env = launcher.configuration(args)
+        for key, value in original.items():
+            if key != 'TW_V2_DATABASE_URL':
+                self.assertEqual(env[key], value)
+        self.assertNotIn('TW_AI_INTEGRATIONS_DISABLED', env)
+
+    def test_foreign_checkout_and_output_escapes_fail_before_build_or_database(self):
+        foreign = self.root / 'foreign-project'
+        foreign.mkdir()
+        (foreign / '.git').mkdir()
+        for arguments in (self.selection('--artifact-root', str(foreign / 'data')),
+                          self.selection('--manifest', str(foreign / 'owner.json')),
+                          self.selection('--rust-binary', str(foreign / 'release/api.exe')),
+                          self.selection('--worktree-runtime-root', str(foreign / '.runtime')),
+                          self.selection('--worktree-runtime-root', str(self.project))):
+            with self.subTest(arguments=arguments), patch.object(launcher, 'configuration') as config, \
+                 patch.object(launcher, 'build_candidate') as build:
+                with self.assertRaises(launcher.PreflightError):
+                    launcher.main([*arguments, '--build'])
+                config.assert_not_called()
+                build.assert_not_called()
+
+    def test_manifest_binds_project_database_artifacts_port_and_runtime_root(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(self.selection()))
+        args.manifest.parent.mkdir(parents=True)
+        owner = {'project': str(self.project), 'port': args.port, 'runtime_profile': args.runtime_profile,
+                 'worktree_runtime': {'root': str(self.runtime), 'database_name': args.database_name,
+                                      'artifact_root': str(args.artifact_root.resolve())}}
+        args.manifest.write_text(json.dumps(owner))
+        self.assertTrue(launcher.worktree_isolation_preflight(args)['isolated_runtime'])
+        for section, field, value in ((None, 'project', str(self.root / 'foreign')),
+                                      (None, 'port', 19082), ('worktree_runtime', 'database_name', 'foreign'),
+                                      ('worktree_runtime', 'root', str(self.root / 'foreign')),
+                                      ('worktree_runtime', 'artifact_root', str(self.root / 'foreign'))):
+            changed = json.loads(json.dumps(owner))
+            (changed if section is None else changed[section])[field] = value
+            args.manifest.write_text(json.dumps(changed))
+            with self.subTest(field=field), self.assertRaises(launcher.PreflightError):
+                launcher.worktree_isolation_preflight(args)
+
+    def test_link_or_junction_in_output_tree_is_rejected(self):
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args(self.selection()))
+        with patch('scripts.local_owner_access.require_local_tree', side_effect=ValueError('reparse')):
+            with self.assertRaises(launcher.PreflightError):
+                launcher.worktree_isolation_preflight(args)
+
+    def test_primary_submodule_gitfile_keeps_the_existing_launcher_contract(self):
+        (self.metadata / 'commondir').unlink()
+        (self.metadata / 'config').write_text('[core]\n bare = false\n')
+        (self.metadata / 'objects').mkdir()
+        args = launcher.resolve_profile_paths(launcher.parser().parse_args([]))
+        self.assertEqual(launcher.worktree_isolation_preflight(args),
+                         {'linked_worktree': False, 'isolated_runtime': False})
+
+    def test_malformed_gitfile_fails_before_any_configuration(self):
+        (self.project / '.git').write_text('not a gitdir')
+        with patch.object(launcher, 'configuration') as config:
+            with self.assertRaises(launcher.PreflightError):
+                launcher.main(self.selection('--check-only'))
+            config.assert_not_called()
+
+    def test_missing_gitdir_or_head_cannot_fall_back_to_primary_checkout_defaults(self):
+        for problem in ('missing-gitdir', 'missing-head', 'empty-head', 'invalid-head', 'missing-commondir'):
+            (self.project / '.git').write_text('gitdir: ' + self.metadata.as_posix())
+            (self.metadata / 'HEAD').write_text('ref: refs/heads/fixture\n')
+            (self.metadata / 'commondir').write_text('../..')
+            if problem == 'missing-gitdir':
+                (self.project / '.git').write_text('gitdir: ' + (self.root / 'missing-metadata').as_posix())
+            elif problem == 'missing-head':
+                (self.metadata / 'HEAD').unlink()
+            elif problem == 'missing-commondir':
+                (self.metadata / 'commondir').unlink()
+            else:
+                (self.metadata / 'HEAD').write_text('' if problem == 'empty-head' else 'unrecognized')
+            with self.subTest(problem=problem), patch.object(launcher, 'configuration') as config, \
+                 patch.object(launcher, 'build_candidate') as build:
+                with self.assertRaises(launcher.PreflightError):
+                    launcher.main(['--check-only'])
+                config.assert_not_called()
+                build.assert_not_called()
+
+    @unittest.skipUnless(shutil.which('pwsh') or shutil.which('powershell'), 'PowerShell wrapper')
+    def test_wrapper_passes_one_root_and_checks_isolation_before_owner_or_listener_access(self):
+        scripts = self.project / 'scripts'
+        scripts.mkdir()
+        python = self.project / 'foundation_v2/.venv/Scripts/python.exe'
+        python.parent.mkdir(parents=True)
+        python.touch()
+        entry = self.project / 'foundation_v2/scripts/run_api_platform.py'
+        entry.parent.mkdir(parents=True)
+        entry.touch()
+        source = Path(__file__).resolve().parents[2] / 'scripts/restart_offline_api.ps1'
+        code = source.read_text(encoding='utf-8')
+        # Exercise the actual wrapper's argument construction and ordering, then
+        # stop at its first launcher call. No executable, listener or DB is used.
+        interception = '''
+function Invoke-Platform([string[]]$ActionArgs) {
+    Write-Output ('FIXTURE:' + (@{profile=$profileArgs; action=$ActionArgs} | ConvertTo-Json -Compress))
+    throw 'fixture_stop_before_actions'
+}
+function Resolve-LocalCapabilityFile { throw 'owner_access_before_isolation' }
+function Get-OfflineListener { throw 'listener_access_before_isolation' }
+'''
+        code = code.replace('try {\n    if ($CheckOnly', interception + '\ntry {\n    if ($CheckOnly', 1)
+        wrapper = scripts / 'restart_offline_api.ps1'
+        wrapper.write_text(code, encoding='utf-8')
+        completed = subprocess.run([shutil.which('pwsh') or shutil.which('powershell'),
+            '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(wrapper),
+            '-CheckOnly', '-RuntimeProfile', 'native', '-WorktreeRuntimeRoot', str(self.runtime),
+            '-DatabaseName', 'lane_fixture', '-Port', '19081', '-DownloadEngine', 'none'],
+            capture_output=True, text=True, timeout=20,
+            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        self.assertEqual(completed.returncode, 1)
+        lines = [line for line in completed.stdout.splitlines() if line.startswith('FIXTURE:')]
+        self.assertEqual(len(lines), 1, completed.stdout)
+        call = json.loads(lines[0].removeprefix('FIXTURE:'))
+        self.assertEqual(call['action'], ['--check-isolation-only'])
+        profile = dict(zip(call['profile'][::2], call['profile'][1::2]))
+        self.assertEqual(Path(profile['--worktree-runtime-root']), self.runtime)
+        for key in ('--artifact-root', '--manifest', '--rust-binary', '--rust-admin-binary', '--rust-research-binary'):
+            self.assertTrue(Path(profile[key]).is_relative_to(self.runtime))
+        self.assertIn('fixture_stop_before_actions', completed.stdout)
+        self.assertNotIn('owner_access_before_isolation', completed.stdout)
+        self.assertNotIn('listener_access_before_isolation', completed.stdout)
+        self.assertFalse(self.runtime.exists())
 
 
 if __name__ == "__main__":
