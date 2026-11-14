@@ -2,7 +2,14 @@
 
 Ngày đối chiếu: 15/11/2026, Asia/Saigon. Phạm vi: kiến trúc, nghiên cứu,
 engine, môi trường AI và vận hành riêng cho owner; không gồm trade tay.
-Đây là nghiên cứu và đề xuất, không phải nghiệm thu runtime hay chiến lược.
+Đây là báo cáo nền từ lượt nghiên cứu ban đầu. Tiến độ thực thi sau đó nằm ở
+[bằng chứng hệ thống](SOLO-SYSTEM-EXECUTION-20261115.md); cả hai tài liệu không
+thay bằng chứng chiến lược đủ điều kiện Challenge.
+
+**Chỉ thị owner bổ sung 15/11:** triển khai độc lập toàn bộ mục tiêu, gồm cả
+alpha/portfolio và hệ thống; không phụ thuộc thread gốc có tiếp tục hay không.
+Phần phân công ở cuối tài liệu đã được điều chỉnh theo chỉ thị này. Phạm vi
+research-only của lượt lập báo cáo vẫn giữ như lịch sử, không chặn execution mới.
 
 ## Kết luận dành cho owner
 
@@ -178,19 +185,19 @@ hoặc nghiệm thu theo phạm vi cũ, không chứng minh trạng thái live h
 | [Strategy workflow](D:/ANNAM/TradingWorkspace/tooling/ai-engines/STRATEGY-WORKFLOW.md) | Stage gates, feasibility, cadence, evidence routing | Chọn một luồng end-to-end cụ thể; kiểm gate đang được code thực thi |
 | [Studio operations](D:/ANNAM/TradingWorkspace/tooling/ai-engines/OPERATIONS.md) | Paperclip native ownership, observer, shadow lifecycle, saved-data diagnostics | Cảnh báo độc lập khi PC/app mất kết nối vẫn là gap được ghi trong guide |
 | [Engine study](D:/ANNAM/TradingWorkspace/planning/research/STRATEGY-DEPTH-ENGINES-AND-MILESTONES-20261112.md) | Vai trò và giới hạn của Nautilus/LEAN/VectorBT/Backtrader/Backtesting.py | Docs/version/native fixtures cần khớp đúng consumer, không nâng engine theo tên gọi |
-| [V3 results](D:/ANNAM/TradingWorkspace/planning/research/PROP-PORTFOLIO-V3-RESULTS-20261114.md) | Ví dụ evidence về funding, paired ticks, shared account, concentration | Đây là checkpoint V3; lane gốc đang V4, không chạy lại/chọn lại candidate tại đây |
+| [V3 results](D:/ANNAM/TradingWorkspace/planning/research/PROP-PORTFOLIO-V3-RESULTS-20261114.md) | Ví dụ evidence về funding, paired ticks, shared account, concentration | Kế thừa snapshot V3 vào protocol riêng, không đọc hoặc sửa campaign V4 của thread gốc |
 
 Tài liệu Studio đã ghi rõ observer trong cùng PC/app không phải hệ thống báo
 động độc lập nếu cả máy ngừng. Với một người vận hành, cần đưa tình huống đó
 vào kế hoạch acceptance sau này; chưa cài watcher/service trong lượt này.
 
-## 7. Phân chia hai lane và thứ tự triển khai đề xuất
+## 7. Hai chiến dịch độc lập và thứ tự triển khai
 
-| Lane gốc đang chạy | Lane worktree này |
+| Thread gốc do owner quản lý | Chiến dịch độc lập trong chat này |
 |---|---|
-| Nghiên cứu alpha/portfolio V4 theo task owner giao | Rà kiến trúc, AI workflow và khả năng một người vận hành |
-| Sở hữu protocol, candidate selection và kết quả của campaign đó | Dùng kết quả đã công bố làm input; không đổi campaign gốc |
-| Job, cache và báo cáo đang sử dụng | Báo cáo/fixtures/job riêng khi có slice triển khai |
+| Có thể tiếp tục V4 hoặc thay đổi theo owner | Tự chịu trách nhiệm alpha/portfolio, engines, AI workflow, kiểm định và vận hành |
+| Sở hữu protocol và kết quả của campaign đó | Kế thừa snapshot đã công bố, đăng ký và thực thi thí nghiệm riêng; không chờ V4 |
+| Checkout/job/state đang sử dụng | Trader 04e2 và workspace solo-prop-system có branch, output và trạng thái riêng |
 
 Trình tự đề xuất cho lane này:
 
@@ -205,15 +212,20 @@ Trình tự đề xuất cho lane này:
 4. **Rehearsal vận hành:** khi có scope được giao, kiểm restart có vị thế,
    timeout chưa rõ kết quả, lịch/reset/DST, spread spike, stale quote và restore
    backup trên môi trường riêng. So khớp ledger, không chỉ process exit 0.
-5. **Hội nhập tuần tự:** review đúng commit; chỉ lane tích hợp mới nâng pin và
-   promote runtime. Bản nghiên cứu tốt chưa tự là bản vận hành được phép gửi lệnh.
+5. **Nghiên cứu và kiểm định chiến lược độc lập:** dùng evidence đã có để chọn
+   thí nghiệm có cơ chế rõ, đăng ký trước outcome; tiếp các cổng economics,
+   source/path, account lifecycle, robustness và vận hành. Không coi xong phần
+   mềm là đạt mục tiêu có ứng viên đủ điều kiện Challenge.
+6. **Hội nhập tuần tự trong checkout riêng:** review đúng commit, bind candidate
+   và engine; không thay pin/runtime của thread gốc. Bản nghiên cứu tốt chưa tự
+   là bản vận hành được phép gửi lệnh.
 
 Không ấn định số ngày paper trading chung hoặc tỷ lệ pass tương lai từ
 cộng đồng. Thời gian kiểm cần bám tình huống cần quan sát, số cơ hội độc lập
 và mức bất định còn lại. Mục tiêu cho owner là ít can thiệp, hiểu rõ hệ thống
 đang làm gì, khôi phục được khi hỏng, và thấy tiến bộ về kinh tế sau phí.
 
-## Phạm vi hoàn thành của lượt này
+## Phạm vi của lượt nghiên cứu ban đầu
 
 Đã sửa cấu hình Git riêng, có backup/receipt và read-only verification khác;
 research nguồn official/quỹ/cộng đồng/video metadata; ghi đề xuất theo use case
