@@ -602,9 +602,16 @@ mod tests {
                 assert!(allowed_methods(path).contains(&(*method).to_owned()));
             }
             for (method, path) in crate::local_auth::ROUTES {
-                assert!(inventory.as_array().unwrap().iter().any(|entry|
-                    entry["method"] == *method && entry["path"] == *path
-                        && entry["owner"] == "local_auth" && entry["dispatch"] == "rust_native"));
+                assert!(
+                    inventory
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .any(|entry| entry["method"] == *method
+                            && entry["path"] == *path
+                            && entry["owner"] == "local_auth"
+                            && entry["dispatch"] == "rust_native")
+                );
                 assert!(allowed_methods(path).contains(&(*method).to_owned()));
             }
             let queued: Vec<Value> = inventory

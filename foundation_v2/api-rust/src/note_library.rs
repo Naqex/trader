@@ -139,26 +139,69 @@ pub(crate) fn document_ok(document: &Value) -> bool {
 }
 pub(crate) fn document_text(document: &Value) -> String {
     fn inline(value: &Value) -> String {
-        if let Some(text) = value.as_str() { return text.to_owned(); }
+        if let Some(text) = value.as_str() {
+            return text.to_owned();
+        }
         if let Some(items) = value.as_array() {
-            return items.iter().map(|item| item.as_str().map(str::to_owned)
-                .or_else(|| item["text"].as_str().map(str::to_owned))
-                .unwrap_or_else(|| inline(&item["content"]))).collect();
+            return items
+                .iter()
+                .map(|item| {
+                    item.as_str()
+                        .map(str::to_owned)
+                        .or_else(|| item["text"].as_str().map(str::to_owned))
+                        .unwrap_or_else(|| inline(&item["content"]))
+                })
+                .collect();
         }
         if value["type"] == "tableContent" {
-            return value["rows"].as_array().map(|rows| rows.iter().map(|row| {
-                row["cells"].as_array().map(|cells| cells.iter()
-                    .map(|cell| inline(cell.get("content").unwrap_or(cell))).collect::<Vec<_>>().join("\t")).unwrap_or_default()
-            }).collect::<Vec<_>>().join("\n")).unwrap_or_default();
+            return value["rows"]
+                .as_array()
+                .map(|rows| {
+                    rows.iter()
+                        .map(|row| {
+                            row["cells"]
+                                .as_array()
+                                .map(|cells| {
+                                    cells
+                                        .iter()
+                                        .map(|cell| inline(cell.get("content").unwrap_or(cell)))
+                                        .collect::<Vec<_>>()
+                                        .join("\t")
+                                })
+                                .unwrap_or_default()
+                        })
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                })
+                .unwrap_or_default();
         }
         String::new()
     }
     fn blocks(value: &Value) -> String {
-        value.as_array().map(|items| items.iter().map(|block| {
-            let content = inline(&block["content"]);
-            let content = if content.is_empty() { block["props"]["url"].as_str().unwrap_or("").to_owned() } else { content };
-            [content, blocks(&block["children"])].into_iter().filter(|s| !s.is_empty()).collect::<Vec<_>>().join("\n")
-        }).collect::<Vec<_>>().join("\n").trim_end().to_owned()).unwrap_or_default()
+        value
+            .as_array()
+            .map(|items| {
+                items
+                    .iter()
+                    .map(|block| {
+                        let content = inline(&block["content"]);
+                        let content = if content.is_empty() {
+                            block["props"]["url"].as_str().unwrap_or("").to_owned()
+                        } else {
+                            content
+                        };
+                        [content, blocks(&block["children"])]
+                            .into_iter()
+                            .filter(|s| !s.is_empty())
+                            .collect::<Vec<_>>()
+                            .join("\n")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .trim_end()
+                    .to_owned()
+            })
+            .unwrap_or_default()
     }
     blocks(&document["blocks"])
 }
