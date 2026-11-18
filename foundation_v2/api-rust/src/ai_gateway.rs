@@ -10,6 +10,7 @@ use tokio::sync::Mutex;
 
 /// OAuth tokens stay in the pinned gateway; the product only counts credential files.
 pub(crate) struct LocalGateway {
+    disabled: bool,
     base: String,
     key_file: PathBuf,
     client: reqwest::Client,
@@ -24,6 +25,15 @@ struct GatewayState {
 
 fn unavailable(code: &str) -> ApiError {
     ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, code)
+}
+
+pub(crate) fn integrations_disabled(value: Option<&std::ffi::OsStr>) -> Result<bool, String> {
+    match value.and_then(std::ffi::OsStr::to_str) {
+        None if value.is_none() => Ok(false),
+        Some("0") => Ok(false),
+        Some("1") => Ok(true),
+        _ => Err("TW_AI_INTEGRATIONS_DISABLED must be 0 or 1".into()),
+    }
 }
 
 fn base_url(value: &str) -> Result<String, String> {
@@ -51,6 +61,8 @@ fn base_url(value: &str) -> Result<String, String> {
 
 impl LocalGateway {
     pub(crate) fn from_environment() -> Result<Self, String> {
+        let disabled =
+            integrations_disabled(std::env::var_os("TW_AI_INTEGRATIONS_DISABLED").as_deref())?;
         let project = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .and_then(|p| p.parent())
@@ -66,7 +78,8 @@ impl LocalGateway {
         let managed = base_url(&base)? == managed_base
             && key_file == project.join(".runtime/mt5-ai-gateway/inference.key");
         let mut gateway = Self::new(&base, key_file, std::env::var("TW_AI_GATEWAY_MODEL").ok())?;
-        if managed && cfg!(windows) {
+        gateway.disabled = disabled;
+        if managed && cfg!(windows) && !disabled {
             gateway.runtime = Some(crate::ai_gateway_runtime::GatewayRuntime::new(project));
         }
         Ok(gateway)
@@ -81,6 +94,7 @@ impl LocalGateway {
             return Err("AI gateway key file must be absolute".into());
         }
         Ok(Self {
+            disabled: false,
             base: base_url(base)?,
             key_file,
             client: reqwest::Client::builder()
@@ -98,6 +112,9 @@ impl LocalGateway {
     }
 
     async fn key(&self) -> Result<String, ApiError> {
+        if self.disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         let metadata = tokio::fs::metadata(&self.key_file)
             .await
             .map_err(|_| unavailable("ai_gateway_not_configured"))?;
@@ -125,6 +142,9 @@ impl LocalGateway {
         state: &mut GatewayState,
         refresh: bool,
     ) -> Result<Vec<Value>, ApiError> {
+        if self.disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         if !refresh
             && let Some((at, models)) = &state.catalog
             && at.elapsed() < Duration::from_secs(30)
@@ -182,6 +202,11 @@ impl LocalGateway {
     }
 
     pub(crate) async fn status(&self, refresh: bool) -> Value {
+        if self.disabled {
+            return json!({"status":"unavailable","error":"ai_integrations_disabled",
+                "models":[],"ready":false,"selection":null,"operation":null,
+                "runtime":{"managed":false},"endpoint":self.base});
+        }
         let (runtime, completed) = match &self.runtime {
             Some(runtime) => runtime.status().await,
             None => (json!({"managed":false}), false),
@@ -218,6 +243,9 @@ impl LocalGateway {
     }
 
     pub(crate) async fn busy(&self) -> bool {
+        if self.disabled {
+            return false;
+        }
         match &self.runtime {
             Some(runtime) => runtime.busy().await,
             None => false,
@@ -225,6 +253,9 @@ impl LocalGateway {
     }
 
     pub(crate) async fn action(&self, action: &str, body: &Value) -> Result<(), ApiError> {
+        if self.disabled {
+            return Err(unavailable("ai_integrations_disabled"));
+        }
         if body.as_object().is_none_or(|v| !v.is_empty())
             || !["start", "login", "cancel", "stop"].contains(&action)
         {
@@ -249,6 +280,9 @@ impl LocalGateway {
     }
 
     pub(crate) async fn shutdown(&self) {
+        if self.disabled {
+            return;
+        }
         if let Some(runtime) = &self.runtime {
             runtime.stop().await;
         }
@@ -370,6 +404,72 @@ pub(crate) async fn read_json(request: reqwest::RequestBuilder) -> Result<Value,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn integration_disable_flag_is_explicit_and_strict() {
+        use std::ffi::OsStr;
+        assert!(!integrations_disabled(None).unwrap());
+        assert!(!integrations_disabled(Some(OsStr::new("0"))).unwrap());
+        assert!(integrations_disabled(Some(OsStr::new("1"))).unwrap());
+        for value in ["", "true", "false", " 1", "2"] {
+            assert!(integrations_disabled(Some(OsStr::new(value))).is_err());
+        }
+    }
+
+    #[tokio::test]
+    async fn disabled_gateway_cannot_contact_endpoint_or_manage_a_runtime() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base = format!(
+            "http://127.0.0.1:{}/v1",
+            listener.local_addr().unwrap().port()
+        );
+        let key =
+            std::env::temp_dir().join(format!("disabled-gateway-{}.key", uuid::Uuid::new_v4()));
+        tokio::fs::write(&key, "synthetic-gateway-fixture-key-0001")
+            .await
+            .unwrap();
+        let mut gateway = LocalGateway::new(&base, key.clone(), None).unwrap();
+        gateway.disabled = true;
+        gateway.state.lock().await.catalog =
+            Some((Instant::now(), vec![json!({"id":"fixture","efforts":[]})]));
+        for refresh in [false, true] {
+            let status = gateway.status(refresh).await;
+            assert_eq!(status["ready"], false);
+            assert_eq!(status["error"], "ai_integrations_disabled");
+            assert_eq!(status["models"], json!([]));
+        }
+        for action in ["start", "login", "cancel", "stop"] {
+            assert_eq!(
+                gateway.action(action, &json!({})).await.unwrap_err().1["detail"],
+                "ai_integrations_disabled"
+            );
+        }
+        assert_eq!(
+            gateway.key().await.unwrap_err().1["detail"],
+            "ai_integrations_disabled"
+        );
+        let selection = json!({"model":"fixture","effort":null});
+        assert_eq!(
+            gateway.select(&selection).await.unwrap_err().1["detail"],
+            "ai_integrations_disabled"
+        );
+        assert_eq!(
+            gateway
+                .prepare_selection(&selection, json!([]), "fixture")
+                .await
+                .unwrap_err()
+                .1["detail"],
+            "ai_integrations_disabled"
+        );
+        assert!(!gateway.busy().await);
+        gateway.shutdown().await;
+        assert!(
+            tokio::time::timeout(Duration::from_millis(25), listener.accept())
+                .await
+                .is_err()
+        );
+        tokio::fs::remove_file(key).await.unwrap();
+    }
     #[test]
     fn metadata_keeps_route_ids_and_only_advertised_efforts() {
         let row = json!({"id":"route-high"});

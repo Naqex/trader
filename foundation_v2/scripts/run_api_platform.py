@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import subprocess
@@ -24,6 +25,94 @@ sys.path.insert(0, str(FOUNDATION))
 
 class PreflightError(RuntimeError):
     pass
+
+
+def linked_worktree():
+    marker = PROJECT / '.git'
+    if marker.is_symlink():
+        raise PreflightError('Cannot establish Git worktree ownership; no runtime action was taken.')
+    if not marker.is_file():
+        return False
+    try:
+        if marker.stat().st_size > 4096:
+            raise ValueError()
+        prefix, relative = marker.read_text(encoding='utf-8').strip().split(': ', 1)
+        if prefix != 'gitdir' or not relative:
+            raise ValueError()
+        metadata = (PROJECT / relative).resolve(strict=True)
+        head = metadata / 'HEAD'
+        if (not metadata.is_dir() or not head.is_file() or not 0 < head.stat().st_size <= 4096
+                or not re.fullmatch(r'(?:[0-9a-fA-F]{40}|[0-9a-fA-F]{64}|ref: refs/[^\s]+)',
+                                    head.read_text(encoding='utf-8').strip())):
+            raise ValueError()
+        if (metadata / 'commondir').is_file():
+            return True
+        if not (metadata / 'config').is_file() or not (metadata / 'objects').is_dir():
+            raise ValueError()
+        return False
+    except (OSError, ValueError):
+        raise PreflightError('Cannot establish Git worktree ownership; no runtime action was taken.') from None
+
+
+def isolated_ai_paths(root):
+    # These paths are deliberately unprovisioned. The runtime flag below disables
+    # optional integrations; private paths also prevent shared-account fallbacks.
+    return {'TW_CHATGPT_WEB_HOME': root / 'ai/chatgpt-web',
+            'TW_CHATGPT_WEB_CORE': root / 'ai/chatgpt-web-core',
+            'TW_CHATGPT_WEB_BUN': root / 'ai/bun.exe',
+            'TW_AI_GATEWAY_KEY_FILE': root / 'ai/gateway/inference.key'}
+
+
+def worktree_isolation_preflight(args):
+    """Admission only: never create files, connect to DB or inspect a listener."""
+    linked = linked_worktree()
+    if args.worktree_runtime_root is None:
+        if linked:
+            raise PreflightError('Linked worktrees require --worktree-runtime-root; runtime defaults may belong to another checkout.')
+        return {'linked_worktree': False, 'isolated_runtime': False}
+    from scripts.local_owner_access import require_local_tree
+    try:
+        root = args.worktree_runtime_root.absolute()
+        require_local_tree(root)
+        root = root.resolve()
+        project = PROJECT.resolve()
+        if (root.exists() and not root.is_dir()) or root == project or project.is_relative_to(root):
+            raise ValueError()
+        # An external private root is supported, but never under another checkout.
+        if any((parent / '.git').exists() and parent != project for parent in (root, *root.parents)):
+            raise ValueError()
+        outputs = (args.artifact_root, args.manifest, args.manifest.with_suffix('.lock'),
+                   args.rust_binary, args.rust_admin_binary, args.rust_research_binary)
+        outputs += tuple(isolated_ai_paths(root).values())
+        if args.download_engine == 'qdm':
+            outputs += (args.qdm_home,)
+        for selected in outputs:
+            path = selected.absolute()
+            require_local_tree(path)
+            if path.resolve() == root or not path.resolve().is_relative_to(root):
+                raise ValueError()
+    except (OSError, ValueError):
+        raise PreflightError('Worktree runtime outputs must be within their dedicated local root, without links, foreign checkouts or source-root collisions.') from None
+    if not args.build_only:
+        if (args.port == 8010 or args.database_name in {'trading_workspace_v2_exness_history', 'postgres', 'template0', 'template1'}
+                or not re.fullmatch(r'[A-Za-z0-9_]{1,63}', args.database_name)):
+            raise PreflightError('Worktree runtime requires an explicit non-default --port and --database-name; inherited connection credentials do not select an isolated database.')
+    if args.manifest.exists():
+        try:
+            if not args.manifest.is_file() or args.manifest.stat().st_size > 1024 * 1024:
+                raise ValueError()
+            value = json.loads(args.manifest.read_text(encoding='utf-8'))
+            binding = value.get('worktree_runtime', {})
+            if (value.get('project') != str(project) or value.get('runtime_profile') != args.runtime_profile
+                    or binding.get('root') != str(root)):
+                raise ValueError()
+            if not args.build_only and (value.get('port') != args.port
+                    or binding.get('database_name') != args.database_name
+                    or binding.get('artifact_root') != str(args.artifact_root.resolve())):
+                raise ValueError()
+        except (OSError, ValueError, TypeError, AttributeError):
+            raise PreflightError('Existing manifest does not own this worktree runtime selection; nothing was changed.') from None
+    return {'linked_worktree': linked, 'isolated_runtime': True}
 
 
 def local_capability_file(args):
@@ -59,6 +148,20 @@ def configuration(args):
         raise PreflightError("TW_V2_DATABASE_URL must identify the existing loopback database.")
     config["dbname"] = args.database_name
     env = dict(os.environ)
+    if args.worktree_runtime_root is not None:
+        # A copied shell must not attach this lane to another checkout's terminal
+        # or optional workers. Explicit capability flags below remain supported.
+        for key in ('TW_V2_MT5_TERMINAL', 'TW_V2_SCIENTIFIC_ADAPTER_CAPABILITY',
+                    'TW_V2_LEGACY_PARQUET_CODEC_CAPABILITY', 'TW_AI_WORKFLOW_PYTHON',
+                    'TW_V2_QDM_HOME'):
+            env.pop(key, None)
+        for key in list(env):
+            if key.startswith(('TW_CHATGPT_WEB_', 'TW_AI_GATEWAY_', 'TW_MT5_MCP_')) or key == 'TW_AI_PROVIDER':
+                env.pop(key)
+        env.update({key: str(path) for key, path in isolated_ai_paths(args.worktree_runtime_root.resolve()).items()})
+        env['TW_AI_INTEGRATIONS_DISABLED'] = '1'
+        env['TW_V2_MT5_ADAPTER_ROOT'] = str(FOUNDATION.resolve())
+        env['TW_V2_SCIENTIFIC_ADAPTER_ROOT'] = str(FOUNDATION.resolve())
     env.update(TW_V2_DATABASE_URL=make_conninfo(**config),
                TW_V2_ARTIFACT_ROOT=str(args.artifact_root.resolve()),
                TW_V2_LOCAL_WORKSPACES="tenant-a", TW_V2_LOCAL_IDENTITY="local-owner",
@@ -94,7 +197,15 @@ def configuration(args):
 
 
 def resolve_profile_paths(args):
-    profile_root = FOUNDATION / "api-rust/target"
+    runtime = args.worktree_runtime_root
+    if runtime is not None:
+        runtime = args.worktree_runtime_root = runtime.absolute()
+    profile_root = FOUNDATION / "api-rust/target" if runtime is None else runtime / 'target'
+    if runtime is not None:
+        if args.artifact_root == FOUNDATION / '.runtime/exness-market-data':
+            args.artifact_root = runtime / 'artifacts'
+        if args.qdm_home == FOUNDATION / '.runtime/quantdatamanager':
+            args.qdm_home = runtime / 'quantdatamanager'
     if args.runtime_profile == "native":
         profile_root /= "native-candidate"
     if args.rust_binary is None:
@@ -105,7 +216,13 @@ def resolve_profile_paths(args):
         args.rust_research_binary = args.rust_binary.parent / "rust_research_worker.exe"
     if args.manifest is None:
         owner = "native-owner.json" if args.runtime_profile == "native" else "owner.json"
-        args.manifest = FOUNDATION / ".runtime/api-platform" / owner
+        args.manifest = (FOUNDATION / '.runtime/api-platform' if runtime is None else runtime / 'api-platform') / owner
+    if runtime is not None:
+        # Build/admin/children run with FOUNDATION as cwd. Bind all caller-relative
+        # selections before handing them to those processes.
+        for name in ('artifact_root', 'qdm_home', 'manifest', 'rust_binary',
+                     'rust_admin_binary', 'rust_research_binary'):
+            setattr(args, name, getattr(args, name).absolute())
     return args
 
 
@@ -547,6 +664,10 @@ def supervise(args, env):
              "run_id": run_id, "project": str(PROJECT.resolve()), "port": args.port,
              "stop_file": str(stop_file.resolve()), "ready": False,
              "processes": {"supervisor": process_identity(os.getpid())}, "executable_sha256": {}}
+    if args.worktree_runtime_root is not None:
+        state['worktree_runtime'] = {'root': str(args.worktree_runtime_root.resolve()),
+                                    'database_name': args.database_name,
+                                    'artifact_root': str(args.artifact_root.resolve())}
     if env.get("TW_V2_LOCAL_CAPABILITY_FILE"):
         state["local_capability_file"] = env["TW_V2_LOCAL_CAPABILITY_FILE"]
     state["executable_sha256"]["supervisor"] = binary_digest(Path(state["processes"]["supervisor"]["executable"]))
@@ -652,6 +773,10 @@ def parser():
     result.add_argument("--rust-admin-binary", type=Path)
     result.add_argument("--rust-research-binary", type=Path)
     result.add_argument("--manifest", type=Path)
+    result.add_argument('--worktree-runtime-root', type=Path,
+                        help='Dedicated local state/build root for linked worktrees; may be outside the source checkout. Requires a non-default database and port for runtime actions.')
+    result.add_argument('--check-isolation-only', action='store_true',
+                        help='Validate local output and worktree selection without DB, build or processes. Combine with --build-only to check output-only isolation.')
     result.add_argument("--check-only", action="store_true")
     result.add_argument("--allow-pending-migrations", action="store_true", help="Read-only preflight reports pending versions; cannot start workers with these.")
     result.add_argument("--require-idle", action="store_true", help="Fail if queued/running jobs or legacy downloads exist.")
@@ -673,10 +798,17 @@ def main(argv=None):
         raise PreflightError("Local owner capabilities require the explicit native runtime profile.")
     if args.runtime_profile != "native" and args.replay_storage_profile != "full":
         raise PreflightError("Compact replay storage requires the explicit native runtime profile.")
+    if args.check_isolation_only:
+        if any((args.check_only, args.setup_only, args.stop, args.build, args.migrate,
+                args.allow_pending_migrations, args.adopt_legacy_downloads)):
+            raise PreflightError('--check-isolation-only cannot be combined with runtime/database actions.')
+        print(json.dumps({'check_isolation_only': True, **worktree_isolation_preflight(args)}))
+        return 0
     if args.build_only:
         if any((args.check_only, args.setup_only, args.stop, args.build, args.migrate,
                 args.allow_pending_migrations, args.adopt_legacy_downloads)):
             raise PreflightError("--build-only cannot be combined with runtime/database actions.")
+        worktree_isolation_preflight(args)
         build_candidate(args)
         return 0
     if args.check_only and (args.build or args.migrate or args.stop or args.adopt_legacy_downloads):
@@ -687,6 +819,7 @@ def main(argv=None):
         raise PreflightError("Native profile cannot silently adopt legacy checkpoints; perform explicit provider adoption before native cutover.")
     if args.stop and (args.build or args.migrate or args.setup_only):
         raise PreflightError("Stop cannot be combined with build/migration/setup actions.")
+    worktree_isolation_preflight(args)
     env = configuration(args)
     validate_paths(args, need_binary=not args.build)
     native_provider_preflight(args, env)
