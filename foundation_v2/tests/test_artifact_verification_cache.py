@@ -97,9 +97,48 @@ def test_cached_read_still_detects_mutation_during_decode(tmp_path):
         read(store, relative, checksum)
 
 
+@pytest.mark.skipif(os.name != 'nt', reason='Windows immutable reader sharing contract')
+def test_active_writer_cannot_enter_verified_read_or_receipt_cache(tmp_path):
+    store, relative, checksum, _ = dataset(tmp_path)
+    with (tmp_path / relative).open('r+b'):
+        with pytest.raises(ArtifactConflict, match='busy with a writer'):
+            read(store, relative, checksum)
+    assert not store._verified_datasets
+    assert read(store, relative, checksum)
+
+
+def test_atomic_replacement_during_decode_cannot_return_stale_rows(tmp_path):
+    store, relative, checksum, _ = dataset(tmp_path)
+    original = pq.ParquetFile.read_row_group
+    path = tmp_path / relative
+
+    def replace(parquet, *args, **kwargs):
+        result = original(parquet, *args, **kwargs)
+        replacement = path.with_suffix('.replacement')
+        replacement.write_bytes(path.read_bytes())
+        os.replace(replacement, path)
+        return result
+
+    with patch.object(pq.ParquetFile, 'read_row_group', replace), pytest.raises(ArtifactConflict, match='changed'):
+        read(store, relative, checksum)
+
+
+def test_continuation_authorization_error_is_not_relabelled_as_corruption(tmp_path):
+    store, relative, checksum, _ = dataset(tmp_path)
+    denied = PermissionError('fixture policy denied')
+
+    def revoke():
+        raise denied
+
+    with pytest.raises(PermissionError) as failure:
+        store.read_dataset_range(relative, checksum, from_utc=0, to_utc=5,
+                                 max_bars=5, continue_check=revoke)
+    assert failure.value is denied
+
+
 def test_unavailable_change_stamp_falls_back_to_full_verification(tmp_path):
     store, relative, checksum, rows = dataset(tmp_path)
-    with patch.object(artifacts, '_descriptor_change_time', return_value=None), patch.object(artifacts.hashlib, 'sha256', wraps=artifacts.hashlib.sha256) as digest:
+    with patch.object(artifacts, '_descriptor_revision', return_value=None), patch.object(artifacts.hashlib, 'sha256', wraps=artifacts.hashlib.sha256) as digest:
         assert read(store, relative, checksum) == rows[2:5]
         assert read(store, relative, checksum) == rows[2:5]
         assert digest.call_count == 2

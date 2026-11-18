@@ -12,17 +12,9 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
-from .artifacts import ArtifactConflict, ArtifactStore, _sync_directory, canonical_json_bytes, publish_immutable, sha256_file
+from .artifacts import ArtifactConflict, ArtifactStore, _io_path, _sync_directory, canonical_json_bytes, publish_immutable, sha256_file
 
 SCHEMA = "tw-artifact-backup-v1"
-
-
-def _io_path(path: Path) -> Path:
-    """Windows backup roots add nesting; keep logical manifest paths unchanged."""
-    absolute = str(path.absolute())
-    if os.name != "nt" or absolute.startswith("\\\\?\\"):
-        return path
-    return Path("\\\\?\\UNC\\" + absolute[2:] if absolute.startswith("\\\\") else "\\\\?\\" + absolute)
 
 
 def _copy_checked(source: Path, destination: Path, checksum: str) -> None:
