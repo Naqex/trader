@@ -2395,7 +2395,7 @@ version = "0.1.0-alpha.1"
 dependencies = [
  "async-stream",
  "axum",
- "base64 0.22.1",
+ "base64 0.23.1",
  "bigdecimal",
  "bytes",
  "chrono",

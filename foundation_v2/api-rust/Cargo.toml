@@ -35,7 +35,7 @@ chrono-tz = "=0.10.4"
 parquet = { version = "=59.3.0", default-features = false, features = ["snap", "zstd", "flate2-rust_backend", "lz4"] }
 reqwest = { version = "=0.12.28", default-features = false, features = ["json", "rustls-tls"] }
 getrandom = "=0.4.3"
-base64 = "=0.22.1"
+base64 = "=0.23.1"
 rmcp = { version = "=3.8.0", default-features = false, features = ["client", "transport-streamable-http-client-reqwest"] }
 reqwest-mcp = { package = "reqwest", version = "=0.13.2", default-features = false, features = ["json", "stream"] }
 
