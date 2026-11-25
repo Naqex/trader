@@ -546,14 +546,21 @@ async fn invoke(
                 open_trades::append_projected(&mut facet, &open, &json!({})).map_err(source)?;
                 report["label_revision_key"] = json!(journal_heads);
                 let index = trades::JournalIndex::new(&journals);
-                for projection in [&mut report, &mut facet] {
-                    if let Some(rows) = projection["ledger"].as_array_mut() {
-                        for row in rows.iter_mut() {
-                            *row = trades::decorate(row, &index);
-                        }
-                        crate::trade_labels::project(&tx, &scope.workspace_id, rows, None).await?;
+                let mut batches = Vec::with_capacity(2);
+                if let Some(rows) = report["ledger"].as_array_mut() {
+                    for row in rows.iter_mut() {
+                        *row = trades::decorate(row, &index);
                     }
+                    batches.push(rows.as_mut_slice());
                 }
+                if let Some(rows) = facet["ledger"].as_array_mut() {
+                    for row in rows.iter_mut() {
+                        *row = trades::decorate(row, &index);
+                    }
+                    batches.push(rows.as_mut_slice());
+                }
+                crate::trade_labels::project_batches(&tx, &scope.workspace_id, &mut batches, None)
+                    .await?;
                 let value = trades::build_trades_page_sorted(
                     &report,
                     &journals,
