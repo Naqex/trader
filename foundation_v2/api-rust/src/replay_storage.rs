@@ -299,6 +299,38 @@ fn validate_prop_mark(
     crate::replay_core::validate_event_with_previous(head, event, previous)
 }
 
+fn verify_and_hydrate_events(
+    prefix: ValidatedBarPrefix,
+    events: Vec<(i64, Value, String)>,
+) -> Result<Value> {
+    let mut ledger = Vec::with_capacity(events.len());
+    let mut hash = empty_prefix_sha256();
+    for (offset, (sequence, event, prefix_sha256)) in events.into_iter().enumerate() {
+        if sequence != offset as i64 + 1 {
+            return Err("execution event prefix is incomplete".into());
+        }
+        hash = extend_prefix_sha256(&hash, &event)?;
+        if hash != prefix_sha256 {
+            return Err("execution event prefix checksum mismatch".into());
+        }
+        ledger.push(event);
+    }
+    if ledger.len() as i64 != prefix.event_sequence() || hash != prefix.prefix_sha256() {
+        return Err("execution event cutoff differs from certificate".into());
+    }
+    let mut full = prefix.head().clone();
+    full["ledger"] = json!(ledger);
+    // Import verifies the full canonical history and regenerates every bounded
+    // context field, including the most recent quote and causal coverage.
+    if !equivalent_json(
+        &ValidatedBarPrefix::import(full.clone())?.export(),
+        &prefix.export(),
+    ) {
+        return Err("hydrated execution differs from validated certificate".into());
+    }
+    Ok(full)
+}
+
 /// Exact historical hydration. Queue-only revisions may share an event cutoff
 /// while carrying different pending commands, so the revision is mandatory.
 pub async fn hydrate_payload<C: GenericClient + Sync>(
@@ -323,32 +355,19 @@ pub async fn hydrate_payload<C: GenericClient + Sync>(
     }
     let rows = client.query("SELECT sequence,event_json,prefix_sha256 FROM replay_execution_events WHERE workspace_id=$1 AND record_id=$2 AND dataset_id=$3 AND sequence<=$4 ORDER BY sequence", &[&workspace,&id,&dataset,&prefix.event_sequence()])
         .await.map_err(|_| "cannot hydrate execution events")?;
-    let mut ledger = Vec::with_capacity(rows.len());
-    let mut hash = empty_prefix_sha256();
-    for (offset, row) in rows.into_iter().enumerate() {
-        let event: Value = row.get("event_json");
-        if row.get::<_, i64>("sequence") != offset as i64 + 1 {
-            return Err("execution event prefix is incomplete".into());
-        }
-        hash = extend_prefix_sha256(&hash, &event)?;
-        if hash != row.get::<_, String>("prefix_sha256") {
-            return Err("execution event prefix checksum mismatch".into());
-        }
-        ledger.push(event);
-    }
-    if ledger.len() as i64 != prefix.event_sequence() || hash != prefix.prefix_sha256() {
-        return Err("execution event cutoff differs from certificate".into());
-    }
-    let mut full = prefix.head().clone();
-    full["ledger"] = json!(ledger);
-    // Import verifies the full canonical history and regenerates every bounded
-    // context field, including the most recent quote and causal coverage.
-    if !equivalent_json(
-        &ValidatedBarPrefix::import(full.clone())?.export(),
-        &prefix.export(),
-    ) {
-        return Err("hydrated execution differs from validated certificate".into());
-    }
+    let events: Vec<(i64, Value, String)> = rows
+        .into_iter()
+        .map(|row| {
+            (
+                row.get("sequence"),
+                row.get("event_json"),
+                row.get("prefix_sha256"),
+            )
+        })
+        .collect();
+    let full = tokio::task::spawn_blocking(move || verify_and_hydrate_events(prefix, events))
+        .await
+        .map_err(|_| "cannot hydrate execution events".to_owned())??;
     if !payload["execution"].is_null() {
         payload["execution"] = full.clone();
     }
@@ -901,5 +920,45 @@ mod tests {
         assert!(revision(0).is_err());
         assert!(revision(i64::MAX).is_err());
         assert_eq!(revision(1).unwrap(), 1);
+    }
+    #[tokio::test]
+    async fn hydrate_events_offloads_cpu_validation_and_rejects_corruption() {
+        let (prefix, events, hashes) = prop_fixture();
+        let rows: Vec<(i64, Value, String)> = events
+            .iter()
+            .zip(hashes.iter())
+            .enumerate()
+            .map(|(index, (event, hash))| (index as i64 + 1, event.clone(), hash.clone()))
+            .collect();
+        let hydrated = tokio::task::spawn_blocking({
+            let prefix = prefix.clone();
+            let rows = rows.clone();
+            move || verify_and_hydrate_events(prefix, rows)
+        })
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(hydrated["ledger"].as_array().unwrap().len(), events.len());
+
+        let mut gapped = rows.clone();
+        gapped[0].0 = 2;
+        assert_eq!(
+            verify_and_hydrate_events(prefix.clone(), gapped).unwrap_err(),
+            "execution event prefix is incomplete"
+        );
+
+        let mut tampered = rows.clone();
+        tampered[0].2 = "0".repeat(64);
+        assert_eq!(
+            verify_and_hydrate_events(prefix.clone(), tampered).unwrap_err(),
+            "execution event prefix checksum mismatch"
+        );
+
+        let mut truncated = rows;
+        truncated.pop();
+        assert_eq!(
+            verify_and_hydrate_events(prefix, truncated).unwrap_err(),
+            "execution event cutoff differs from certificate"
+        );
     }
 }

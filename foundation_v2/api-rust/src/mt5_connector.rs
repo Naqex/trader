@@ -148,6 +148,48 @@ fn validate(draft: &Connect) -> Result<NaiveDate, ApiError> {
     }
     Ok(date)
 }
+#[derive(Debug, PartialEq, Eq)]
+enum ConnectCommitPlan {
+    ReplayExisting(Uuid),
+    Commit(Uuid),
+    Reseal(Uuid),
+}
+
+fn resolve_connect_plan(
+    receipt: Option<(Uuid, &str)>,
+    expected_fingerprint: &str,
+    existing_connection_id: Option<Uuid>,
+    workspace_connection_count: i64,
+    planned_id: Uuid,
+    attempt: usize,
+) -> Result<ConnectCommitPlan, ApiError> {
+    if let Some((connection_id, saved_fingerprint)) = receipt {
+        if saved_fingerprint != expected_fingerprint {
+            return Err(ApiError::detail(
+                StatusCode::CONFLICT,
+                "mt5_request_conflict",
+            ));
+        }
+        return Ok(ConnectCommitPlan::ReplayExisting(connection_id));
+    }
+    if let Some(actual_id) = existing_connection_id {
+        if actual_id != planned_id {
+            if attempt == 0 {
+                return Ok(ConnectCommitPlan::Reseal(actual_id));
+            }
+            return Err(ApiError::detail(
+                StatusCode::CONFLICT,
+                "mt5_request_conflict",
+            ));
+        }
+        return Ok(ConnectCommitPlan::Commit(actual_id));
+    }
+    if workspace_connection_count >= 10 {
+        return Err(error("mt5_connection_limit"));
+    }
+    Ok(ConnectCommitPlan::Commit(planned_id))
+}
+
 async fn connect(
     State(state): State<Arc<AppState>>,
     scope: Workspace,
@@ -180,18 +222,6 @@ async fn connect(
         "{:x}",
         Sha256::digest(serde_json::to_vec(&json!([draft.server, draft.login])).unwrap())
     );
-    let id = Uuid::new_v4();
-    let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
-    let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
-    tx.query_one(
-        "SELECT pg_advisory_xact_lock($1)",
-        &[&crate::native_mutation::idempotency_lock(
-            &scope,
-            "mt5-connections",
-        )],
-    )
-    .await
-    .map_err(|_| ApiError::database())?;
     let fingerprint = format!(
         "{:x}",
         Sha256::digest(
@@ -199,25 +229,45 @@ async fn connect(
                 .unwrap()
         )
     );
-    if let Some(receipt)=tx.query_opt("SELECT connection_id,fingerprint FROM mt5_connection_requests WHERE workspace_id=$1 AND request_id=$2",&[&scope.workspace_id,&draft.request_id]).await.map_err(|_|ApiError::database())? {
-        if receipt.get::<_,String>("fingerprint")!=fingerprint{return Err(ApiError::detail(StatusCode::CONFLICT,"mt5_request_conflict"))}
-        let connection_id:Uuid=receipt.get("connection_id");
-        let row=tx.query_one("SELECT * FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",&[&scope.workspace_id,&connection_id]).await.map_err(|_|ApiError::database())?;
-        return Ok((StatusCode::ACCEPTED,Json(public(&row))))
-    }
-    let old = tx
-        .query_opt(
-            "SELECT * FROM mt5_connections WHERE workspace_id=$1 AND account_key=$2",
-            &[&scope.workspace_id, &key],
-        )
-        .await
-        .map_err(|_| ApiError::database())?;
-    let id = old
-        .as_ref()
-        .map(|r| r.get::<_, Uuid>("connection_id"))
-        .unwrap_or(id);
-    if old.is_none()
-        && tx
+    // Phase 1: fast read-only precheck without holding a transaction or advisory lock
+    // across the external DPAPI seal subprocess.
+    let mut planned_id = Uuid::new_v4();
+    {
+        let conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+        if let Some(receipt) = conn
+            .query_opt(
+                "SELECT connection_id,fingerprint FROM mt5_connection_requests WHERE workspace_id=$1 AND request_id=$2",
+                &[&scope.workspace_id, &draft.request_id],
+            )
+            .await
+            .map_err(|_| ApiError::database())?
+        {
+            if receipt.get::<_, String>("fingerprint") != fingerprint {
+                return Err(ApiError::detail(
+                    StatusCode::CONFLICT,
+                    "mt5_request_conflict",
+                ));
+            }
+            let connection_id: Uuid = receipt.get("connection_id");
+            let row = conn
+                .query_one(
+                    "SELECT * FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",
+                    &[&scope.workspace_id, &connection_id],
+                )
+                .await
+                .map_err(|_| ApiError::database())?;
+            return Ok((StatusCode::ACCEPTED, Json(public(&row))));
+        }
+        let old = conn
+            .query_opt(
+                "SELECT connection_id FROM mt5_connections WHERE workspace_id=$1 AND account_key=$2",
+                &[&scope.workspace_id, &key],
+            )
+            .await
+            .map_err(|_| ApiError::database())?;
+        if let Some(row) = old {
+            planned_id = row.get::<_, Uuid>("connection_id");
+        } else if conn
             .query_one(
                 "SELECT count(*) FROM mt5_connections WHERE workspace_id=$1",
                 &[&scope.workspace_id],
@@ -226,13 +276,10 @@ async fn connect(
             .map_err(|_| ApiError::database())?
             .get::<_, i64>(0)
             >= 10
-    {
-        return Err(error("mt5_connection_limit"));
+        {
+            return Err(error("mt5_connection_limit"));
+        }
     }
-    let sealed=adapter(json!({"action":"seal","workspace":scope.workspace_id,"connection_id":id,"secret":{"server":draft.server,"login":draft.login,"password":draft.password}}),Duration::from_secs(10)).await.map_err(|code|ApiError::detail(StatusCode::SERVICE_UNAVAILABLE,&code))?;
-    let credential = sealed["credential"]
-        .as_str()
-        .ok_or_else(|| error("mt5_secret_unavailable"))?;
     let hint = format!(
         "…{}",
         draft
@@ -245,22 +292,112 @@ async fn connect(
             .rev()
             .collect::<String>()
     );
-    tx.execute(
-        "INSERT INTO workspaces(workspace_id,created_at_utc) VALUES($1,$2) ON CONFLICT DO NOTHING",
-        &[&scope.workspace_id, &Utc::now().to_rfc3339()],
-    )
-    .await
-    .map_err(|_| ApiError::database())?;
-    let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued',$10) ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,requested_mode=EXCLUDED.requested_mode,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.snapshot ELSE CASE WHEN mt5_connections.snapshot->'balance_baseline' IS NULL THEN NULL ELSE jsonb_build_object('status','unavailable','balance_baseline',mt5_connections.snapshot->'balance_baseline') END END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential,&draft.requested_mode]).await.map_err(|_|ApiError::database())?;
-    tx.execute("INSERT INTO mt5_connection_requests(workspace_id,request_id,connection_id,fingerprint) VALUES($1,$2,$3,$4)",&[&scope.workspace_id,&draft.request_id,&id,&fingerprint]).await.map_err(|_|ApiError::database())?;
-    tx.commit().await.map_err(|_| ApiError::database())?;
-    let generation = row.get::<_, i64>("generation");
-    log_action(&scope.workspace_id, id, generation, "connect", "queued");
-    let workspace = scope.workspace_id.clone();
-    tokio::spawn(async move {
-        crate::demo_trading::revoke_managed_worker(&workspace, id, Some(generation)).await;
-    });
-    Ok((StatusCode::ACCEPTED, Json(public(&row))))
+    // Phase 2 & 3: seal credentials outside any DB transaction/lock, then acquire the
+    // advisory lock only for the brief re-check and atomic commit. If a concurrent request
+    // created the same account_key with a different connection_id, release the lock and
+    // reseal once for the authoritative ID.
+    for attempt in 0..2 {
+        let sealed = adapter(
+            json!({"action":"seal","workspace":scope.workspace_id,"connection_id":planned_id,"secret":{"server":draft.server,"login":draft.login,"password":draft.password}}),
+            Duration::from_secs(10),
+        )
+        .await
+        .map_err(|code| ApiError::detail(StatusCode::SERVICE_UNAVAILABLE, &code))?;
+        let credential = sealed["credential"]
+            .as_str()
+            .ok_or_else(|| error("mt5_secret_unavailable"))?
+            .to_owned();
+        let mut conn = state.pool.get().await.map_err(|_| ApiError::database())?;
+        let tx = conn.transaction().await.map_err(|_| ApiError::database())?;
+        tx.query_one(
+            "SELECT pg_advisory_xact_lock($1)",
+            &[&crate::native_mutation::idempotency_lock(
+                &scope,
+                "mt5-connections",
+            )],
+        )
+        .await
+        .map_err(|_| ApiError::database())?;
+        let receipt = tx
+            .query_opt(
+                "SELECT connection_id,fingerprint FROM mt5_connection_requests WHERE workspace_id=$1 AND request_id=$2",
+                &[&scope.workspace_id, &draft.request_id],
+            )
+            .await
+            .map_err(|_| ApiError::database())?
+            .map(|row| (row.get::<_, Uuid>("connection_id"), row.get::<_, String>("fingerprint")));
+        let existing_id = tx
+            .query_opt(
+                "SELECT connection_id FROM mt5_connections WHERE workspace_id=$1 AND account_key=$2",
+                &[&scope.workspace_id, &key],
+            )
+            .await
+            .map_err(|_| ApiError::database())?
+            .map(|row| row.get::<_, Uuid>("connection_id"));
+        let count = if receipt.is_none() && existing_id.is_none() {
+            tx.query_one(
+                "SELECT count(*) FROM mt5_connections WHERE workspace_id=$1",
+                &[&scope.workspace_id],
+            )
+            .await
+            .map_err(|_| ApiError::database())?
+            .get::<_, i64>(0)
+        } else {
+            0
+        };
+        let plan = resolve_connect_plan(
+            receipt.as_ref().map(|(cid, fp)| (*cid, fp.as_str())),
+            &fingerprint,
+            existing_id,
+            count,
+            planned_id,
+            attempt,
+        )?;
+        match plan {
+            ConnectCommitPlan::ReplayExisting(connection_id) => {
+                let row = tx
+                    .query_one(
+                        "SELECT * FROM mt5_connections WHERE workspace_id=$1 AND connection_id=$2",
+                        &[&scope.workspace_id, &connection_id],
+                    )
+                    .await
+                    .map_err(|_| ApiError::database())?;
+                return Ok((StatusCode::ACCEPTED, Json(public(&row))));
+            }
+            ConnectCommitPlan::Reseal(actual_id) => {
+                planned_id = actual_id;
+                continue;
+            }
+            ConnectCommitPlan::Commit(id) => {
+                tx.execute(
+                    "INSERT INTO workspaces(workspace_id,created_at_utc) VALUES($1,$2) ON CONFLICT DO NOTHING",
+                    &[&scope.workspace_id, &Utc::now().to_rfc3339()],
+                )
+                .await
+                .map_err(|_| ApiError::database())?;
+                let row=tx.query_one("INSERT INTO mt5_connections(workspace_id,connection_id,request_id,account_key,name,server,login_hint,start_date,credential,status,requested_mode) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'queued',$10) ON CONFLICT(workspace_id,account_key) DO UPDATE SET request_id=EXCLUDED.request_id,name=EXCLUDED.name,credential=EXCLUDED.credential,start_date=EXCLUDED.start_date,requested_mode=EXCLUDED.requested_mode,snapshot=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.snapshot ELSE CASE WHEN mt5_connections.snapshot->'balance_baseline' IS NULL THEN NULL ELSE jsonb_build_object('status','unavailable','balance_baseline',mt5_connections.snapshot->'balance_baseline') END END,last_synced_at=CASE WHEN mt5_connections.start_date=EXCLUDED.start_date AND mt5_connections.requested_mode=EXCLUDED.requested_mode THEN mt5_connections.last_synced_at ELSE NULL END,generation=mt5_connections.generation+1,full_sync=true,status='queued',error_code=NULL,next_sync_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP RETURNING *",&[&scope.workspace_id,&id,&draft.request_id,&key,&draft.name.trim(),&draft.server,&hint,&date,&credential,&draft.requested_mode]).await.map_err(|_|ApiError::database())?;
+                tx.execute(
+                    "INSERT INTO mt5_connection_requests(workspace_id,request_id,connection_id,fingerprint) VALUES($1,$2,$3,$4)",
+                    &[&scope.workspace_id, &draft.request_id, &id, &fingerprint],
+                )
+                .await
+                .map_err(|_| ApiError::database())?;
+                tx.commit().await.map_err(|_| ApiError::database())?;
+                let generation = row.get::<_, i64>("generation");
+                log_action(&scope.workspace_id, id, generation, "connect", "queued");
+                let workspace = scope.workspace_id.clone();
+                tokio::spawn(async move {
+                    crate::demo_trading::revoke_managed_worker(&workspace, id, Some(generation))
+                        .await;
+                });
+                return Ok((StatusCode::ACCEPTED, Json(public(&row))));
+            }
+        }
+    }
+    Err(ApiError::detail(
+        StatusCode::CONFLICT,
+        "mt5_request_conflict",
+    ))
 }
 async fn action(
     State(state): State<Arc<AppState>>,
@@ -1082,5 +1219,42 @@ mod tests {
         let empty = json!({"history_from_utc":"2026-10-23T00:00:00Z",
             "account_binding":{"login":"123","server":"Fixture"},"deals":[],"cashflows":[]});
         assert!(validate_full_history(Some(&empty), &empty, true).is_ok());
+    }
+    #[test]
+    fn connect_commit_plan_preserves_idempotency_limit_and_concurrent_reseal_bounds() {
+        let planned = Uuid::from_u128(10);
+        let existing = Uuid::from_u128(20);
+        let receipt_id = Uuid::from_u128(30);
+
+        assert_eq!(
+            resolve_connect_plan(Some((receipt_id, "fp-a")), "fp-a", None, 10, planned, 0).unwrap(),
+            ConnectCommitPlan::ReplayExisting(receipt_id)
+        );
+        let conflict =
+            resolve_connect_plan(Some((receipt_id, "fp-old")), "fp-new", None, 0, planned, 0)
+                .unwrap_err();
+        assert_eq!(conflict.0, StatusCode::CONFLICT);
+        assert_eq!(conflict.1["detail"], "mt5_request_conflict");
+
+        let limit = resolve_connect_plan(None, "fp-a", None, 10, planned, 0).unwrap_err();
+        assert_eq!(limit.0, StatusCode::UNPROCESSABLE_ENTITY);
+        assert_eq!(limit.1["detail"], "mt5_connection_limit");
+
+        assert_eq!(
+            resolve_connect_plan(None, "fp-a", Some(existing), 10, existing, 0).unwrap(),
+            ConnectCommitPlan::Commit(existing)
+        );
+        assert_eq!(
+            resolve_connect_plan(None, "fp-a", Some(existing), 3, planned, 0).unwrap(),
+            ConnectCommitPlan::Reseal(existing)
+        );
+        let race = resolve_connect_plan(None, "fp-a", Some(existing), 3, planned, 1).unwrap_err();
+        assert_eq!(race.0, StatusCode::CONFLICT);
+        assert_eq!(race.1["detail"], "mt5_request_conflict");
+
+        assert_eq!(
+            resolve_connect_plan(None, "fp-a", None, 9, planned, 0).unwrap(),
+            ConnectCommitPlan::Commit(planned)
+        );
     }
 }

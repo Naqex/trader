@@ -41,6 +41,7 @@ import WorkspaceConnectionNote from './WorkspaceConnectionNote.jsx'
 import { startFrontendPerformance } from './frontendPerformance.js'
 import { TestingRouteBoundary } from './TestingReadState.jsx'
 import { TestingEmptyState, TestingPageSkeleton } from './TestingPageState.jsx'
+import { preloadTestingLocale } from './testingLocale.jsx'
 import ChartLoadingState from './ChartLoadingState.jsx'
 import ProjectTooltipLayer from './ProjectTooltipLayer.jsx'
 
@@ -179,10 +180,27 @@ if (!rootElement) throw new Error('Trading Workspace root element is missing')
 const rootStateKey = '__tradingWorkspaceReactRoot'
 const appRoot = rootElement[rootStateKey] || createRoot(rootElement)
 rootElement[rootStateKey] = appRoot
-appRoot.render(<><App /><ProjectTooltipLayer /></>)
+
+const initialLanguage = (() => {
+  try {
+    const param = new URLSearchParams(window.location.search).get('lang')
+    if (param === 'en' || param === 'vi') return param
+    return localStorage.getItem('tw-language') === 'en' ? 'en' : 'vi'
+  } catch {
+    return 'vi'
+  }
+})()
+
+let disposed = false
+void preloadTestingLocale(initialLanguage)
+  .catch(() => {})
+  .finally(() => {
+    if (!disposed) appRoot.render(<><App /><ProjectTooltipLayer /></>)
+  })
 
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
+    disposed = true
     removeChunkRecovery()
     appRoot.unmount()
     delete rootElement[rootStateKey]
