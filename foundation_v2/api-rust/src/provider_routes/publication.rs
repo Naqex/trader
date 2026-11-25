@@ -245,7 +245,10 @@ pub(super) async fn publish(
         "x-workspace-id",
         workspace.parse().map_err(|_| "workspace_access_denied")?,
     );
-    state.authorization.authorize(&headers).map_err(detail)?;
+    state
+        .authorization
+        .authorize_workspace(&headers)
+        .map_err(detail)?;
     let preview = prepared.preview.clone();
     let dataset = preview["dataset_id"]
         .as_str()

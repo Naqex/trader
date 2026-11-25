@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { translateTesting } from '../src/testingTranslate.js'
 
 const copySource = fs.readFileSync(new URL('../src/testing-copy.json', import.meta.url), 'utf8')
 const copy = JSON.parse(copySource)
@@ -31,4 +32,18 @@ test('status families have both locales and blocked execution has an explanation
   }
   assert.match(copy.replay_execution_not_initialized.en, /not been initialized/)
   assert.match(copy['LIVE REPLAY CURSOR'].en, /CURRENT REPLAY CURSOR/)
+})
+
+test('translateTesting uses exact lookup and explicit placeholders without greedy wildcard mangling', () => {
+  assert.equal(translateTesting('Tùy chỉnh', 'vi'), 'Tùy chỉnh')
+  assert.equal(translateTesting('Tùy chỉnh', 'en'), 'Tùy chỉnh')
+  assert.equal(translateTesting('TSLA', 'vi'), 'TSLA')
+  assert.equal(translateTesting('TSLA', 'en'), 'TSLA')
+  assert.equal(translateTesting('Hủy lệnh', 'vi'), 'Hủy lệnh')
+  assert.equal(translateTesting('Hủy lệnh', 'en'), 'Hủy lệnh')
+  assert.equal(translateTesting('T{number}', 'vi', { number: 3 }), 'T3')
+  assert.equal(translateTesting('T{number}', 'en', { number: 3 }), 'W3')
+  assert.equal(translateTesting('{count} lệnh', 'vi', { count: 1 }), '1 giao dịch')
+  assert.equal(translateTesting('{count} lệnh', 'en', { count: 1 }), '1 trade')
+  assert.equal(translateTesting('{count} lệnh', 'en', { count: 4 }), '4 trades')
 })
