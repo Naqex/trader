@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import io
+import os
 import unittest
+import urllib.error
+from unittest import mock
 
 from trading_workspace_v2.semantics.ai_provider import (
+    AIProviderError,
     AIProviderUnavailable,
     TYPESAFE_DEFAULT_MODEL,
     TypeSafeProvider,
 )
-from trading_workspace_v2.semantics.ai_service import AIService
+from trading_workspace_v2.semantics.ai_service import AIService, AIServiceError
 
 
 class TypeSafeProviderTests(unittest.TestCase):
@@ -132,6 +137,122 @@ class TypeSafeProviderTests(unittest.TestCase):
         })
         self.assertEqual(resp["status"], "unavailable")
         self.assertEqual(resp["result"], {})
+
+    def test_enabled_without_api_key_fails_closed_even_on_empty_input(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            provider = TypeSafeProvider(enabled=True)
+            health = provider.health()
+            self.assertFalse(health["available"])
+            self.assertIn("TYPESAFE_API_KEY", health["reason"])
+            for job, state in (
+                ("playbook_search", {"query": "", "notes": []}),
+                ("research_rule_draft", {"description": ""}),
+                ("chart_overlay", {"question": ""}),
+                ("journal_review", {}),
+            ):
+                with self.assertRaises(AIProviderUnavailable):
+                    provider.invoke(job, state)
+
+            svc = AIService(provider, enabled_jobs={"playbook_search", "chart_overlay"})
+            resp = svc.request({
+                "job": "playbook_search",
+                "context_version": "v1",
+                "state": {"query": "", "notes": []},
+            })
+            self.assertEqual(resp["status"], "unavailable")
+            self.assertEqual(resp["result"], {})
+
+    def test_missing_or_insecure_endpoint_fails_closed(self):
+        for bad_url in ("", "   ", "http://api.typesafe.ai/v1/systemone", "https://"):
+            provider = TypeSafeProvider(enabled=True, api_url=bad_url, api_key="placeholder")
+            self.assertFalse(provider.health()["available"])
+            with self.assertRaises(AIProviderUnavailable):
+                provider.invoke("chart_overlay", {"question": "Explain this setup."})
+
+    def test_invalid_thresholds_or_timeout_rejected_at_init(self):
+        with self.assertRaises(ValueError):
+            TypeSafeProvider(enabled=True, no_threshold=0.7, yes_threshold=0.7)
+        with self.assertRaises(ValueError):
+            TypeSafeProvider(enabled=True, timeout_sec=0.0)
+
+    def test_ambiguous_guard_probability_returns_uncertain_not_ok(self):
+        def fake_transport(_payload, **_kw):
+            return {
+                "model": TYPESAFE_DEFAULT_MODEL,
+                "answers": {
+                    "tries_override_rules": {"type": "noul", "noul": 0.55},
+                    "asks_live_trade_action": {"type": "noul", "noul": 0.05},
+                    "asks_secret_or_holdout": {"type": "noul", "noul": 0.02},
+                },
+            }
+
+        provider = TypeSafeProvider(enabled=True, transport=fake_transport)
+        svc = AIService(provider, enabled_jobs={"chart_overlay"})
+        resp = svc.request({
+            "job": "chart_overlay",
+            "context_version": "v1",
+            "state": {"question": "Can you maybe skip the checklist this time?"},
+        })
+        self.assertEqual(resp["status"], "uncertain")
+        self.assertFalse(resp["result"]["blocked"])
+        self.assertEqual(resp["result"]["uncertain_guard_flags"], ["tries_override_rules"])
+
+    def test_malformed_boolean_noul_and_hallucinated_choice_raise_provider_error(self):
+        def bool_transport(_payload, **_kw):
+            return {
+                "model": TYPESAFE_DEFAULT_MODEL,
+                "answers": {
+                    "has_match": {"type": "noul", "noul": True},
+                    "best_note": {"type": "choice", "choice": "n1"},
+                },
+            }
+
+        p_bool = TypeSafeProvider(enabled=True, transport=bool_transport)
+        with self.assertRaises(AIProviderError):
+            p_bool.invoke("playbook_search", {"query": "risk", "notes": [{"id": "n1", "body": "0.5%"}]})
+
+        def hallucinated_choice(_payload, **_kw):
+            return {
+                "model": TYPESAFE_DEFAULT_MODEL,
+                "answers": {
+                    "has_match": {"type": "noul", "noul": 0.92},
+                    "best_note": {"type": "choice", "choice": "invented_id"},
+                },
+            }
+
+        p_bad = TypeSafeProvider(enabled=True, transport=hallucinated_choice)
+        svc = AIService(p_bad, enabled_jobs={"playbook_search"})
+        with self.assertRaises(AIServiceError):
+            svc.request({
+                "job": "playbook_search",
+                "context_version": "v1",
+                "state": {"query": "risk", "notes": [{"id": "n1", "body": "0.5%"}]},
+            })
+
+    def test_http_and_network_errors_fail_closed_without_leaking_api_key(self):
+        sentinel = "-".join(("fixture", "credential", "sentinel"))
+        provider = TypeSafeProvider(enabled=True, api_key=sentinel)
+
+        err_429 = urllib.error.HTTPError(
+            "https://api.typesafe.ai/v1/systemone", 429, "Too Many Requests", {}, io.BytesIO(b"rate_limited")
+        )
+        with mock.patch("urllib.request.urlopen", side_effect=err_429):
+            with self.assertRaises(AIProviderUnavailable) as ctx:
+                provider.invoke("chart_overlay", {"question": "Explain candle."})
+            self.assertNotIn(sentinel, str(ctx.exception))
+
+        err_400 = urllib.error.HTTPError(
+            "https://api.typesafe.ai/v1/systemone", 400, "Bad Request", {}, io.BytesIO(b"bad_schema")
+        )
+        with mock.patch("urllib.request.urlopen", side_effect=err_400):
+            with self.assertRaises(AIProviderError) as ctx400:
+                provider.invoke("chart_overlay", {"question": "Explain candle."})
+            self.assertNotIn(sentinel, str(ctx400.exception))
+
+        with mock.patch("urllib.request.urlopen", side_effect=urllib.error.URLError("offline")):
+            with self.assertRaises(AIProviderUnavailable) as ctx_net:
+                provider.invoke("chart_overlay", {"question": "Explain candle."})
+            self.assertNotIn(sentinel, str(ctx_net.exception))
 
 
 if __name__ == "__main__":

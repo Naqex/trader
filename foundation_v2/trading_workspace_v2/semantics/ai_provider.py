@@ -114,10 +114,26 @@ def _extract_noul(answers, qid):
     item = answers.get(qid)
     if not isinstance(item, dict) or "noul" not in item:
         raise AIProviderError(f"TypeSafe response missing noul `{qid}`")
-    val = float(item["noul"])
+    raw_val = item["noul"]
+    if isinstance(raw_val, bool):
+        raise AIProviderError(f"TypeSafe returned boolean instead of noul probability for `{qid}`")
+    try:
+        val = float(raw_val)
+    except (TypeError, ValueError) as exc:
+        raise AIProviderError(f"TypeSafe returned non-numeric noul probability for `{qid}`") from exc
     if not math.isfinite(val) or val < 0.0 or val > 1.0:
         raise AIProviderError(f"TypeSafe returned invalid noul probability for `{qid}`")
     return val
+
+
+def _extract_choice(answers, qid, allowed):
+    item = answers.get(qid)
+    if not isinstance(item, dict):
+        raise AIProviderError(f"TypeSafe response missing choice object `{qid}`")
+    choice = item.get("choice")
+    if choice not in allowed:
+        raise AIProviderError(f"TypeSafe returned choice outside allowed criteria for `{qid}`")
+    return choice, item
 
 
 class TypeSafeProvider:
@@ -126,7 +142,7 @@ class TypeSafeProvider:
     Invariants:
       - Zero broker/execution imports; `capabilities["broker_actions"]` is permanently `False`.
       - Pinned to `jev-1.14.0` by default (never silently drifts on moving aliases).
-      - Opt-in only: disabled unless `enabled=True` AND (`transport` is injected OR `TYPESAFE_API_KEY` is set).
+      - Opt-in only: disabled unless `enabled=True` AND (`transport` is injected OR HTTPS `api_url` + `TYPESAFE_API_KEY` are set).
       - Failures raise `AIProviderUnavailable` / `AIProviderError` — never coerced into `"no"` or `"ok"`.
     """
 
@@ -137,6 +153,7 @@ class TypeSafeProvider:
         *,
         enabled=False,
         model_id=TYPESAFE_DEFAULT_MODEL,
+        api_url=TYPESAFE_API_URL,
         api_key=None,
         api_key_env="TYPESAFE_API_KEY",
         timeout_sec=20.0,
@@ -145,12 +162,17 @@ class TypeSafeProvider:
         transport=None,
     ):
         self.enabled = bool(enabled)
-        self.model_id = str(model_id or TYPESAFE_DEFAULT_MODEL)
+        self.model_id = str(model_id or TYPESAFE_DEFAULT_MODEL).strip() or TYPESAFE_DEFAULT_MODEL
+        self._api_url = str(api_url or "").strip()
         self._explicit_api_key = (api_key or "").strip() or None
         self._api_key_env = str(api_key_env)
         self.timeout_sec = float(timeout_sec)
         self.yes_threshold = float(yes_threshold)
         self.no_threshold = float(no_threshold)
+        if not math.isfinite(self.timeout_sec) or self.timeout_sec <= 0.0:
+            raise ValueError("timeout_sec must be positive")
+        if not (0.0 < self.no_threshold < self.yes_threshold < 1.0):
+            raise ValueError("thresholds must satisfy 0 < no_threshold < yes_threshold < 1")
         self._transport = transport
         self.capabilities = {
             "playbook_search": self.enabled,
@@ -165,18 +187,32 @@ class TypeSafeProvider:
             return self._explicit_api_key
         return os.environ.get(self._api_key_env, "").strip()
 
+    def _has_valid_endpoint(self):
+        return self._api_url.startswith("https://") and len(self._api_url) > len("https://")
+
+    def _assert_ready(self):
+        if not self.enabled:
+            raise AIProviderUnavailable("TypeSafeProvider is disabled")
+        if self._transport is not None:
+            return
+        if not self._has_valid_endpoint():
+            raise AIProviderUnavailable("TypeSafe endpoint is not configured or must use HTTPS")
+        if not self._resolve_key():
+            raise AIProviderUnavailable(f"{self._api_key_env} is not configured")
+
     def health(self):
         if not self.enabled:
             return {"available": False, "reason": "TypeSafeProvider is disabled (opt-in required)"}
         if self._transport is not None:
             return {"available": True, "reason": None, "model": self.model_id, "mode": "injected_transport"}
+        if not self._has_valid_endpoint():
+            return {"available": False, "reason": "TypeSafe endpoint is not configured or must use HTTPS"}
         if not self._resolve_key():
             return {"available": False, "reason": f"{self._api_key_env} is not set"}
         return {"available": True, "reason": None, "model": self.model_id, "mode": "live_https"}
 
     def _post_system_one(self, state, questions, *, assets=None, enable_images=False):
-        if not self.enabled:
-            raise AIProviderUnavailable("TypeSafeProvider is disabled")
+        self._assert_ready()
         payload = {
             "model": self.model_id,
             "state": state,
@@ -194,8 +230,6 @@ class TypeSafeProvider:
             return raw, latency_ms
 
         key = self._resolve_key()
-        if not key:
-            raise AIProviderUnavailable(f"{self._api_key_env} is not configured")
         headers = {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
@@ -203,7 +237,7 @@ class TypeSafeProvider:
         if enable_images:
             headers["TypeSafe-Danger-Zone-Images"] = "true"
         req = urllib.request.Request(
-            TYPESAFE_API_URL,
+            self._api_url,
             data=json.dumps(payload, ensure_ascii=False, allow_nan=False).encode("utf-8"),
             headers=headers,
             method="POST",
@@ -264,7 +298,6 @@ class TypeSafeProvider:
         raw, latency_ms = self._post_system_one({"query": query, "candidates": cand_map}, questions)
         ans = raw["answers"]
         has_p = _extract_noul(ans, "has_match")
-        best = ans.get("best_note") or {}
         if has_p < self.no_threshold:
             return {
                 "status": "uncertain",
@@ -272,13 +305,14 @@ class TypeSafeProvider:
                 "usage": raw.get("usage"),
                 "latency_ms": latency_ms,
             }
+        selected_id, best = _extract_choice(ans, "best_note", cand_map)
         status = "ok" if has_p >= self.yes_threshold else "uncertain"
         return {
             "status": status,
             "result": {
                 "no_match": False,
                 "has_match_noul": round(has_p, 4),
-                "selected_id": best.get("choice"),
+                "selected_id": selected_id,
                 "confidence": best.get("confidence"),
                 "probabilities": best.get("probabilities"),
             },
@@ -331,12 +365,15 @@ class TypeSafeProvider:
                 "latency_ms": latency_ms,
             }
 
+        uncertain_guard_flags = [k for k, p in guard_probs.items() if p > self.no_threshold]
         result = {
             "blocked": False,
             "guard_probabilities": guard_probs,
             "advisory_only": True,
         }
-        status = "ok"
+        status = "uncertain" if uncertain_guard_flags else "ok"
+        if uncertain_guard_flags:
+            result["uncertain_guard_flags"] = uncertain_guard_flags
         if "followed_rule" in questions:
             rp = _extract_noul(ans, "followed_rule")
             if rp >= self.yes_threshold:
@@ -400,9 +437,15 @@ class TypeSafeProvider:
         ans = raw["answers"]
         has_side = _extract_noul(ans, "has_side")
         has_tf = _extract_noul(ans, "has_timeframe")
+        side_choice = _extract_choice(ans, "side", ("long", "short", "both"))[0] if has_side >= self.yes_threshold else None
+        tf_choice = (
+            _extract_choice(ans, "timeframe", ("M5", "M15", "H1", "H4", "D1"))[0]
+            if has_tf >= self.yes_threshold
+            else None
+        )
         draft = {
-            "side": (ans.get("side") or {}).get("choice") if has_side >= self.yes_threshold else None,
-            "timeframe": (ans.get("timeframe") or {}).get("choice") if has_tf >= self.yes_threshold else None,
+            "side": side_choice,
+            "timeframe": tf_choice,
         }
         status = "ok" if (draft["side"] is not None and draft["timeframe"] is not None) else "uncertain"
         return {
@@ -418,8 +461,7 @@ class TypeSafeProvider:
         }
 
     def invoke(self, job, state):
-        if not self.enabled:
-            raise AIProviderUnavailable("TypeSafeProvider is disabled")
+        self._assert_ready()
         if job == "playbook_search":
             return self._invoke_playbook_search(state)
         if job == "research_rule_draft":
