@@ -5,6 +5,7 @@ import path from 'node:path'
 import { createServer, transformWithEsbuild } from 'vite'
 import react from '@vitejs/plugin-react'
 import { chromium } from 'playwright'
+import { splitTestingCopy } from '../vite.config.js'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const out = path.resolve(process.argv[2] || path.join(root, '.artifacts/overlay-layering'))
@@ -101,6 +102,7 @@ const server = await createServer({
   cacheDir: path.join(process.env.TEMP || out, 'naqex-overlay-layering-vite-cache'),
   plugins: [
     react(),
+    splitTestingCopy(),
     {
       name: 'overlay-layering-fixture',
       resolveId(id) {

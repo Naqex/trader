@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "prune:dist": "node pruneDistAssets.mjs",
+    "prune:dist:apply": "node pruneDistAssets.mjs --apply",
     "test:notion-connector": "node --test tests/notionConnector.test.mjs",
     "test:learn-ui": "node run_learn_ui_acceptance.mjs",
     "test:settings-ui": "node run_settings_ui_acceptance.mjs",
