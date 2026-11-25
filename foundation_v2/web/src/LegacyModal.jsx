@@ -37,6 +37,8 @@ export default function LegacyModal({ theme, label, onClose, children, className
     initial.focus({ preventScroll: true })
     const keyboard = event => {
       if (modalStack.at(-1) !== panel || event.defaultPrevented) return
+      // Yield Escape and Tab cycling whenever a native top-layer <dialog> is active above this modal.
+      if (event.target?.closest?.('dialog[open]') || document.querySelector('dialog:modal')) return
       if (event.key === 'Escape' && event.target.closest?.('[popover]:popover-open')) return
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeRef.current(); return }
       if (event.key !== 'Tab') return
@@ -49,7 +51,8 @@ export default function LegacyModal({ theme, label, onClose, children, className
     return () => {
       document.removeEventListener('keydown', keyboard)
       const wasTop = modalStack.at(-1) === panel
-      modalStack.splice(modalStack.indexOf(panel), 1)
+      const index = modalStack.indexOf(panel)
+      if (index >= 0) modalStack.splice(index, 1)
       syncModals()
       if (!modalStack.length) {
         if (background.app) background.app.inert = background.inert
@@ -61,7 +64,7 @@ export default function LegacyModal({ theme, label, onClose, children, className
   }, [])
 
   return createPortal(
-    <div className={`legacy-modal-overlay wm-ui-portal ${overlayClassName} ${theme === 'light' ? 'is-light' : ''}`} data-theme={theme} role="presentation" onPointerDown={event => { if (event.target === event.currentTarget) closeRef.current() }}>
+    <div className={`legacy-modal-overlay wm-ui-portal ${overlayClassName} ${theme === 'light' ? 'is-light' : ''}`} data-theme={theme} role="presentation" onPointerDown={event => { if (event.target === event.currentTarget && !document.querySelector('dialog:modal')) closeRef.current() }}>
       <section ref={panelRef} className={`legacy-modal ${className}`} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
         <header>{headerLeading}<h2 id={titleId}>{label}</h2>{headerActions}<button type="button" className="wm-dialog-close" aria-label={t(closeLabel)} onClick={() => closeRef.current()}><ChartIcon name="close" /></button></header>
         {children}

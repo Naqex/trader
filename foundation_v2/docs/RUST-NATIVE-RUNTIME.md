@@ -1,5 +1,24 @@
 # Rust-native candidate runtime
 
+## Linked worktrees and private state
+
+Linked checkouts require `--worktree-runtime-root` and explicit non-default
+`--database-name` / `--port` before runtime actions. The launcher binds binaries,
+artifacts, manifest and lock to that root, rejects links/foreign checkout paths,
+and disables inherited optional AI/provider/terminal integrations. An existing
+manifest must match this checkout and its selected outputs.
+
+Admission can be checked without reading a database or starting any process:
+
+```powershell
+foundation_v2/.venv/Scripts/python.exe foundation_v2/scripts/run_api_platform.py --worktree-runtime-root .runtime/owned-runtime --database-name tw_private_research --port 8127 --download-engine none --check-isolation-only
+```
+
+This check grants no broker capability and does not provision a database. The
+PowerShell wrapper accepts `-WorktreeRuntimeRoot` with the same ownership rules.
+Standalone/default runtime behavior is retained; source adoption is separate
+from deploying or restarting an existing local service.
+
 03 November local API update: [MT5 account lifecycle receipt](../evidence/owner-system-audit-20261031/ACCOUNT-LIFECYCLE-20261103.md)
 records background terminal desktops, refresh without reconnect, generation-bound
 cleanup and verification on the two existing demo accounts. Schema20, storage,

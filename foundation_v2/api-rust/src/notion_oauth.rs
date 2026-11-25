@@ -223,7 +223,7 @@ impl NotionOAuthService {
                 .map_err(|_| forbidden("notion_oauth_workspace_access_denied"))?,
         );
         let scope = auth
-            .authorize(&headers)
+            .authorize_workspace(&headers)
             .map_err(|_| forbidden("notion_oauth_workspace_access_denied"))?;
         if !bool::from(scope.subject.as_bytes().ct_eq(pending.identity.as_bytes())) {
             return Err(bad("notion_oauth_identity_changed"));
@@ -1303,6 +1303,83 @@ mod tests {
             "connected"
         );
         task.abort();
+        provider_task.abort();
+    }
+
+    #[tokio::test]
+    async fn complete_at_and_callback_authorize_workspace_in_local_capability_mode() {
+        let capability_auth = LocalAuthorization::with_capabilities(
+            "owner".into(),
+            vec!["a".into(), "b".into()],
+            crate::auth::LocalCapabilityConfig {
+                allowed_origins: vec!["http://127.0.0.1:5180".into()],
+                owner_bearer: Some(crate::auth::OwnerBearerCapability {
+                    token_sha256: "1".repeat(64),
+                    expires_at_utc: Utc::now() + Duration::days(1),
+                }),
+                bootstrap: None,
+            },
+        )
+        .unwrap();
+        let mut raw_headers = HeaderMap::new();
+        raw_headers.insert("x-workspace-id", "b".parse().unwrap());
+        assert_eq!(
+            capability_auth.authorize(&raw_headers).unwrap_err().0,
+            StatusCode::UNAUTHORIZED
+        );
+
+        let (service, count, provider_task) =
+            fixture(json!({"access_token":"fixture-access"})).await;
+        let service = Arc::new(service);
+        let nonce_b = nonce(&service.begin_at("b", "owner", now()).unwrap());
+        let completed = service
+            .complete_at(&nonce_b, "fixture-code", &capability_auth, now())
+            .await
+            .unwrap();
+        assert_eq!(completed["status"], "connected");
+        assert_eq!(
+            service.status_at("b", "owner", now())["status"],
+            "connected"
+        );
+        assert_eq!(
+            service.status_at("a", "owner", now())["status"],
+            "disconnected"
+        );
+
+        let nonce_outsider = nonce(&service.begin_at("outsider", "owner", now()).unwrap());
+        let denied = service
+            .complete_at(&nonce_outsider, "fixture-code", &capability_auth, now())
+            .await
+            .unwrap_err();
+        assert_eq!(denied.0, StatusCode::FORBIDDEN);
+        assert_eq!(denied.1["detail"], "notion_oauth_workspace_access_denied");
+
+        let nonce_a = nonce(&service.begin_at("a", "owner", Utc::now()).unwrap());
+        let mut state = crate::tests::fixture(1000);
+        {
+            let state = Arc::get_mut(&mut state).unwrap();
+            state.authorization = capability_auth;
+            state.config.local_workspaces = Some(vec!["a".into(), "b".into()]);
+            state.config.request_timeout = std::time::Duration::from_secs(5);
+            state.notion_oauth = service.clone();
+        }
+        let app = crate::router(state, routes());
+        let response = app
+            .oneshot(request(
+                &format!("{CALLBACK}?state={nonce_a}&code=fixture-code"),
+                "127.0.0.1:8010",
+                Some("127.0.0.1:50000"),
+                None,
+                "GET",
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            service.status_at("a", "owner", Utc::now())["status"],
+            "connected"
+        );
+        assert_eq!(count.load(Ordering::SeqCst), 2);
         provider_task.abort();
     }
 }

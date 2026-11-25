@@ -117,20 +117,13 @@ async fn format<C: GenericClient + Sync>(
         .map(|row|row.get(0)).ok_or_else(|| "replay revision missing".into())
 }
 
-/// Restore a bounded trusted head only when the exact revision is compact.
-pub async fn load_prefix<C: GenericClient + Sync>(
+async fn load_compact_prefix<C: GenericClient + Sync>(
     client: &C,
     workspace: &str,
     id: &str,
-    rev: i64,
+    rev: i32,
     dataset: &str,
-) -> Result<Option<ValidatedBarPrefix>> {
-    let rev = revision(rev)?;
-    match format(client, workspace, id, rev).await?.as_str() {
-        FULL_FORMAT => return Ok(None),
-        STORAGE_FORMAT => (),
-        _ => return Err("unknown replay execution storage format".into()),
-    }
+) -> Result<ValidatedBarPrefix> {
     let row = client.query_opt("SELECT p.validator_version,p.event_sequence,p.prefix_sha256,p.prefix_json,p.branch_id,p.dataset_sha256,d.manifest_json->>'artifact_sha256' AS manifest_sha256 FROM replay_execution_revisions p LEFT JOIN datasets d ON d.workspace_id=p.workspace_id AND d.dataset_id=p.dataset_id WHERE p.workspace_id=$1 AND p.record_id=$2 AND p.revision=$3 AND p.dataset_id=$4", &[&workspace,&id,&rev,&dataset])
         .await.map_err(|_| "cannot read execution prefix")?.ok_or("execution prefix missing")?;
     if row.get::<_, String>("validator_version") != BAR_PREFIX_VERSION {
@@ -160,7 +153,26 @@ pub async fn load_prefix<C: GenericClient + Sync>(
             return Err("execution prefix tip differs from certificate".into());
         }
     }
-    Ok(Some(prefix))
+    Ok(prefix)
+}
+
+/// Restore a bounded trusted head only when the exact revision is compact.
+pub async fn load_prefix<C: GenericClient + Sync>(
+    client: &C,
+    workspace: &str,
+    id: &str,
+    rev: i64,
+    dataset: &str,
+) -> Result<Option<ValidatedBarPrefix>> {
+    let rev = revision(rev)?;
+    match format(client, workspace, id, rev).await?.as_str() {
+        FULL_FORMAT => return Ok(None),
+        STORAGE_FORMAT => (),
+        _ => return Err("unknown replay execution storage format".into()),
+    }
+    load_compact_prefix(client, workspace, id, rev, dataset)
+        .await
+        .map(Some)
 }
 
 pub struct PropMarkSelection {
@@ -287,43 +299,18 @@ fn validate_prop_mark(
     crate::replay_core::validate_event_with_previous(head, event, previous)
 }
 
-/// Exact historical hydration. Queue-only revisions may share an event cutoff
-/// while carrying different pending commands, so the revision is mandatory.
-pub async fn hydrate_payload<C: GenericClient + Sync>(
-    client: &C,
-    workspace: &str,
-    id: &str,
-    rev: i64,
-    mut payload: Value,
+fn verify_and_hydrate_events(
+    prefix: ValidatedBarPrefix,
+    events: Vec<(i64, Value, String)>,
 ) -> Result<Value> {
-    match format(client, workspace, id, revision(rev)?)
-        .await?
-        .as_str()
-    {
-        FULL_FORMAT => return Ok(payload),
-        STORAGE_FORMAT => (),
-        _ => return Err("unknown replay execution storage format".into()),
-    }
-    let head = execution(&payload)?.ok_or("compact revision execution missing")?;
-    let dataset = text(&head, "dataset_id")?.to_owned();
-    let prefix = load_prefix(client, workspace, id, rev, &dataset)
-        .await?
-        .ok_or("compact prefix missing")?;
-    check_scope(id, &payload, prefix.head())?;
-    if !equivalent_json(&head, prefix.head()) {
-        return Err("compact payload differs from immutable head".into());
-    }
-    let rows = client.query("SELECT sequence,event_json,prefix_sha256 FROM replay_execution_events WHERE workspace_id=$1 AND record_id=$2 AND dataset_id=$3 AND sequence<=$4 ORDER BY sequence", &[&workspace,&id,&dataset,&prefix.event_sequence()])
-        .await.map_err(|_| "cannot hydrate execution events")?;
-    let mut ledger = Vec::with_capacity(rows.len());
+    let mut ledger = Vec::with_capacity(events.len());
     let mut hash = empty_prefix_sha256();
-    for (offset, row) in rows.into_iter().enumerate() {
-        let event: Value = row.get("event_json");
-        if row.get::<_, i64>("sequence") != offset as i64 + 1 {
+    for (offset, (sequence, event, prefix_sha256)) in events.into_iter().enumerate() {
+        if sequence != offset as i64 + 1 {
             return Err("execution event prefix is incomplete".into());
         }
         hash = extend_prefix_sha256(&hash, &event)?;
-        if hash != row.get::<_, String>("prefix_sha256") {
+        if hash != prefix_sha256 {
             return Err("execution event prefix checksum mismatch".into());
         }
         ledger.push(event);
@@ -341,6 +328,46 @@ pub async fn hydrate_payload<C: GenericClient + Sync>(
     ) {
         return Err("hydrated execution differs from validated certificate".into());
     }
+    Ok(full)
+}
+
+/// Exact historical hydration. Queue-only revisions may share an event cutoff
+/// while carrying different pending commands, so the revision is mandatory.
+pub async fn hydrate_payload<C: GenericClient + Sync>(
+    client: &C,
+    workspace: &str,
+    id: &str,
+    rev: i64,
+    mut payload: Value,
+) -> Result<Value> {
+    let rev = revision(rev)?;
+    match format(client, workspace, id, rev).await?.as_str() {
+        FULL_FORMAT => return Ok(payload),
+        STORAGE_FORMAT => (),
+        _ => return Err("unknown replay execution storage format".into()),
+    }
+    let head = execution(&payload)?.ok_or("compact revision execution missing")?;
+    let dataset = text(&head, "dataset_id")?.to_owned();
+    let prefix = load_compact_prefix(client, workspace, id, rev, &dataset).await?;
+    check_scope(id, &payload, prefix.head())?;
+    if !equivalent_json(&head, prefix.head()) {
+        return Err("compact payload differs from immutable head".into());
+    }
+    let rows = client.query("SELECT sequence,event_json,prefix_sha256 FROM replay_execution_events WHERE workspace_id=$1 AND record_id=$2 AND dataset_id=$3 AND sequence<=$4 ORDER BY sequence", &[&workspace,&id,&dataset,&prefix.event_sequence()])
+        .await.map_err(|_| "cannot hydrate execution events")?;
+    let events: Vec<(i64, Value, String)> = rows
+        .into_iter()
+        .map(|row| {
+            (
+                row.get("sequence"),
+                row.get("event_json"),
+                row.get("prefix_sha256"),
+            )
+        })
+        .collect();
+    let full = tokio::task::spawn_blocking(move || verify_and_hydrate_events(prefix, events))
+        .await
+        .map_err(|_| "cannot hydrate execution events".to_owned())??;
     if !payload["execution"].is_null() {
         payload["execution"] = full.clone();
     }
@@ -893,5 +920,45 @@ mod tests {
         assert!(revision(0).is_err());
         assert!(revision(i64::MAX).is_err());
         assert_eq!(revision(1).unwrap(), 1);
+    }
+    #[tokio::test]
+    async fn hydrate_events_offloads_cpu_validation_and_rejects_corruption() {
+        let (prefix, events, hashes) = prop_fixture();
+        let rows: Vec<(i64, Value, String)> = events
+            .iter()
+            .zip(hashes.iter())
+            .enumerate()
+            .map(|(index, (event, hash))| (index as i64 + 1, event.clone(), hash.clone()))
+            .collect();
+        let hydrated = tokio::task::spawn_blocking({
+            let prefix = prefix.clone();
+            let rows = rows.clone();
+            move || verify_and_hydrate_events(prefix, rows)
+        })
+        .await
+        .unwrap()
+        .unwrap();
+        assert_eq!(hydrated["ledger"].as_array().unwrap().len(), events.len());
+
+        let mut gapped = rows.clone();
+        gapped[0].0 = 2;
+        assert_eq!(
+            verify_and_hydrate_events(prefix.clone(), gapped).unwrap_err(),
+            "execution event prefix is incomplete"
+        );
+
+        let mut tampered = rows.clone();
+        tampered[0].2 = "0".repeat(64);
+        assert_eq!(
+            verify_and_hydrate_events(prefix.clone(), tampered).unwrap_err(),
+            "execution event prefix checksum mismatch"
+        );
+
+        let mut truncated = rows;
+        truncated.pop();
+        assert_eq!(
+            verify_and_hydrate_events(prefix, truncated).unwrap_err(),
+            "execution event cutoff differs from certificate"
+        );
     }
 }

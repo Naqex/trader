@@ -8,6 +8,10 @@ export function isRetryableReadError(error) {
   return error instanceof TypeError || error.name === 'TypeError' || error.code === 'NETWORK_ERROR'
 }
 
+export function shouldShowManualRetry(onRetry, recovery) {
+  return Boolean(onRetry && (!recovery || recovery.exhausted || !recovery.retryAt))
+}
+
 function resourceRevision(snapshot, resource) {
   const value = snapshot?.resources?.[resource]
   if (value != null) return typeof value === 'object' ? value.revision : value

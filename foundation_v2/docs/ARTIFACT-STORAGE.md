@@ -5,14 +5,23 @@ result relative paths and SHA256 manifest fields are unchanged; browser storage
 is not an artifact backend. Rust must authorize the workspace before resolving
 any manifest reference. It must not accept arbitrary client filesystem paths.
 
-`ArtifactStore.read_dataset_range()` verifies the full SHA256 on the same open
-file descriptor used for Parquet decoding, prunes row groups using timestamp
+`ArtifactStore.read_dataset_range()` verifies SHA256 on the same open file
+descriptor used for Parquet decoding, prunes row groups using timestamp
 statistics, and projects timestamp/OHLC only. Row-level filtering preserves the
 exclusive upper cutoff and refuses output beyond `max_bars`. Missing statistics
 fall back to reading that group. Descriptor identity is checked around hashing
-and decoding; pathname identity detects a replacement. There is no digest cache:
-each read still scans all raw bytes for integrity, but no longer decodes every
-row. This intentionally trades some disk I/O for the existing integrity contract.
+and decoding; pathname identity detects a replacement. A bounded cache retains
+up to 32 verified `(expected hash, descriptor revision)` receipts, not dataset
+contents. A missing reliable revision forces a full hash on each read.
+
+On Windows, dataset readers deny concurrent in-place writes and request delete
+sharing. A replacement is either denied by the filesystem or detected by the
+pathname check; stale rows are not returned. The revision combines native
+ChangeTime with the file USN: ChangeTime alone can collide for rapid edits, and
+USN updates can coalesce while handles remain open. The read-sharing rule and
+both checks are therefore used together. Unsupported USN queries disable cache
+reuse without enabling or changing the filesystem journal. Permission errors
+from an authorization/continuation callback remain authorization errors.
 
 All publishers write a unique temporary file, sync its contents, then publish
 without overwriting a concurrent winner. Windows uses a write-through move
@@ -22,6 +31,11 @@ Path components reject traversal, reserved Windows device names, symlinks and
 junctions. This protects the application boundary; the artifact directory must
 also remain private to the service account. Hardware/filesystem power-loss
 behavior is not established by a process-crash fixture.
+
+Windows artifact roots use an extended-length native I/O path internally, shared
+with the backup helper. This covers long candidate temporary names as well as
+read, quarantine and restore paths. Returned relative artifact names and manifest
+keys retain their existing layout; no OS-wide long-path setting is changed.
 
 ## Backup and restore
 
