@@ -372,13 +372,13 @@ export default function ReplayWorkspace({ workspace, query }) {
   useEffect(() => {
     const refresh = () => {
       if (pendingAction) return
-      loadDatasets()
+      if (datasetState.status !== 'ready' && datasetState.status !== 'loading') loadDatasets()
       if (state.status === 'error' && sessionId && requestedCursorValid) loadSession(sessionId, requestedCursor)
     }
     window.addEventListener('focus', refresh)
     window.addEventListener('online', refresh)
     return () => { window.removeEventListener('focus', refresh); window.removeEventListener('online', refresh) }
-  }, [loadDatasets, loadSession, pendingAction, requestedCursor, requestedCursorValid, sessionId, state.status])
+  }, [datasetState.status, loadDatasets, loadSession, pendingAction, requestedCursor, requestedCursorValid, sessionId, state.status])
 
   useEffect(() => {
     if (requestedSession) {
@@ -802,7 +802,7 @@ export default function ReplayWorkspace({ workspace, query }) {
     if (!(reference > 0)) return null
     try { return scalperProtection(scalperPreset, reference, side, order.instrument) } catch { return null }
   }, [order.active?.entry_fill, order.active?.side, order.draft.side, order.instrument, order.reference, replay?.visible_rows, scalperPreset])
-  const priceLevels = order.active ? orderLevels(replay, order.draft, scalperPreview, order.reference, order.instrument) : null
+  const priceLevels = useMemo(() => (order.active ? orderLevels(replay, order.draft, scalperPreview, order.reference, order.instrument) : null), [order.active, order.draft, order.instrument, order.reference, replay, scalperPreview])
   const quotes = marketQuotes(replay)
   const orderBlockedReason = propMode && propState.status !== 'ready' ? 'Chưa đồng bộ được trạng thái challenge; thao tác đang khóa.' : propMode && propState.attempt?.status !== 'running' ? 'Đang đồng bộ trạng thái challenge; hãy thử tải lại phiên.' : historicalView ? 'Cutoff lịch sử chỉ đọc. Về cursor mới nhất hoặc tạo nhánh để đặt lệnh.' : completed ? 'Dataset đã kết thúc; không còn nến để fill hoặc sửa lệnh.' : conflict ? 'Đang khóa vì revision đã thay đổi.' : assetClockStale ? 'Chờ nến mới của tài sản tại thời gian replay chung để đặt lệnh.' : ''
 
@@ -1103,7 +1103,7 @@ export default function ReplayWorkspace({ workspace, query }) {
                     workspace={workspace} datasetId={replay.payload.dataset_id} datasetSha256={replay.dataset_sha256} viewCursorIndex={replay.view_cursor_index} symbol={replayContext.instrument} assetClass={order.instrument?.asset_class} seconds={activeDataset?.timeframe_seconds || replay.payload.execution?.timeframe_seconds}
                     cutoff={Number(replay.cutoff_timestamp)} stepTail={state.stepTail} theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} onOrderEdit={() => { setIsPlaying(false); openPanel('order') }} orderGeneration={`${sessionId}:${revision}:${cursor}`}
                     onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} onOrderValidationError={order.reportError} rows={visibleRows} sessionId={sessionId}
-                    viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} preferredInterval={nativeIntervalRef.current?.sessionId === sessionId ? nativeIntervalRef.current.interval : undefined} onHeaderSlots={slots => { if (slots?.interval) nativeIntervalRef.current = { sessionId, interval: slots.interval }; setNativeHeaderSlots(slots) }} selectingReplayBar={selectingReplayBar} onReplayBarSelect={selectReplayBar} />
+                    viewportRequest={viewportRequest} drawings={drawings.objects} preferredInterval={nativeIntervalRef.current?.sessionId === sessionId ? nativeIntervalRef.current.interval : undefined} onHeaderSlots={slots => { if (slots?.interval) nativeIntervalRef.current = { sessionId, interval: slots.interval }; setNativeHeaderSlots(slots) }} selectingReplayBar={selectingReplayBar} onReplayBarSelect={selectReplayBar} />
                     : <Suspense fallback={<ChartLoadingState />}><ReplayChart theme={theme} levels={priceLevels} orderEditable={!order.disabled} orderCloseable={order.canClose && Boolean(order.active)} onOrderClose={order.close} orderGeneration={`${sessionId}:${revision}:${cursor}`} onOrderDragStart={() => setIsPlaying(false)} tickSize={order.instrument?.tick_size} onOrderPriceChange={order.changePrice} rows={visibleRows} sessionId={sessionId} chartType={chartType} showVolume={showVolume} showAverage={showAverage} viewportRequest={viewportRequest} drawings={drawings.objects} onCrosshair={setCrosshair} onAnchorSelect={handleChartAnchor} /></Suspense>}
                   <div className="chart-badge chart-badge-left">{replay.payload.dataset_id}</div>
                   <div className="chart-badge chart-badge-right">{replay.historical_view ? t("HISTORICAL CUTOFF") : t("LIVE REPLAY CURSOR")}</div>

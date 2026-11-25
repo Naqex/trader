@@ -73,7 +73,7 @@ jobs:
           cache: npm
           cache-dependency-path: foundation_v2/web/package-lock.json
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node --test tests/scopedMutation.test.mjs tests/scopedRead.test.mjs tests/clientNavigation.test.mjs tests/workspaceEvents.test.mjs tests/chartAnnotations.test.mjs tests/dataDeskApi.test.mjs tests/sessionPicker.test.mjs tests/dashboardModel.test.mjs tests/shellPreferences.test.mjs
+      - run: node --test tests/scopedMutation.test.mjs tests/scopedRead.test.mjs tests/clientNavigation.test.mjs tests/workspaceEvents.test.mjs tests/chartAnnotations.test.mjs tests/dataDeskApi.test.mjs tests/sessionPicker.test.mjs tests/dashboardModel.test.mjs tests/shellPreferences.test.mjs tests/testingCopy.test.mjs tests/auditRegressions.test.mjs
       - run: npm run build
       - run: npx --no-install playwright install --with-deps chromium
       - run: node tests/brand.browser.mjs

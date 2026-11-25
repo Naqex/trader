@@ -117,20 +117,13 @@ async fn format<C: GenericClient + Sync>(
         .map(|row|row.get(0)).ok_or_else(|| "replay revision missing".into())
 }
 
-/// Restore a bounded trusted head only when the exact revision is compact.
-pub async fn load_prefix<C: GenericClient + Sync>(
+async fn load_compact_prefix<C: GenericClient + Sync>(
     client: &C,
     workspace: &str,
     id: &str,
-    rev: i64,
+    rev: i32,
     dataset: &str,
-) -> Result<Option<ValidatedBarPrefix>> {
-    let rev = revision(rev)?;
-    match format(client, workspace, id, rev).await?.as_str() {
-        FULL_FORMAT => return Ok(None),
-        STORAGE_FORMAT => (),
-        _ => return Err("unknown replay execution storage format".into()),
-    }
+) -> Result<ValidatedBarPrefix> {
     let row = client.query_opt("SELECT p.validator_version,p.event_sequence,p.prefix_sha256,p.prefix_json,p.branch_id,p.dataset_sha256,d.manifest_json->>'artifact_sha256' AS manifest_sha256 FROM replay_execution_revisions p LEFT JOIN datasets d ON d.workspace_id=p.workspace_id AND d.dataset_id=p.dataset_id WHERE p.workspace_id=$1 AND p.record_id=$2 AND p.revision=$3 AND p.dataset_id=$4", &[&workspace,&id,&rev,&dataset])
         .await.map_err(|_| "cannot read execution prefix")?.ok_or("execution prefix missing")?;
     if row.get::<_, String>("validator_version") != BAR_PREFIX_VERSION {
@@ -160,7 +153,26 @@ pub async fn load_prefix<C: GenericClient + Sync>(
             return Err("execution prefix tip differs from certificate".into());
         }
     }
-    Ok(Some(prefix))
+    Ok(prefix)
+}
+
+/// Restore a bounded trusted head only when the exact revision is compact.
+pub async fn load_prefix<C: GenericClient + Sync>(
+    client: &C,
+    workspace: &str,
+    id: &str,
+    rev: i64,
+    dataset: &str,
+) -> Result<Option<ValidatedBarPrefix>> {
+    let rev = revision(rev)?;
+    match format(client, workspace, id, rev).await?.as_str() {
+        FULL_FORMAT => return Ok(None),
+        STORAGE_FORMAT => (),
+        _ => return Err("unknown replay execution storage format".into()),
+    }
+    load_compact_prefix(client, workspace, id, rev, dataset)
+        .await
+        .map(Some)
 }
 
 pub struct PropMarkSelection {
@@ -296,19 +308,15 @@ pub async fn hydrate_payload<C: GenericClient + Sync>(
     rev: i64,
     mut payload: Value,
 ) -> Result<Value> {
-    match format(client, workspace, id, revision(rev)?)
-        .await?
-        .as_str()
-    {
+    let rev = revision(rev)?;
+    match format(client, workspace, id, rev).await?.as_str() {
         FULL_FORMAT => return Ok(payload),
         STORAGE_FORMAT => (),
         _ => return Err("unknown replay execution storage format".into()),
     }
     let head = execution(&payload)?.ok_or("compact revision execution missing")?;
     let dataset = text(&head, "dataset_id")?.to_owned();
-    let prefix = load_prefix(client, workspace, id, rev, &dataset)
-        .await?
-        .ok_or("compact prefix missing")?;
+    let prefix = load_compact_prefix(client, workspace, id, rev, &dataset).await?;
     check_scope(id, &payload, prefix.head())?;
     if !equivalent_json(&head, prefix.head()) {
         return Err("compact payload differs from immutable head".into());
