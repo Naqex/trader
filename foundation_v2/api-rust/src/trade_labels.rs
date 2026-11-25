@@ -774,46 +774,85 @@ pub fn normalize(tags: &[String], defs: &[Value]) -> Vec<String> {
     }
     result
 }
+fn collect_unique_keys<'a>(
+    rows: impl Iterator<Item = &'a Value>,
+    session: Option<&str>,
+) -> Vec<String> {
+    let mut seen = HashSet::new();
+    let mut keys = Vec::new();
+    for r in rows {
+        let key = assignment_key(
+            session.unwrap_or(text(r, "session_id")),
+            text(r, "trade_id"),
+        );
+        if seen.insert(key.clone()) {
+            keys.push(key);
+        }
+    }
+    keys
+}
+fn apply_projection(
+    defs: &[Value],
+    by_key: &std::collections::HashMap<String, (i32, Value)>,
+    rows: &mut [Value],
+    session: Option<&str>,
+) {
+    for r in rows.iter_mut() {
+        let key = assignment_key(
+            session.unwrap_or(text(r, "session_id")),
+            text(r, "trade_id"),
+        );
+        let assignment = by_key.get(&key);
+        let raw = assignment
+            .map(|(_, payload)| payload["tags"].clone())
+            .unwrap_or_else(|| r["tags"].clone());
+        let normalized = normalize(&names(&raw), defs);
+        r["tags"] = json!(normalized);
+        r["label_revision"] = json!(assignment.map(|(rev, _)| *rev).unwrap_or(0));
+        r["labels_authoritative"] = json!(true);
+        r["label_aliases"] = json!(
+            defs.iter()
+                .filter(|d| !is_group(d)
+                    && d["payload"]["active"] != false
+                    && normalized
+                        .iter()
+                        .any(|tag| tag == text(&d["payload"], "name")))
+                .flat_map(|d| names(&d["payload"]["aliases"]))
+                .collect::<Vec<_>>()
+        );
+    }
+}
 // Indexed lookups by assignment source key; do not load all historical assignments.
+pub async fn project_batches(
+    tx: &Transaction<'_>,
+    workspace: &str,
+    batches: &mut [&mut [Value]],
+    session: Option<&str>,
+) -> Result<(), ApiError> {
+    let keys = collect_unique_keys(batches.iter().flat_map(|rows| rows.iter()), session);
+    if keys.is_empty() {
+        return Ok(());
+    }
+    let defs = definitions(tx, workspace).await?;
+    let assignments=tx.query("SELECT r.source_key,r.current_revision,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='trade_label_assignment' AND r.source_key=ANY($2) AND NOT v.deleted",&[&workspace,&keys]).await.map_err(|_|ApiError::database())?;
+    let mut by_key = std::collections::HashMap::with_capacity(assignments.len());
+    for a in assignments {
+        by_key
+            .entry(a.get::<_, String>(0))
+            .or_insert_with(|| (a.get::<_, i32>(1), a.get::<_, Value>(2)));
+    }
+    for rows in batches.iter_mut() {
+        apply_projection(&defs, &by_key, rows, session);
+    }
+    Ok(())
+}
 pub async fn project(
     tx: &Transaction<'_>,
     workspace: &str,
     rows: &mut [Value],
     session: Option<&str>,
 ) -> Result<(), ApiError> {
-    let defs = definitions(tx, workspace).await?;
-    let keys = rows
-        .iter()
-        .map(|r| {
-            assignment_key(
-                session.unwrap_or(text(r, "session_id")),
-                text(r, "trade_id"),
-            )
-        })
-        .collect::<Vec<_>>();
-    let assignments=tx.query("SELECT r.source_key,r.current_revision,v.payload_json FROM workspace_records r JOIN workspace_record_revisions v ON v.workspace_id=r.workspace_id AND v.kind=r.kind AND v.record_id=r.record_id AND v.revision=r.current_revision WHERE r.workspace_id=$1 AND r.kind='trade_label_assignment' AND r.source_key=ANY($2) AND NOT v.deleted",&[&workspace,&keys]).await.map_err(|_|ApiError::database())?;
-    let mut by_key = std::collections::HashMap::new();
-    for a in &assignments {
-        by_key.entry(a.get::<_, String>(0)).or_insert(a);
-    }
-    for (r, key) in rows.iter_mut().zip(keys) {
-        let assignment = by_key.get(&key).copied();
-        let raw = assignment
-            .map(|a| a.get::<_, Value>(2)["tags"].clone())
-            .unwrap_or_else(|| r["tags"].clone());
-        r["tags"] = json!(normalize(&names(&raw), &defs));
-        r["label_revision"] = json!(assignment.map(|a| a.get::<_, i32>(1)).unwrap_or(0));
-        r["labels_authoritative"] = json!(true);
-        r["label_aliases"] = json!(
-            defs.iter()
-                .filter(|d| !is_group(d)
-                    && d["payload"]["active"] != false
-                    && names(&r["tags"]).contains(&text(&d["payload"], "name").to_owned()))
-                .flat_map(|d| names(&d["payload"]["aliases"]))
-                .collect::<Vec<_>>()
-        );
-    }
-    Ok(())
+    project_batches(tx, workspace, &mut [rows], session).await
 }
 pub async fn project_context(
     tx: &Transaction<'_>,
@@ -935,5 +974,54 @@ mod tests {
             panic!()
         };
         assert_eq!(group_id, Some(None));
+    }
+    #[test]
+    fn apply_projection_batches_match_single_batch_projection_and_deduplicate_keys() {
+        let defs = vec![
+            json!({"record_id":"a","payload":{"name":"Breakout","aliases":["old","Breakout"],"active":true}}),
+            json!({"record_id":"b","payload":{"name":"Archived","aliases":["Archived"],"active":false}}),
+        ];
+        let mut report_rows = vec![
+            json!({"session_id":"s1","trade_id":"t1","tags":["legacy"]}),
+            json!({"session_id":"s1","trade_id":"t2","tags":["old","Archived"]}),
+        ];
+        let mut facet_rows = vec![
+            json!({"session_id":"s1","trade_id":"t1","tags":["legacy"]}),
+            json!({"session_id":"s1","trade_id":"t2","tags":["old","Archived"]}),
+            json!({"session_id":"s2","trade_id":"t3","tags":["unassigned"]}),
+        ];
+        let keys = collect_unique_keys(report_rows.iter().chain(facet_rows.iter()), None);
+        assert_eq!(
+            keys.len(),
+            3,
+            "shared report/facet trade keys must be queried once"
+        );
+
+        let mut by_key = std::collections::HashMap::new();
+        by_key.insert(
+            assignment_key("s1", "t1"),
+            (4, json!({"tags":["old","Archived","extra"]})),
+        );
+
+        let mut expected_report = report_rows.clone();
+        let mut expected_facet = facet_rows.clone();
+        apply_projection(&defs, &by_key, &mut expected_report, None);
+        apply_projection(&defs, &by_key, &mut expected_facet, None);
+
+        let mut batches: Vec<&mut [Value]> =
+            vec![report_rows.as_mut_slice(), facet_rows.as_mut_slice()];
+        for batch in batches.iter_mut() {
+            apply_projection(&defs, &by_key, batch, None);
+        }
+
+        assert_eq!(report_rows, expected_report);
+        assert_eq!(facet_rows, expected_facet);
+        assert_eq!(report_rows[0]["tags"], json!(["Breakout", "extra"]));
+        assert_eq!(report_rows[0]["label_revision"], json!(4));
+        assert_eq!(report_rows[0]["labels_authoritative"], json!(true));
+        assert_eq!(report_rows[0]["label_aliases"], json!(["old", "Breakout"]));
+        assert_eq!(report_rows[1]["tags"], json!(["Breakout"]));
+        assert_eq!(report_rows[1]["label_revision"], json!(0));
+        assert_eq!(facet_rows[2]["tags"], json!(["unassigned"]));
     }
 }
