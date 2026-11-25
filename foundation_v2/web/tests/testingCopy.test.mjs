@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { translateTesting } from '../src/testingTranslate.js'
 
 const copySource = fs.readFileSync(new URL('../src/testing-copy.json', import.meta.url), 'utf8')
 const copy = JSON.parse(copySource)
@@ -31,4 +32,41 @@ test('status families have both locales and blocked execution has an explanation
   }
   assert.match(copy.replay_execution_not_initialized.en, /not been initialized/)
   assert.match(copy['LIVE REPLAY CURSOR'].en, /CURRENT REPLAY CURSOR/)
+})
+
+test('translateTesting uses exact lookup and explicit placeholders without greedy wildcard mangling', () => {
+  assert.equal(translateTesting('Tùy chỉnh', 'vi'), 'Tùy chỉnh')
+  assert.equal(translateTesting('Tùy chỉnh', 'en'), 'Tùy chỉnh')
+  assert.equal(translateTesting('TSLA', 'vi'), 'TSLA')
+  assert.equal(translateTesting('TSLA', 'en'), 'TSLA')
+  assert.equal(translateTesting('Hủy lệnh', 'vi'), 'Hủy lệnh')
+  assert.equal(translateTesting('Hủy lệnh', 'en'), 'Hủy lệnh')
+  assert.equal(translateTesting('T{number}', 'vi', { number: 3 }), 'T3')
+  assert.equal(translateTesting('T{number}', 'en', { number: 3 }), 'W3')
+  assert.equal(translateTesting('{count} lệnh', 'vi', { count: 1 }), '1 giao dịch')
+  assert.equal(translateTesting('{count} lệnh', 'en', { count: 1 }), '1 trade')
+  assert.equal(translateTesting('{count} lệnh', 'en', { count: 4 }), '4 trades')
+})
+
+test('active research, journal, data desk, and trade workspaces localize all Vietnamese UI copy with EN catalog coverage', () => {
+  const workspaces = [
+    'ResearchWorkspace.jsx',
+    'JournalWorkspace.jsx',
+    'DataDeskWorkspace.jsx',
+    'TradeWorkspace.jsx',
+  ]
+  for (const file of workspaces) {
+    const src = fs.readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8')
+    assert.match(src, /useTestingLocale/, `${file} must import and use useTestingLocale`)
+    for (const match of src.matchAll(/>([^<>{]*[À-ỹ][^<>{]*)</gu)) {
+      const text = match[1].trim()
+      assert.equal(text, '', `${file} has unwrapped Vietnamese JSX text node: ${text}`)
+    }
+    for (const match of src.matchAll(/'((?:\\.|[^'\\\r\n])*)'/g)) {
+      const key = match[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\')
+      if (!/[À-ỹ]/u.test(key)) continue
+      assert.ok(copy[key], `${file} missing testing-copy.json entry for: ${key}`)
+      assert.ok(copy[key].en.trim(), `${file} missing EN translation for: ${key}`)
+    }
+  }
 })

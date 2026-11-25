@@ -10,13 +10,37 @@ export default function ConfirmationDialog({ title, children, confirmLabel, canc
   close.current = onClose
   useEffect(() => {
     const node = dialog.current, opener = returnFocus || document.activeElement
-    node.showModal()
+    if (node && !node.open) node.showModal()
     cancel.current?.focus({ preventScroll: true })
-    return () => { node.close(); if (opener?.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true }) }
+    return () => { if (node?.open) node.close(); if (opener?.isConnected && !opener.closest('[inert]')) opener.focus({ preventScroll: true }) }
   }, [])
+  useEffect(() => {
+    if (pending && dialog.current?.open) dialog.current.focus({ preventScroll: true })
+  }, [pending])
   const dismiss = () => { if (!pending) close.current() }
-  return <dialog ref={dialog} className="wm-confirmation-dialog" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={pending} onCancel={event => { event.preventDefault(); event.stopPropagation(); dismiss() }} onKeyDown={event => event.stopPropagation()} onClick={event => {
-    if (event.target !== event.currentTarget) return
+  const handleKeyDown = event => {
+    event.stopPropagation()
+    if (event.key === 'Escape') {
+      event.nativeEvent?.stopPropagation?.()
+      return
+    }
+    if (event.key !== 'Tab') return
+    const node = dialog.current
+    if (!node) return
+    const nodes = [...node.querySelectorAll('button,input:not([type="hidden"]),select,textarea,a[href],summary,[tabindex]')]
+      .filter(el => el.tabIndex >= 0 && !el.matches(':disabled') && !el.closest('[inert]') && el.getClientRects().length)
+    const first = nodes[0], last = nodes.at(-1)
+    if (!first) { event.preventDefault(); node.focus({ preventScroll: true }); return }
+    if (event.shiftKey && (document.activeElement === first || !nodes.includes(document.activeElement))) {
+      event.preventDefault()
+      last.focus({ preventScroll: true })
+    } else if (!event.shiftKey && (document.activeElement === last || !nodes.includes(document.activeElement))) {
+      event.preventDefault()
+      first.focus({ preventScroll: true })
+    }
+  }
+  return <dialog ref={dialog} tabIndex={-1} className="wm-confirmation-dialog" aria-labelledby={titleId} aria-describedby={descriptionId} aria-busy={pending} onCancel={event => { event.preventDefault(); event.stopPropagation(); dismiss() }} onKeyDown={handleKeyDown} onClick={event => {
+    if (event.detail === 0 || event.target !== event.currentTarget) return
     const box = event.currentTarget.getBoundingClientRect()
     if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dismiss()
   }}>

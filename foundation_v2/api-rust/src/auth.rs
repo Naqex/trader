@@ -309,4 +309,42 @@ mod tests {
             StatusCode::UNAUTHORIZED
         );
     }
+    #[test]
+    fn authorize_workspace_allows_member_and_blocks_outsider_in_local_capability_mode() {
+        let auth = LocalAuthorization::with_capabilities(
+            "owner".into(),
+            vec!["tenant-a".into()],
+            LocalCapabilityConfig {
+                allowed_origins: vec!["http://127.0.0.1:5180".into()],
+                owner_bearer: Some(OwnerBearerCapability {
+                    token_sha256: "1".repeat(64),
+                    expires_at_utc: chrono::Utc::now() + chrono::Duration::days(1),
+                }),
+                bootstrap: None,
+            },
+        )
+        .unwrap();
+        let mut headers = HeaderMap::new();
+        headers.insert("x-workspace-id", "tenant-a".parse().unwrap());
+        assert_eq!(
+            auth.authorize(&headers).unwrap_err().0,
+            StatusCode::UNAUTHORIZED
+        );
+        let scope = auth.authorize_workspace(&headers).unwrap();
+        assert_eq!(scope.workspace_id, "tenant-a");
+        assert_eq!(scope.subject, "owner");
+
+        let mut outsider = HeaderMap::new();
+        outsider.insert("x-workspace-id", "tenant-b".parse().unwrap());
+        assert_eq!(
+            auth.authorize_workspace(&outsider).unwrap_err().0,
+            StatusCode::FORBIDDEN
+        );
+
+        headers.append("x-workspace-id", "tenant-a".parse().unwrap());
+        assert_eq!(
+            auth.authorize_workspace(&headers).unwrap_err().0,
+            StatusCode::UNAUTHORIZED
+        );
+    }
 }

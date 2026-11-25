@@ -1,4 +1,5 @@
 import React from 'react'
+import { shouldShowManualRetry } from './readRecovery.js'
 import { useTestingLocale } from './testingLocale.jsx'
 
 export function TestingSkeleton({ label = 'Đang tải dữ liệu…', rows = 4 }) {
@@ -17,7 +18,7 @@ export function ReadRecoveryStatus({ recovery }) {
 
 export default function TestingReadState({ message, error = false, onRetry, recovery }) {
   const { t } = useTestingLocale()
-  return <div className="wm-read-state" role={error ? 'alert' : 'status'}><p>{t(message)}</p><ReadRecoveryStatus recovery={recovery} />{onRetry && !recovery && <button type="button" className="fxa-button" onClick={onRetry}>{t('Thử lại')}</button>}</div>
+  return <div className="wm-read-state" role={error ? 'alert' : 'status'}><p>{t(message)}</p><ReadRecoveryStatus recovery={recovery} />{shouldShowManualRetry(onRetry, recovery) && <button type="button" className="fxa-button" onClick={onRetry}>{t('Thử lại')}</button>}</div>
 }
 
 export class TestingRouteBoundary extends React.Component {

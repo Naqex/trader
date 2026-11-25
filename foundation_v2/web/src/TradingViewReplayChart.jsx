@@ -321,11 +321,16 @@ export default function TradingViewReplayChart(props) {
           if (importedShapes.includes(id)) { if (event === 'remove') setTimeout(importAnnotations, 0); return }
           if (['create', 'move', 'remove', 'hide', 'show', 'properties_changed', 'points_changed'].includes(event)) scheduleSave()
         })
+        let lastCrosshairTime = NaN
         chart.crossHairMoved().subscribe(null, event => {
           const time = Number(event.time)
           replayHoverTimestamp = Number.isFinite(time) && time <= Number(latest.current.cutoff) ? time : null
-          const row = latest.current.rows.find(row => Number(row.timestamp) === time) || historyReader?.nativeRow(time, adapter.interval)
-          latest.current.onCrosshair?.(row ? { row } : null)
+          if (!latest.current.onCrosshair) return
+          const key = Number.isFinite(time) ? time : null
+          if (Object.is(key, lastCrosshairTime)) return
+          lastCrosshairTime = key
+          const row = key == null ? null : latest.current.rows.find(row => Number(row.timestamp) === key) || historyReader?.nativeRow(key, adapter.interval)
+          latest.current.onCrosshair(row ? { row } : null)
         })
         headerSlots = { save, fitOrder, intervals: adapter.supported,
           setInterval: value => { if (!cancelled && adapter.supported.includes(value)) chart.setResolution(value) },

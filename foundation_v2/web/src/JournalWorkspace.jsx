@@ -1,6 +1,7 @@
 import { scopedMutation } from './scopedMutation.js'
 import { displayDate } from './dateFormat.js'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTestingLocale } from './testingLocale.jsx'
 import './journal-analytics.css'
 import './journal-story.css'
 import { buildWorkspaceHref, readWorkspaceContext } from './workspaceContext.js'
@@ -50,6 +51,8 @@ const STORY_COPY = {
   },
 }
 
+const identityTranslate = text => text
+
 function contextFromQuery(query) {
   const shared = readWorkspaceContext(query)
   const sessionId = shared.sessionId
@@ -67,31 +70,36 @@ function isFiniteNumber(value) {
   return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
 }
 
-function formatDate(value) {
-  if (!value) return 'Chưa có thời gian'
+function formatDate(value, t = identityTranslate) {
+  if (!value) return t('Chưa có thời gian')
   const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return 'Chưa có thời gian'
+  if (Number.isNaN(parsed.getTime())) return t('Chưa có thời gian')
   return displayDate(parsed, { timeStyle: 'short', timeZone: null })
 }
 
-function formatContextTimestamp(value) {
-  if (value === null || value === undefined || value === '') return 'Chưa có thời gian'
+function formatContextTimestamp(value, t = identityTranslate) {
+  if (value === null || value === undefined || value === '') return t('Chưa có thời gian')
   const numeric = Number(value)
   if (Number.isFinite(numeric)) {
-    return formatDate(Math.abs(numeric) < 1e12 ? numeric * 1000 : numeric)
+    return formatDate(Math.abs(numeric) < 1e12 ? numeric * 1000 : numeric, t)
   }
-  return formatDate(value)
+  return formatDate(value, t)
 }
 
-function labelForType(value) {
-  return ENTRY_TYPES.find(([key]) => key === value)?.[1] || value || 'Chưa phân loại'
+function labelForType(value, t = identityTranslate) {
+  return t(ENTRY_TYPES.find(([key]) => key === value)?.[1] || value || 'Chưa phân loại')
 }
 
-function typeMeta(value) {
-  return STORY_COPY[value] || {
+function typeMeta(value, t = identityTranslate) {
+  const raw = STORY_COPY[value] || {
     takeaway: 'Ghi chú này chưa có loại được nhận diện.',
     result: 'Chưa có kết quả thực tế trong journal contract.',
     next: 'Mở replay context để tiếp tục kiểm chứng.',
+  }
+  return {
+    takeaway: t(raw.takeaway),
+    result: t(raw.result),
+    next: t(raw.next),
   }
 }
 
@@ -105,24 +113,24 @@ function recordOutcome(record) {
   return typeof value === 'string' && value.trim() ? value.trim() : ''
 }
 
-function sourceLabel(source) {
-  if (!source?.kind && !source?.id) return 'Chưa có source'
+function sourceLabel(source, t = identityTranslate) {
+  if (!source?.kind && !source?.id) return t('Chưa có source')
   return `${source.kind || 'source'} · ${source.id || '-'}`
 }
 
-function storyForRecord(record, context) {
+function storyForRecord(record, context, t = identityTranslate) {
   const payload = record?.payload || record || {}
   const type = payload.entry_type || 'observation'
   const outcome = recordOutcome(record)
-  const copy = typeMeta(type)
+  const copy = typeMeta(type, t)
   return {
     type,
-    label: labelForType(type),
+    label: labelForType(type, t),
     takeaway: copy.takeaway,
     outcome: outcome || copy.result,
     next: payload.next_action || copy.next,
     activeStep: outcome ? 'outcome' : (type === 'observation' || type === 'hypothesis' ? type : 'decision'),
-    contextLabel: context.sessionId ? `Replay ${context.sessionId}` : 'Chưa chọn replay session',
+    contextLabel: context.sessionId ? `Replay ${context.sessionId}` : t('Chưa chọn replay session'),
   }
 }
 
@@ -177,31 +185,33 @@ async function readJson(response) {
 }
 
 function ContextBar({ context, workspace, filtered, onFilterChange, replayHref }) {
+  const { t } = useTestingLocale()
   return (
-    <section className="ja-context-bar" aria-label="Ngữ cảnh journal">
+    <section className="ja-context-bar" aria-label={t('Ngữ cảnh journal')}>
       <div className="ja-context-copy">
         <span className="ja-eyebrow">LINKED CONTEXT</span>
-        <strong>{context.sessionId ? `Replay ${context.sessionId}` : context.tradeId ? `Trade ${context.tradeId}` : 'Chưa chọn replay session'}</strong>
+        <strong>{context.sessionId ? `Replay ${context.sessionId}` : context.tradeId ? `Trade ${context.tradeId}` : t('Chưa chọn replay session')}</strong>
         {context.tradeId && <span>Trade <code>{context.tradeId}</code></span>}
         {context.datasetId && <span>Dataset <code>{context.datasetId}</code></span>}
         {context.playbookId && <span>Setup <code>{context.playbookId}{context.playbookRevision ? ` · r${context.playbookRevision}` : ''}</code></span>}
-        {isFiniteNumber(context.cursor) && <span>Cutoff nến <strong>#{context.cursor}</strong></span>}
-        {context.cutoffTimestamp && <span><strong>{formatContextTimestamp(context.cutoffTimestamp)}</strong></span>}
+        {isFiniteNumber(context.cursor) && <span>{t('Cutoff nến')} <strong>#{context.cursor}</strong></span>}
+        {context.cutoffTimestamp && <span><strong>{formatContextTimestamp(context.cutoffTimestamp, t)}</strong></span>}
       </div>
       <div className="ja-context-actions">
         {(context.sessionId || context.tradeId) && (
           <label className="ja-filter-toggle">
             <input type="checkbox" checked={filtered} onChange={(event) => onFilterChange(event.target.checked)} />
-            Chỉ ngữ cảnh này
+            {t('Chỉ ngữ cảnh này')}
           </label>
         )}
-        {context.sessionId && <a className="ja-text-link" href={replayHref}>Mở lại replay</a>}
+        {context.sessionId && <a className="ja-text-link" href={replayHref}>{t('Mở lại replay')}</a>}
       </div>
     </section>
   )
 }
 
 export function JournalRow({ record, selected, onSelect }) {
+  const { t } = useTestingLocale()
   const payload = record.payload || record
   const source = sourceForRecord(record)
   return (
@@ -212,20 +222,21 @@ export function JournalRow({ record, selected, onSelect }) {
       aria-pressed={selected}
     >
       <span className="ja-row-main">
-        <span className="ja-row-kicker">{labelForType(payload.entry_type)}</span>
+        <span className="ja-row-kicker">{labelForType(payload.entry_type, t)}</span>
         <strong>{payload.note}</strong>
-        <small>{formatDate(record.updated_at_utc || record.created_at_utc)} · r{record.revision ?? '-'} · {sourceLabel(source)}</small>
+        <small>{formatDate(record.updated_at_utc || record.created_at_utc, t)} · r{record.revision ?? '-'} · {sourceLabel(source, t)}</small>
       </span>
       <span className="ja-row-meta">
         <code>{source.id || '-'}</code>
-        <span>{[payload.entry_type === 'no-trade' ? 'Không giao dịch' : '', Array.isArray(payload.tags) && payload.tags.length ? payload.tags.join(' · ') : 'Không có tag'].filter(Boolean).join(' · ')}</span>
+        <span>{[payload.entry_type === 'no-trade' ? t('Không giao dịch') : '', Array.isArray(payload.tags) && payload.tags.length ? payload.tags.join(' · ') : t('Không có tag')].filter(Boolean).join(' · ')}</span>
       </span>
     </button>
   )
 }
 
 export function StoryRail({ record, context }) {
-  const story = storyForRecord(record, context)
+  const { t } = useTestingLocale()
+  const story = storyForRecord(record, context, t)
   const payload = record?.payload || record || {}
   return (
     <section className="ja-story-rail" aria-label="Decision story">
@@ -243,26 +254,27 @@ export function StoryRail({ record, context }) {
           return (
             <li className={`${active ? 'is-active' : ''} ${complete ? 'is-complete' : ''}`} key={id}>
               <span className="ja-story-step-mark" aria-hidden="true">{complete ? '✓' : '·'}</span>
-              <span><strong>{label}</strong><small>{hint}</small></span>
+              <span><strong>{t(label)}</strong><small>{t(hint)}</small></span>
             </li>
           )
         })}
       </ol>
       <div className="ja-story-facts">
-        {payload.decision && <div><span>Quyết định đã ghi</span><strong>{payload.decision}</strong></div>}
-        {payload.plan && <div><span>Plan dự kiến</span><strong>{payload.plan}</strong></div>}
-        <div><span>Kết quả thực tế</span><strong className={recordOutcome(record) ? 'is-known' : 'is-unknown'}>{story.outcome}</strong></div>
-        <div><span>Bước tiếp</span><strong>{story.next}</strong></div>
+        {payload.decision && <div><span>{t('Quyết định đã ghi')}</span><strong>{payload.decision}</strong></div>}
+        {payload.plan && <div><span>{t('Plan dự kiến')}</span><strong>{payload.plan}</strong></div>}
+        <div><span>{t('Kết quả thực tế')}</span><strong className={recordOutcome(record) ? 'is-known' : 'is-unknown'}>{story.outcome}</strong></div>
+        <div><span>{t('Bước tiếp')}</span><strong>{story.next}</strong></div>
       </div>
     </section>
   )
 }
 
 function ProvenancePanel({ record, context }) {
+  const { t } = useTestingLocale()
   const source = sourceForRecord(record)
   const payload = record?.payload || record || {}
   return (
-    <section className="ja-provenance-card" aria-label="Provenance ghi chú">
+    <section className="ja-provenance-card" aria-label={t('Provenance ghi chú')}>
       <div className="ja-provenance-card-head">
         <div><span className="ja-eyebrow">PROVENANCE</span><strong>Evidence scope</strong></div>
         <span className="ja-readonly-badge">read-only source</span>
@@ -271,21 +283,22 @@ function ProvenancePanel({ record, context }) {
         <div><dt>Replay session</dt><dd>{source.session_id || source.replay_session_id || context.sessionId || '-'}</dd></div>
         <div><dt>Trade</dt><dd>{source.trade_id || context.tradeId || '-'}</dd></div>
         <div><dt>Dataset</dt><dd><code>{source.dataset_id || context.datasetId || '-'}</code></dd></div>
-        <div><dt>Cutoff nến</dt><dd>{source.cursor_index ?? context.cursor ?? '-'}</dd></div>
-        <div><dt>Cutoff</dt><dd>{source.cutoff_timestamp ? formatContextTimestamp(source.cutoff_timestamp) : context.cutoffTimestamp ? formatContextTimestamp(context.cutoffTimestamp) : '-'}</dd></div>
+        <div><dt>{t('Cutoff nến')}</dt><dd>{source.cursor_index ?? context.cursor ?? '-'}</dd></div>
+        <div><dt>Cutoff</dt><dd>{source.cutoff_timestamp ? formatContextTimestamp(source.cutoff_timestamp, t) : context.cutoffTimestamp ? formatContextTimestamp(context.cutoffTimestamp, t) : '-'}</dd></div>
         <div><dt>Mode</dt><dd>{source.mode || context.mode || '-'}</dd></div>
         <div><dt>Setup</dt><dd>{source.playbook_id || context.playbookId || '-'}{(source.playbook_revision || context.playbookRevision) ? ` · r${source.playbook_revision || context.playbookRevision}` : ''}</dd></div>
         <div><dt>Source ID</dt><dd><code>{source.id || '-'}</code></dd></div>
         <div><dt>Revision</dt><dd>r{record?.revision ?? '-'}</dd></div>
-        <div><dt>Tags</dt><dd>{Array.isArray(payload.tags) && payload.tags.length ? payload.tags.join(' · ') : 'Không có tag'}</dd></div>
+        <div><dt>Tags</dt><dd>{Array.isArray(payload.tags) && payload.tags.length ? payload.tags.join(' · ') : t('Không có tag')}</dd></div>
         <div><dt>Overlay</dt><dd>{Array.isArray(payload.overlay_ids) && payload.overlay_ids.length ? payload.overlay_ids.join(' · ') : '-'}</dd></div>
       </dl>
-      <p>Source, cutoff và mode được giữ nguyên qua các revision để bạn luôn biết ghi chú này dựa trên snapshot nào. Actual là nội dung người dùng ghi sau review; app không tự mở nến tương lai.</p>
+      <p>{t('Source, cutoff và mode được giữ nguyên qua các revision để bạn luôn biết ghi chú này dựa trên snapshot nào. Actual là nội dung người dùng ghi sau review; app không tự mở nến tương lai.')}</p>
     </section>
   )
 }
 
 export default function JournalWorkspace({ workspace = 'tenant-a', query = new URLSearchParams() }) {
+  const { t } = useTestingLocale()
   const context = useMemo(() => contextFromQuery(query), [query])
   const [state, setState] = useState({ status: 'loading', items: [], error: null })
   const [filtered, setFiltered] = useState(Boolean(context.sessionId || context.tradeId))
@@ -360,8 +373,8 @@ export default function JournalWorkspace({ workspace = 'tenant-a', query = new U
   const submit = async (event) => {
     event.preventDefault()
     const cleanNote = note.trim()
-    if (!cleanNote) { setFormError('Ghi chú không được để trống.'); return }
-    if (!source && !selected) { setFormError('Hãy mở Journal từ một replay session hoặc trade để giữ đúng source.'); return }
+    if (!cleanNote) { setFormError(t('Ghi chú không được để trống.')); return }
+    if (!source && !selected) { setFormError(t('Hãy mở Journal từ một replay session hoặc trade để giữ đúng source.')); return }
     const payload = {
       entry_type: entryType,
       note: cleanNote,
@@ -407,9 +420,9 @@ export default function JournalWorkspace({ workspace = 'tenant-a', query = new U
     }
   }
 
-  const title = selected && !editing ? 'Chi tiết ghi chú' : selected ? 'Sửa ghi chú' : 'Ghi chú mới'
+  const title = selected && !editing ? t('Chi tiết ghi chú') : selected ? t('Sửa ghi chú') : t('Ghi chú mới')
   const selectedSource = sourceForRecord(selected)
-  const selectedStory = selected ? storyForRecord(selected, context) : null
+  const selectedStory = selected ? storyForRecord(selected, context, t) : null
   const replayHref = buildWorkspaceHref('replay', workspace, query, { trade: null, job: null })
   const analyticsHref = buildWorkspaceHref('analytics', workspace, query, { trade: context.tradeId || null })
   return (
@@ -420,30 +433,30 @@ export default function JournalWorkspace({ workspace = 'tenant-a', query = new U
           <small className="ja-header-status">Workspace local · broker locked</small>
         </div>
         <div className="ja-story-intro-actions">
-          <a className="ja-button ja-button-quiet" href={replayHref}>Mở replay</a>
-          <a className="ja-button ja-button-quiet" href={analyticsHref}>Xem analytics</a>
+          <a className="ja-button ja-button-quiet" href={replayHref}>{t('Mở replay')}</a>
+          <a className="ja-button ja-button-quiet" href={analyticsHref}>{t('Xem analytics')}</a>
         </div>
       </header>
 
       <ContextBar context={context} workspace={workspace} filtered={filtered} onFilterChange={setFiltered} replayHref={replayHref} />
 
-      {state.status === 'loading' && <div className="ja-message" role="status">Đang tải journal…</div>}
+      {state.status === 'loading' && <div className="ja-message" role="status">{t('Đang tải journal…')}</div>}
       {state.status === 'error' && (
         <div className="ja-message ja-message-error" role="alert">
-          Không đọc được journal: {state.error} <button className="ja-inline-button" type="button" onClick={load}>Thử lại</button>
+          {t('Không đọc được journal:')} {state.error} <button className="ja-inline-button" type="button" onClick={load}>{t('Thử lại')}</button>
         </div>
       )}
 
       <section className="ja-journal-grid ja-story-grid">
         <div className="ja-list-panel">
           <div className="ja-section-head">
-            <div><span className="ja-eyebrow">ENTRIES</span><strong>{visibleItems.length} ghi chú</strong><small className="ja-section-subtitle">{filtered ? 'Đang lọc theo context hiện tại' : 'Toàn bộ workspace'}</small></div>
-            <button type="button" className="ja-button ja-button-primary" onClick={resetForm} disabled={!source}>+ Ghi chú</button>
+            <div><span className="ja-eyebrow">ENTRIES</span><strong>{t('{count} ghi chú', { count: visibleItems.length })}</strong><small className="ja-section-subtitle">{filtered ? t('Đang lọc theo context hiện tại') : t('Toàn bộ workspace')}</small></div>
+            <button type="button" className="ja-button ja-button-primary" onClick={resetForm} disabled={!source}>{t('+ Ghi chú')}</button>
           </div>
           {!visibleItems.length && state.status === 'ready' && (
             <div className="ja-empty-state">
-              <strong>{filtered ? 'Chưa có ghi chú cho context này' : 'Journal đang trống'}</strong>
-              <span>{source ? 'Tạo ghi chú đầu tiên để lưu decision cùng replay.' : 'Mở Journal từ replay để tạo ghi chú có source rõ ràng.'}</span>
+              <strong>{filtered ? t('Chưa có ghi chú cho context này') : t('Journal đang trống')}</strong>
+              <span>{source ? t('Tạo ghi chú đầu tiên để lưu decision cùng replay.') : t('Mở Journal từ replay để tạo ghi chú có source rõ ràng.')}</span>
             </div>
           )}
           <div className="ja-journal-list">
@@ -458,67 +471,67 @@ export default function JournalWorkspace({ workspace = 'tenant-a', query = new U
           {!selected && (
             <section className="ja-story-placeholder" aria-label="Decision story preview">
               <span className="ja-eyebrow">DECISION STORY</span>
-              <strong>Chọn ghi chú để xem quyết định và kết quả.</strong>
+              <strong>{t('Chọn ghi chú để xem quyết định và kết quả.')}</strong>
             </section>
           )}
           {selected && <ProvenancePanel record={selected} context={context} />}
           <form className="ja-editor-panel" onSubmit={submit}>
           <div className="ja-section-head">
             <div><span className="ja-eyebrow">{selected ? `REVISION ${selected.revision ?? '-'}` : 'NEW ENTRY'}</span><strong>{title}</strong></div>
-            {selected && !editing && <button type="button" className="ja-button" onClick={() => setEditing(true)}>Sửa</button>}
-            {selected && editing && <button type="button" className="ja-button" onClick={() => selectRecord(selected)}>Hủy</button>}
+            {selected && !editing && <button type="button" className="ja-button" onClick={() => setEditing(true)}>{t('Sửa')}</button>}
+            {selected && editing && <button type="button" className="ja-button" onClick={() => selectRecord(selected)}>{t('Hủy')}</button>}
           </div>
-          <label className="ja-field">Loại ghi chú
+          <label className="ja-field">{t('Loại ghi chú')}
             <select value={entryType} onChange={(event) => setEntryType(event.target.value)} disabled={Boolean(selected && !editing)}>
-              {ENTRY_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              {ENTRY_TYPES.map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}
             </select>
           </label>
-          <label className="ja-field">Nội dung
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ví dụ: giá phá range nhưng chưa đóng trên vùng…" rows={8} disabled={Boolean(selected && !editing)} maxLength={10000} />
+          <label className="ja-field">{t('Nội dung')}
+            <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder={t('Ví dụ: giá phá range nhưng chưa đóng trên vùng…')} rows={8} disabled={Boolean(selected && !editing)} maxLength={10000} />
           </label>
           <details className="ja-decision-fields" aria-label="DECISION CONTEXT">
-            <summary>Decision context · quan sát, quyết định & kết quả</summary>
-            <label className="ja-field">Điều đã quan sát <span className="ja-field-hint">chỉ dữ kiện tới cutoff</span>
-              <textarea value={observation} onChange={(event) => setObservation(event.target.value)} placeholder="Ví dụ: nến H1 đóng trong range…" rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
+            <summary>{t('Decision context · quan sát, quyết định & kết quả')}</summary>
+            <label className="ja-field">{t('Điều đã quan sát')} <span className="ja-field-hint">{t('chỉ dữ kiện tới cutoff')}</span>
+              <textarea value={observation} onChange={(event) => setObservation(event.target.value)} placeholder={t('Ví dụ: nến H1 đóng trong range…')} rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
             </label>
-            <label className="ja-field">Giả thuyết
-              <textarea value={hypothesis} onChange={(event) => setHypothesis(event.target.value)} placeholder="Điều bạn nghĩ sẽ xảy ra và lý do…" rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
+            <label className="ja-field">{t('Giả thuyết')}
+              <textarea value={hypothesis} onChange={(event) => setHypothesis(event.target.value)} placeholder={t('Điều bạn nghĩ sẽ xảy ra và lý do…')} rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
             </label>
-            <label className="ja-field">Quyết định / lý do bỏ qua
-              <textarea value={decision} onChange={(event) => setDecision(event.target.value)} placeholder={entryType === 'no-trade' ? 'Ví dụ: Không vào vì chưa đủ điều kiện…' : 'Vào, chờ hay bỏ qua?'} rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
+            <label className="ja-field">{t('Quyết định / lý do bỏ qua')}
+              <textarea value={decision} onChange={(event) => setDecision(event.target.value)} placeholder={entryType === 'no-trade' ? t('Ví dụ: Không vào vì chưa đủ điều kiện…') : t('Vào, chờ hay bỏ qua?')} rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
             </label>
-            <label className="ja-field">Plan dự kiến
-              <textarea value={plan} onChange={(event) => setPlan(event.target.value)} placeholder="Điều kiện tiếp theo, risk hoặc invalidation…" rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
+            <label className="ja-field">{t('Plan dự kiến')}
+              <textarea value={plan} onChange={(event) => setPlan(event.target.value)} placeholder={t('Điều kiện tiếp theo, risk hoặc invalidation…')} rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
             </label>
-            <label className="ja-field">Actual / kết quả đã biết <span className="ja-field-hint">do người dùng ghi sau khi review</span>
-              <textarea value={actualResult} onChange={(event) => setActualResult(event.target.value)} placeholder="Chưa biết thì để trống…" rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
+            <label className="ja-field">{t('Actual / kết quả đã biết')} <span className="ja-field-hint">{t('do người dùng ghi sau khi review')}</span>
+              <textarea value={actualResult} onChange={(event) => setActualResult(event.target.value)} placeholder={t('Chưa biết thì để trống…')} rows={3} disabled={Boolean(selected && !editing)} maxLength={4000} />
             </label>
-            <label className="ja-field">Bước tiếp theo
-              <textarea value={nextAction} onChange={(event) => setNextAction(event.target.value)} placeholder="Việc cần kiểm chứng tiếp…" rows={2} disabled={Boolean(selected && !editing)} maxLength={4000} />
+            <label className="ja-field">{t('Bước tiếp theo')}
+              <textarea value={nextAction} onChange={(event) => setNextAction(event.target.value)} placeholder={t('Việc cần kiểm chứng tiếp…')} rows={2} disabled={Boolean(selected && !editing)} maxLength={4000} />
             </label>
           </details>
-          <label className="ja-field">Tags <span className="ja-field-hint">phân tách bằng dấu phẩy</span>
+          <label className="ja-field">Tags <span className="ja-field-hint">{t('phân tách bằng dấu phẩy')}</span>
             <input value={tags} onChange={(event) => setTags(event.target.value)} placeholder="discipline, breakout" disabled={Boolean(selected && !editing)} />
           </label>
-          <label className="ja-field">Overlay liên quan <span className="ja-field-hint">ID, phân tách bằng dấu phẩy</span>
+          <label className="ja-field">{t('Overlay liên quan')} <span className="ja-field-hint">{t('ID, phân tách bằng dấu phẩy')}</span>
             <input value={overlayIds} onChange={(event) => setOverlayIds(event.target.value)} placeholder="annotation-7" disabled={Boolean(selected && !editing)} />
           </label>
           <div className="ja-source-box">
             <span className="ja-eyebrow">IMMUTABLE SOURCE</span>
             <code>{selectedSource.kind || source?.kind || '-'}:{selectedSource.id || source?.id || '-'}</code>
-            <small>Source gắn với session/trade và không đổi khi sửa revision.</small>
+            <small>{t('Source gắn với session/trade và không đổi khi sửa revision.')}</small>
           </div>
           {formError && <div className="ja-form-error" role="alert">{formError}</div>}
           {(!selected || editing) && (
             <button className="ja-button ja-button-primary ja-submit" type="submit" disabled={pending || !source}>
-              {pending ? 'Đang lưu…' : selected ? 'Lưu revision' : 'Lưu ghi chú'}
+              {pending ? t('Đang lưu…') : selected ? t('Lưu revision') : t('Lưu ghi chú')}
             </button>
           )}
           </form>
           {selectedStory && (
             <div className="ja-next-action">
               <div><span className="ja-eyebrow">NEXT ACTION</span><strong>{selectedStory.next}</strong></div>
-              <a className="ja-text-link" href={replayHref}>Tiếp tục replay →</a>
+              <a className="ja-text-link" href={replayHref}>{t('Tiếp tục replay')} →</a>
             </div>
           )}
         </div>
@@ -526,4 +539,3 @@ export default function JournalWorkspace({ workspace = 'tenant-a', query = new U
     </main>
   )
 }
-

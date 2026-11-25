@@ -50,14 +50,14 @@ function optionalNumber(value) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-function formatMoney(value, currency = 'USD') {
+function formatMoney(value, currency = 'USD', locale = 'vi-VN') {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
-  return currency === 'USD' ? formatAmount(value, ' USD') : new Intl.NumberFormat('vi-VN', { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value))
+  return currency === 'USD' ? formatAmount(value, ' USD', 2, locale) : new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 2 }).format(Number(value))
 }
 
-function formatPrice(value) {
+function formatPrice(value, locale = 'vi-VN') {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return '-'
-  return new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 4, maximumFractionDigits: 8 }).format(Number(value))
+  return new Intl.NumberFormat(locale, { minimumFractionDigits: 4, maximumFractionDigits: 8 }).format(Number(value))
 }
 
 async function readJson(response) {
@@ -133,15 +133,17 @@ function RiskPreview({ draft, entry, instrument, costModel }) {
 }
 
 function SimulatorBanner() {
+  const { t } = useTestingLocale()
   return (
     <div className="trade-simulator-banner" role="status" data-testid="trade-simulator-banner">
       <span className="trade-lock-mark">SIM</span>
-      <div><strong>SIMULATOR / PAPER ONLY</strong><span>Queue order chỉ ghi vào replay ledger local. Broker/live execution đang khóa.</span></div>
+      <div><strong>SIMULATOR / PAPER ONLY</strong><span>{t('Queue order chỉ ghi vào replay ledger local. Broker/live execution đang khóa.')}</span></div>
     </div>
   )
 }
 
 export default function TradeWorkspace({ workspace, query, replay: controlledReplay = null, onReplayChange }) {
+  const { t, locale } = useTestingLocale()
   const sessionId = query?.get('session') || ''
   const [state, setState] = useState({ status: controlledReplay ? 'ready' : sessionId ? 'loading' : 'idle', replay: controlledReplay, error: null })
   const [datasetState, setDatasetState] = useState({ status: 'loading', items: [], error: null })
@@ -273,18 +275,18 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
   const initialize = useCallback(async (event) => {
     event.preventDefault()
     if (!replay?.record_id || !datasetId || datasetState.status !== 'ready' || !catalogManifest || !instrument || !costModel) {
-      setNotice({ kind: 'error', text: 'Chưa xác định được dataset context và execution assumptions; chưa thể khởi tạo simulator.' })
+      setNotice({ kind: 'error', text: t('Chưa xác định được dataset context và execution assumptions; chưa thể khởi tạo simulator.') })
       return
     }
     const spreadValue = useTicks ? 0 : optionalNumber(spread)
     const startingBalanceValue = optionalNumber(startingBalance)
     if (![spreadValue, startingBalanceValue].every(Number.isFinite) || startingBalanceValue <= 0 || spreadValue < 0) {
-      setNotice({ kind: 'error', text: 'Spread và starting balance phải được nhập đầy đủ; giá trị rỗng không được đổi thành 0.' })
+      setNotice({ kind: 'error', text: t('Spread và starting balance phải được nhập đầy đủ; giá trị rỗng không được đổi thành 0.') })
       return
     }
     const leverageValue = optionalNumber(tickLeverage)
     if (useTicks && (!tickOptions?.available || !tickOptions.snapshot_id || !Number.isInteger(leverageValue) || leverageValue < 1 || leverageValue > 1000)) {
-      setNotice({ kind: 'error', text: 'Cần tick tại phút đang chọn và đòn bẩy mô phỏng nguyên từ 1 đến 1000.' })
+      setNotice({ kind: 'error', text: t('Cần tick tại phút đang chọn và đòn bẩy mô phỏng nguyên từ 1 đến 1000.') })
       return
     }
     setPending('initialize')
@@ -307,17 +309,17 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
       const next = await readJson(response)
       applyReplay(next)
       setDraft(initialDraft(next))
-      setNotice({ kind: 'ok', text: 'Đã khởi tạo execution state local cho replay.' })
+      setNotice({ kind: 'ok', text: t('Đã khởi tạo execution state local cho replay.') })
     } catch (error) {
-      setNotice({ kind: 'error', text: `Không khởi tạo được: ${error.message}` })
+      setNotice({ kind: 'error', text: t('Không khởi tạo được: {error}', { error: error.message }) })
     } finally { setPending('') }
-  }, [applyReplay, catalogManifest, costModel, datasetId, datasetState.status, instrument, replay?.record_id, revision, spread, startingBalance, timeframeSeconds, workspace, useTicks, tickOptions, tickLeverage])
+  }, [applyReplay, catalogManifest, costModel, datasetId, datasetState.status, instrument, replay?.record_id, revision, spread, startingBalance, t, timeframeSeconds, workspace, useTicks, tickOptions, tickLeverage])
 
   const queueOrder = useCallback(async (event) => {
     event.preventDefault()
     if (!replay?.record_id || !Number.isFinite(entryReference) || assetClockStale) return
     const validation = validateDraft(draft, entryReference)
-    if (validation) { setNotice({ kind: 'error', text: validation }); return }
+    if (validation) { setNotice({ kind: 'error', text: t(validation) }); return }
     setPending('queue')
     setNotice(null)
     const operationId = `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -335,14 +337,14 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
         }),
       })
       applyReplay(await readJson(response))
-      setNotice({ kind: 'ok', text: 'Trade draft đã được queue vào replay simulator. Chưa có broker action.' })
+      setNotice({ kind: 'ok', text: t('Trade draft đã được queue vào replay simulator. Chưa có broker action.') })
     } catch (error) {
-      setNotice({ kind: 'error', text: `Không queue được draft: ${error.message}` })
+      setNotice({ kind: 'error', text: t('Không queue được draft: {error}', { error: error.message }) })
     } finally { setPending('') }
-  }, [applyReplay, draft, entryReference, replay?.record_id, revision, workspace, assetClockStale])
+  }, [applyReplay, draft, entryReference, replay?.record_id, revision, t, workspace, assetClockStale])
 
-  const stateLabel = state.status === 'loading' ? 'Đang tải session' : state.status === 'error' ? 'Có lỗi' : !hasSession ? 'Chưa chọn session' : execution ? 'Execution sẵn sàng' : datasetState.status === 'loading' ? 'Đang tải context' : datasetState.status === 'error' ? 'Context unavailable' : datasetId && !catalogManifest ? 'Dataset chưa xác nhận' : 'Chưa khởi tạo execution'
-  const catalogContextLabel = datasetState.status === 'loading' ? 'Đang tải…' : datasetState.status === 'error' ? 'Unavailable' : datasetId && !catalogManifest ? 'Chưa xác nhận' : catalogManifest ? 'Verified' : 'Không cần'
+  const stateLabel = state.status === 'loading' ? t('Đang tải session') : state.status === 'error' ? t('Có lỗi') : !hasSession ? t('Chưa chọn session') : execution ? t('Execution sẵn sàng') : datasetState.status === 'loading' ? t('Đang tải context') : datasetState.status === 'error' ? 'Context unavailable' : datasetId && !catalogManifest ? t('Dataset chưa xác nhận') : t('Chưa khởi tạo execution')
+  const catalogContextLabel = datasetState.status === 'loading' ? t('Đang tải…') : datasetState.status === 'error' ? 'Unavailable' : datasetId && !catalogManifest ? t('Chưa xác nhận') : catalogManifest ? 'Verified' : t('Không cần')
   const canInitialize = Boolean(replay?.record_id && datasetId && datasetState.status === 'ready' && catalogManifest && instrument && costModel && Number.isFinite(timeframeSeconds) && timeframeSeconds > 0)
   const replayRetryExhausted = replayRetryCount >= MAX_GET_RETRIES
   const datasetRetryExhausted = datasetRetryCount >= MAX_GET_RETRIES
@@ -353,51 +355,51 @@ export default function TradeWorkspace({ workspace, query, replay: controlledRep
     <main className="trade-workspace wm-page" data-testid="trade-workspace">
       <header className="trade-heading wm-page-header">
         <div><h1>Trade draft</h1></div>
-        <div className="trade-heading-state"><span>Session</span><strong>{stateLabel}</strong><small>{payload?.dataset_id || 'Chưa có dataset'}</small></div>
+        <div className="trade-heading-state"><span>Session</span><strong>{stateLabel}</strong><small>{payload?.dataset_id || t('Chưa có dataset')}</small></div>
       </header>
       <SimulatorBanner />
-      {state.status === 'loading' && <div className="trade-message">Đang tải replay session…</div>}
-      {state.status === 'error' && <div className="trade-message is-error" role="alert">Không đọc được replay: {state.error}<button className="trade-inline-retry" data-testid="trade-replay-retry" type="button" onClick={retryReplay} disabled={replayRetryExhausted} aria-describedby={replayRetryExhausted ? 'trade-replay-retry-note' : undefined}>{replayRetryExhausted ? 'Đã hết lượt thử' : 'Thử lại'}</button>{replayRetryExhausted && <small id="trade-replay-retry-note">Đã thử lại {MAX_GET_RETRIES} lần. Kiểm tra backend trước khi tiếp tục.</small>}</div>}
-      {datasetState.status === 'error' && <div className="trade-message is-error" role="alert">Không đọc được catalog dataset: {datasetState.error}<button className="trade-inline-retry" data-testid="trade-dataset-retry" type="button" onClick={retryDatasets} disabled={datasetRetryExhausted} aria-describedby={datasetRetryExhausted ? 'trade-dataset-retry-note' : undefined}>{datasetRetryExhausted ? 'Đã hết lượt thử' : 'Thử lại'}</button>{datasetRetryExhausted && <small id="trade-dataset-retry-note">Đã thử lại {MAX_GET_RETRIES} lần. Kiểm tra backend trước khi tiếp tục.</small>}</div>}
-      {!hasSession && state.status !== 'loading' && <div className="trade-empty"><strong>Mở Practice trước</strong><span>Trade draft cần session, dataset và decision cutoff. Hãy mở một replay session rồi quay lại Trade desk.</span><a className="trade-link" href={`/?workspace=${encodeURIComponent(workspace)}&view=replay`}>Mở Practice →</a></div>}
+      {state.status === 'loading' && <div className="trade-message">{t('Đang tải replay session…')}</div>}
+      {state.status === 'error' && <div className="trade-message is-error" role="alert">{t('Không đọc được replay:')} {state.error}<button className="trade-inline-retry" data-testid="trade-replay-retry" type="button" onClick={retryReplay} disabled={replayRetryExhausted} aria-describedby={replayRetryExhausted ? 'trade-replay-retry-note' : undefined}>{replayRetryExhausted ? t('Đã hết lượt thử') : t('Thử lại')}</button>{replayRetryExhausted && <small id="trade-replay-retry-note">{t('Đã thử lại {count} lần. Kiểm tra backend trước khi tiếp tục.', { count: MAX_GET_RETRIES })}</small>}</div>}
+      {datasetState.status === 'error' && <div className="trade-message is-error" role="alert">{t('Không đọc được catalog dataset:')} {datasetState.error}<button className="trade-inline-retry" data-testid="trade-dataset-retry" type="button" onClick={retryDatasets} disabled={datasetRetryExhausted} aria-describedby={datasetRetryExhausted ? 'trade-dataset-retry-note' : undefined}>{datasetRetryExhausted ? t('Đã hết lượt thử') : t('Thử lại')}</button>{datasetRetryExhausted && <small id="trade-dataset-retry-note">{t('Đã thử lại {count} lần. Kiểm tra backend trước khi tiếp tục.', { count: MAX_GET_RETRIES })}</small>}</div>}
+      {!hasSession && state.status !== 'loading' && <div className="trade-empty"><strong>{t('Mở Practice trước')}</strong><span>{t('Trade draft cần session, dataset và decision cutoff. Hãy mở một replay session rồi quay lại Trade desk.')}</span><a className="trade-link" href={`/?workspace=${encodeURIComponent(workspace)}&view=replay`}>{t('Mở Practice')} →</a></div>}
       {replay && (
         <>
-          <div className="trade-context-strip"><span><b>Instrument</b>{instrument?.instrument_id || 'Chưa xác định'}</span><span><b>Dataset catalog</b>{catalogContextLabel}</span><span><b>Cutoff</b>{replay.cutoff_timestamp ? displayDate(replay.cutoff_timestamp, { timeStyle: 'short' }) : '-'}</span><span><b>Revision</b>r{revision}</span><span><b>Giá tham chiếu</b>{formatPrice(entryReference)}</span></div>
+          <div className="trade-context-strip"><span><b>Instrument</b>{instrument?.instrument_id || t('Chưa xác định')}</span><span><b>Dataset catalog</b>{catalogContextLabel}</span><span><b>Cutoff</b>{replay.cutoff_timestamp ? displayDate(replay.cutoff_timestamp, { timeStyle: 'short' }) : '-'}</span><span><b>Revision</b>r{revision}</span><span><b>{t('Giá tham chiếu')}</b>{formatPrice(entryReference, locale)}</span></div>
           {!execution && (
             <section className="trade-init-section" aria-labelledby="trade-init-title">
-              <div><span className="trade-eyebrow">STEP 01</span><h2 id="trade-init-title">Khởi tạo simulator state</h2><p>Execution state được gắn vào session và giữ cùng provenance. Chi phí dưới đây là fixture/model, chưa phải báo giá broker.</p></div>
+              <div><span className="trade-eyebrow">STEP 01</span><h2 id="trade-init-title">{t('Khởi tạo simulator state')}</h2><p>{t('Execution state được gắn vào session và giữ cùng provenance. Chi phí dưới đây là fixture/model, chưa phải báo giá broker.')}</p></div>
               {canInitialize ? <form className="trade-init-form" onSubmit={initialize}>
                 <label>Starting balance<input type="number" min="1" step="0.01" value={startingBalance} disabled={Boolean(payload?.asset_states) || Boolean(sessionConfig)} onChange={(event) => setStartingBalance(event.target.value)} /></label>
-                {!sessionConfig && <label className="replay-tick-toggle"><input type="checkbox" checked={Boolean(useTicks)} disabled={!tickOptions?.available} onChange={event => setTickMode(event.target.checked ? 'tick' : 'bar')} />Khớp lệnh bằng tick Bid/Ask</label>}
-                {!sessionConfig && <p className="replay-tick-status" role="status">{tickOptions?.reason || 'Đang kiểm tra lịch sử tick…'}</p>}
-                {useTicks ? <label>Đòn bẩy mô phỏng<input type="number" min="1" max="1000" step="1" value={tickLeverage} onChange={event => setTickLeverage(event.target.value)} /></label> : <label>Spread (price)<input type="number" min="0" step="0.00001" value={spread} disabled={Boolean(sessionConfig)} onChange={(event) => setSpread(event.target.value)} /></label>}
-                <button className="trade-primary" type="submit" disabled={Boolean(pending) || (!sessionConfig && tickOptions === null)}>{pending === 'initialize' ? 'Đang khởi tạo…' : 'Khởi tạo local simulator'}</button>
-              </form> : <div className="trade-message" role="status" data-testid="trade-context-unknown">{datasetState.status === 'loading' ? 'Đang chờ dataset context trước khi mở simulator…' : datasetState.status === 'error' ? 'Dataset context đang unavailable; hãy thử lại trước khi mở simulator.' : 'Dataset chưa có manifest/instrument assumptions đủ để mở simulator.'}</div>}
+                {!sessionConfig && <label className="replay-tick-toggle"><input type="checkbox" checked={Boolean(useTicks)} disabled={!tickOptions?.available} onChange={event => setTickMode(event.target.checked ? 'tick' : 'bar')} />{t('Khớp lệnh bằng tick Bid/Ask')}</label>}
+                {!sessionConfig && <p className="replay-tick-status" role="status">{tickOptions?.reason ? t(tickOptions.reason) : t('Đang kiểm tra lịch sử tick…')}</p>}
+                {useTicks ? <label>{t('Đòn bẩy mô phỏng')}<input type="number" min="1" max="1000" step="1" value={tickLeverage} onChange={event => setTickLeverage(event.target.value)} /></label> : <label>Spread (price)<input type="number" min="0" step="0.00001" value={spread} disabled={Boolean(sessionConfig)} onChange={(event) => setSpread(event.target.value)} /></label>}
+                <button className="trade-primary" type="submit" disabled={Boolean(pending) || (!sessionConfig && tickOptions === null)}>{pending === 'initialize' ? t('Đang khởi tạo…') : t('Khởi tạo local simulator')}</button>
+              </form> : <div className="trade-message" role="status" data-testid="trade-context-unknown">{datasetState.status === 'loading' ? t('Đang chờ dataset context trước khi mở simulator…') : datasetState.status === 'error' ? t('Dataset context đang unavailable; hãy thử lại trước khi mở simulator.') : t('Dataset chưa có manifest/instrument assumptions đủ để mở simulator.')}</div>}
             </section>
           )}
           {execution && (
             <section className="trade-grid">
               <div className="trade-main-column">
-                <section className="trade-account-strip" aria-label="Tài khoản mô phỏng">
-                  <div><span>Balance</span><strong>{formatMoney(account.balance, costModel?.account_ccy)}</strong></div><div><span>Equity</span><strong>{formatMoney(account.equity, costModel?.account_ccy)}</strong></div><div><span>Floating PnL</span><strong>{formatMoney(account.floating, costModel?.account_ccy)}</strong></div><div><span>Position</span><strong>{execution.position ? `${execution.position.side} ${execution.position.quantity}` : execution.pending_market_order ? 'Pending' : 'Flat'}</strong></div>
+                <section className="trade-account-strip" aria-label={t('Tài khoản mô phỏng')}>
+                  <div><span>Balance</span><strong>{formatMoney(account.balance, costModel?.account_ccy, locale)}</strong></div><div><span>Equity</span><strong>{formatMoney(account.equity, costModel?.account_ccy, locale)}</strong></div><div><span>Floating PnL</span><strong>{formatMoney(account.floating, costModel?.account_ccy, locale)}</strong></div><div><span>Position</span><strong>{execution.position ? `${execution.position.side} ${execution.position.quantity}` : execution.pending_market_order ? 'Pending' : 'Flat'}</strong></div>
                 </section>
                 <section className="trade-draft-section" aria-labelledby="trade-draft-title">
-                  <div className="trade-section-title"><div><span className="trade-eyebrow">STEP 02</span><h2 id="trade-draft-title">Draft tại chart cutoff</h2></div><span className="trade-cutoff-label">future fill: nến kế tiếp</span></div>
+                  <div className="trade-section-title"><div><span className="trade-eyebrow">STEP 02</span><h2 id="trade-draft-title">{t('Draft tại chart cutoff')}</h2></div><span className="trade-cutoff-label">{t('future fill: nến kế tiếp')}</span></div>
                   {execution.position || execution.pending_market_order ? (
-                    <div className="trade-active-state"><strong>{execution.position ? 'Đang có vị thế trong simulator' : 'Đã có market order đang chờ fill'}</strong><span>{execution.position ? `${execution.position.side} ${execution.position.quantity} · SL ${formatPrice(execution.position.stop_loss)} · TP ${formatPrice(execution.position.take_profit)}` : `${execution.pending_market_order.side} ${execution.pending_market_order.quantity} · sẽ fill ở bar kế tiếp`}</span></div>
+                    <div className="trade-active-state"><strong>{execution.position ? t('Đang có vị thế trong simulator') : t('Đã có market order đang chờ fill')}</strong><span>{execution.position ? `${execution.position.side} ${execution.position.quantity} · SL ${formatPrice(execution.position.stop_loss, locale)} · TP ${formatPrice(execution.position.take_profit, locale)}` : t('{side} {quantity} · sẽ fill ở bar kế tiếp', { side: execution.pending_market_order.side, quantity: execution.pending_market_order.quantity })}</span></div>
                   ) : (
                     <form className="trade-draft-form" onSubmit={queueOrder}>
-                      <div className="trade-side-toggle" role="group" aria-label="Hướng lệnh"><button className={draft.side === 'BUY' ? 'is-buy' : ''} type="button" aria-pressed={draft.side === 'BUY'} onClick={() => setDraft((current) => ({ ...current, side: 'BUY' }))}>BUY</button><button className={draft.side === 'SELL' ? 'is-sell' : ''} type="button" aria-pressed={draft.side === 'SELL'} onClick={() => setDraft((current) => ({ ...current, side: 'SELL' }))}>SELL</button></div>
+                      <div className="trade-side-toggle" role="group" aria-label={t('Hướng lệnh')}><button className={draft.side === 'BUY' ? 'is-buy' : ''} type="button" aria-pressed={draft.side === 'BUY'} onClick={() => setDraft((current) => ({ ...current, side: 'BUY' }))}>BUY</button><button className={draft.side === 'SELL' ? 'is-sell' : ''} type="button" aria-pressed={draft.side === 'SELL'} onClick={() => setDraft((current) => ({ ...current, side: 'SELL' }))}>SELL</button></div>
                       <label>Quantity<input type="number" min={instrument?.quantity_min || undefined} step={instrument?.quantity_step || undefined} value={draft.quantity} onChange={(event) => setDraft((current) => ({ ...current, quantity: event.target.value }))} /></label>
                       <label>Stop loss<input type="number" min="0" step={instrument?.tick_size || undefined} value={draft.stopLoss} onChange={(event) => setDraft((current) => ({ ...current, stopLoss: event.target.value }))} /></label>
                       <label>Take profit<input type="number" min="0" step={instrument?.tick_size || undefined} value={draft.takeProfit} onChange={(event) => setDraft((current) => ({ ...current, takeProfit: event.target.value }))} /></label>
                       <RiskPreview draft={draft} entry={entryReference} instrument={instrument} costModel={costModel} />
-                      <div className="trade-form-actions"><button className="trade-primary" type="submit" disabled={Boolean(pending) || assetClockStale || !Number.isFinite(entryReference)}>{pending === 'queue' ? 'Đang queue…' : 'Queue vào simulator'}</button><span>Không gửi broker · operation sẽ gắn vào ledger local</span></div>
+                      <div className="trade-form-actions"><button className="trade-primary" type="submit" disabled={Boolean(pending) || assetClockStale || !Number.isFinite(entryReference)}>{pending === 'queue' ? t('Đang queue…') : t('Queue vào simulator')}</button><span>{t('Không gửi broker · operation sẽ gắn vào ledger local')}</span></div>
                     </form>
                   )}
                 </section>
               </div>
-              <aside className="trade-side-column"><section className="trade-context-panel"><div className="trade-section-title"><div><span className="trade-eyebrow">MODEL</span><h2>Execution assumptions</h2></div></div><dl><div><dt>Fill basis</dt><dd>{execution.quote_source === 'broker_bid_ask' ? 'Tick Bid/Ask · đầu phút kế tiếp' : 'Market · next bar open'}</dd></div><div><dt>Spread</dt><dd>{execution.quote_source === 'broker_bid_ask' ? 'Bid/Ask lịch sử' : execution.spread_price ?? '-'}</dd></div><div><dt>Commission</dt><dd>{costModel?.commission_per_side_account ?? '-'} / side</dd></div><div><dt>Contract</dt><dd>{instrument?.contract_size ?? '-'}</dd></div><div><dt>Data suffix</dt><dd>{String(replay.dataset_sha256 || '').slice(0, 12) || '-'}</dd></div></dl></section><section className="trade-safety-note"><strong>Live execution bị khóa</strong><span>Trade draft và queue chỉ thay đổi replay state. Không có route gửi lệnh broker trong màn hình này.</span></section>{notice && <div className={`trade-notice is-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{notice.text}</div>}</aside>
+              <aside className="trade-side-column"><section className="trade-context-panel"><div className="trade-section-title"><div><span className="trade-eyebrow">MODEL</span><h2>Execution assumptions</h2></div></div><dl><div><dt>Fill basis</dt><dd>{execution.quote_source === 'broker_bid_ask' ? t('Tick Bid/Ask · đầu phút kế tiếp') : 'Market · next bar open'}</dd></div><div><dt>Spread</dt><dd>{execution.quote_source === 'broker_bid_ask' ? t('Bid/Ask lịch sử') : execution.spread_price ?? '-'}</dd></div><div><dt>Commission</dt><dd>{costModel?.commission_per_side_account ?? '-'} / side</dd></div><div><dt>Contract</dt><dd>{instrument?.contract_size ?? '-'}</dd></div><div><dt>Data suffix</dt><dd>{String(replay.dataset_sha256 || '').slice(0, 12) || '-'}</dd></div></dl></section><section className="trade-safety-note"><strong>{t('Live execution bị khóa')}</strong><span>{t('Trade draft và queue chỉ thay đổi replay state. Không có route gửi lệnh broker trong màn hình này.')}</span></section>{notice && <div className={`trade-notice is-${notice.kind}`} role={notice.kind === 'error' ? 'alert' : 'status'}>{notice.text}</div>}</aside>
             </section>
           )}
         </>

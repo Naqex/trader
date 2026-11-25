@@ -221,7 +221,10 @@ async fn run_one(
         "x-workspace-id",
         workspace.parse().map_err(|_| "workspace_access_denied")?,
     );
-    state.authorization.authorize(&headers).map_err(detail)?;
+    state
+        .authorization
+        .authorize_workspace(&headers)
+        .map_err(detail)?;
     let key = lifecycle::job_key(runtime, &workspace, &id).map_err(detail)?;
     let owned: bool = tx
         .query_one("SELECT pg_try_advisory_lock($1)", &[&key])

@@ -6,6 +6,32 @@ import { compatibleAdvancedCharts } from './advancedChartCompatibility.mjs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { localPaperclip } from './paperclipBridge.mjs'
+import { buildLocaleDictionary } from './src/testingCopySplit.js'
+
+const VIRTUAL_COPY_IDS = {
+  'virtual:testing-copy-vi': '\0virtual:testing-copy-vi',
+  'virtual:testing-copy-en': '\0virtual:testing-copy-en',
+}
+
+// Compile testing-copy.json into separate lazy VI/EN chunks at build time while
+// keeping src/testing-copy.json as the single editable source of truth.
+export function splitTestingCopy() {
+  const copyPath = fileURLToPath(new URL('./src/testing-copy.json', import.meta.url))
+  return {
+    name: 'split-testing-copy',
+    resolveId(id) {
+      return VIRTUAL_COPY_IDS[id] || null
+    },
+    async load(id) {
+      if (id !== VIRTUAL_COPY_IDS['virtual:testing-copy-vi'] && id !== VIRTUAL_COPY_IDS['virtual:testing-copy-en']) return null
+      this.addWatchFile(copyPath)
+      const lang = id.endsWith('-en') ? 'en' : 'vi'
+      const copy = JSON.parse(await readFile(copyPath, 'utf8'))
+      const dictionary = buildLocaleDictionary(copy, lang)
+      return `export default ${JSON.stringify(dictionary)};`
+    },
+  }
+}
 
 // Authorized vendor distribution stays outside Git and the application bundle.
 function localAdvancedCharts() {
@@ -37,7 +63,7 @@ function localAdvancedCharts() {
 }
 
 export default defineConfig(() => ({
-  plugins: [react(), localAdvancedCharts(), localPaperclip()],
+  plugins: [react(), splitTestingCopy(), localAdvancedCharts(), localPaperclip()],
   // Open tabs still import chunks from the build they initially loaded.
   build: { emptyOutDir: false },
   server: {

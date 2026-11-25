@@ -68,7 +68,7 @@ function DatasetDetails({ dataset, workspace, query }) {
   if (!dataset) {
     return (
       <div className="rd-empty-callout" data-testid="data-desk-empty-selection">
-        Chọn một dataset để xem provenance, range và các cảnh báo trước khi mở Research.
+        {t('Chọn một dataset để xem provenance, range và các cảnh báo trước khi mở Research.')}
       </div>
     )
   }
@@ -76,10 +76,10 @@ function DatasetDetails({ dataset, workspace, query }) {
   const warnings = datasetWarnings(dataset)
   const source = dataset.source || {}
   return (
-    <section className="rd-detail" aria-label="Chi tiết dataset" data-testid="dataset-details">
+    <section className="rd-detail" aria-label={t('Chi tiết dataset')} data-testid="dataset-details">
       <div className="rd-panel-head">
         <div>
-          <h2>Provenance và QA</h2>
+          <h2>{t('Provenance và QA')}</h2>
         </div>
         <a className="rd-context-link" href={buildWorkspaceHref('research', workspace, query, { dataset: dataset.dataset_id, session:null, cursor:null, cutoff:null })}>{t('Mở trong Research')} →</a>
       </div>
@@ -90,22 +90,22 @@ function DatasetDetails({ dataset, workspace, query }) {
         <div><dt>Instrument / TF</dt><dd>{dataset.instrument_id || '-'} · {displayTimeframe(dataset, '-')}</dd></div>
         <div><dt>{t('Số nến')}</dt><dd>{fmt(dataset.row_count, '', 0)}</dd></div>
         <div><dt>Range</dt><dd>{t(formatUtc(range.start, locale))} → {t(formatUtc(range.end, locale))}</dd></div>
-        <div><dt>License</dt><dd>{source.license_use || 'Chưa xác minh'}</dd></div>
+        <div><dt>License</dt><dd>{source.license_use || t('Chưa xác minh')}</dd></div>
         <div><dt>Quality</dt><dd><QualityBadge dataset={dataset} /></dd></div>
         {Array.isArray(dataset.quality?.gaps) && <div><dt>{t('Khoảng trống dữ liệu')}</dt><dd>{fmt(dataset.quality.gap_count ?? dataset.quality.gaps.length,'',0)}</dd></div>}
         <div><dt>{t('Dung lượng')}</dt><dd>{formatDatasetSize(dataset.size_bytes, fmt)}</dd></div>
         {dataset.quality?.coverage && <div><dt>{t('Nến chưa có ở đầu/cuối khoảng chọn')}</dt><dd>{fmt(dataset.quality.coverage.leading_missing_intervals + dataset.quality.coverage.trailing_missing_intervals,'',0)}</dd></div>}
         {dataset.quality?.duplicates != null && <div><dt>{t('Nến trùng')}</dt><dd>{fmt(dataset.quality.duplicates,'',0)}</dd></div>}
-        <div><dt>Holdout</dt><dd><span className={`rd-badge ${dataset.holdout_access ? 'is-good' : 'is-warn'}`}>{holdoutLabel(dataset)}</span></dd></div>
-        <div><dt>Artifact hash</dt><dd><code>{dataset.artifact_sha256 || 'Chưa có hash'}</code></dd></div>
-        <div><dt>Retrieved</dt><dd>{formatUtc(source.retrieved_at_utc)}</dd></div>
-        <div><dt>Transform</dt><dd>{dataset.transform_version || 'Chưa xác định'}</dd></div>
-        <div><dt>Instrument spec</dt><dd>{dataset.instrument_spec ? 'Có' : 'Chưa có'}</dd></div>
+        <div><dt>Holdout</dt><dd><span className={`rd-badge ${dataset.holdout_access ? 'is-good' : 'is-warn'}`}>{t(holdoutLabel(dataset))}</span></dd></div>
+        <div><dt>Artifact hash</dt><dd><code>{dataset.artifact_sha256 || t('Chưa có hash')}</code></dd></div>
+        <div><dt>Retrieved</dt><dd>{t(formatUtc(source.retrieved_at_utc, locale))}</dd></div>
+        <div><dt>Transform</dt><dd>{dataset.transform_version || t('Chưa xác định')}</dd></div>
+        <div><dt>Instrument spec</dt><dd>{dataset.instrument_spec ? t('Có') : t('Chưa có')}</dd></div>
       </dl>
       {warnings.length > 0 && (
         <div className="rd-warning-block" role="note" data-testid="dataset-warnings">
-          <strong>Cần biết trước khi chạy</strong>
-          <ul>{warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+          <strong>{t('Cần biết trước khi chạy')}</strong>
+          <ul>{warnings.map((warning) => <li key={warning}>{t(warning)}</li>)}</ul>
         </div>
       )}
     </section>
@@ -119,33 +119,34 @@ function importQualityTone(disposition) {
 }
 
 function LocalCsvQualityReport({ preview }) {
+  const { t, locale } = useTestingLocale()
   const quality = preview?.quality || {}
   const range = preview?.available_range || {}
   const gaps = Array.isArray(quality.gaps) ? quality.gaps : []
   const disposition = quality.disposition || 'unknown'
-  const label = disposition === 'pass' ? 'Đạt kiểm tra cơ bản' : disposition === 'review' ? 'Cần review trước khi research' : disposition === 'missing_data' ? 'Không có dữ liệu' : 'Chưa xác định'
+  const label = disposition === 'pass' ? t('Đạt kiểm tra cơ bản') : disposition === 'review' ? t('Cần review trước khi research') : disposition === 'missing_data' ? t('Không có dữ liệu') : t('Chưa xác định')
   return (
-    <section className="rd-import-report" aria-label="Báo cáo chất lượng CSV" data-testid="data-desk-quality-report">
+    <section className="rd-import-report" aria-label={t('Báo cáo chất lượng CSV')} data-testid="data-desk-quality-report">
       <div className="rd-import-report-head">
-        <div><h3>Chất lượng CSV</h3></div>
+        <div><h3>{t('Chất lượng CSV')}</h3></div>
         <span className={`rd-badge ${importQualityTone(disposition)}`}>{label}</span>
       </div>
       <dl className="rd-import-facts">
         <div><dt>Rows</dt><dd>{formatNumber(preview?.row_count, 0)}</dd></div>
         <div><dt>Unique timestamps</dt><dd>{formatNumber(preview?.unique_row_count, 0)}</dd></div>
-        <div><dt>Range</dt><dd>{formatUtc(range.from_utc)} → {formatUtc(range.to_utc)}</dd></div>
+        <div><dt>Range</dt><dd>{t(formatUtc(range.from_utc, locale))} → {t(formatUtc(range.to_utc, locale))}</dd></div>
         <div><dt>Duplicates</dt><dd>{formatNumber(quality.duplicates, 0)}</dd></div>
         <div><dt>Out of order</dt><dd>{formatNumber(quality.out_of_order, 0)}</dd></div>
         <div><dt>Gaps / overlap</dt><dd>{formatNumber(gaps.length, 0)} / {formatNumber(quality.overlapping_intervals, 0)}</dd></div>
       </dl>
       <div className="rd-import-hashes">
-        <div><span>Dataset ID</span><code>{preview?.dataset_id || 'Chưa có'}</code></div>
-        <div><span>Raw SHA-256</span><code>{preview?.raw_sha256 || 'Chưa có'}</code></div>
-        <div><span>Normalized SHA-256</span><code>{preview?.normalized_sha256 || 'Chưa có'}</code></div>
+        <div><span>Dataset ID</span><code>{preview?.dataset_id || t('Chưa có')}</code></div>
+        <div><span>Raw SHA-256</span><code>{preview?.raw_sha256 || t('Chưa có')}</code></div>
+        <div><span>Normalized SHA-256</span><code>{preview?.normalized_sha256 || t('Chưa có')}</code></div>
       </div>
       {disposition !== 'pass' && (
         <p className="rd-import-inline-warning" role="note">
-          Dataset có thể được lưu để điều tra, nhưng Research sẽ giữ trạng thái blocked/review cho tới khi quality được xử lý.
+          {t('Dataset có thể được lưu để điều tra, nhưng Research sẽ giữ trạng thái blocked/review cho tới khi quality được xử lý.')}
         </p>
       )}
     </section>
@@ -239,7 +240,7 @@ function LocalCsvImport({ workspace, onImported, onBusyChange, asset }) {
       return
     }
     if (file.size === 0) {
-      setUpload({ status: 'error', file, csvText: '', payload: null, preview: null, error: 'File trống; hãy chọn một CSV có header và ít nhất hai nến.', imported: null })
+      setUpload({ status: 'error', file, csvText: '', payload: null, preview: null, error: t('File trống; hãy chọn một CSV có header và ít nhất hai nến.'), imported: null })
       return
     }
     if (file.size > CSV_LIMIT_BYTES) {
@@ -285,7 +286,7 @@ function LocalCsvImport({ workspace, onImported, onBusyChange, asset }) {
     setUpload((current) => ({ ...current, status: 'reading', error: null, imported: null }))
     try {
       const csvText = await upload.file.text()
-      if (!csvText.trim()) throw new Error('File không có nội dung CSV.')
+      if (!csvText.trim()) throw new Error(t('File không có nội dung CSV.'))
       const payload = buildPayload(csvText)
       setUpload((current) => ({ ...current, status: 'previewing', csvText, payload, error: null }))
       const result = await previewLocalCsv(workspace, payload)
@@ -321,7 +322,7 @@ function LocalCsvImport({ workspace, onImported, onBusyChange, asset }) {
             <label className="rd-field"><span>{t('Khung thời gian (giây)')}</span><input name="timeframeSeconds" inputMode="numeric" value={form.timeframeSeconds} onChange={updateForm} /></label>
           </div>
           <details className="rd-import-advanced">
-            <summary>Provenance và instrument spec</summary>
+            <summary>{t('Provenance và instrument spec')}</summary>
             <div className="rd-import-fields">
               <label className="rd-field"><span>Source ID</span><input name="sourceId" value={form.sourceId} onChange={updateForm} /></label>
               <label className="rd-field"><span>Provider label</span><input name="provider" value={form.provider} onChange={updateForm} /></label>
@@ -341,19 +342,19 @@ function LocalCsvImport({ workspace, onImported, onBusyChange, asset }) {
             <button type="button" className="rd-button is-primary" onClick={previewFile} disabled={!upload.file || busy} data-testid="data-desk-preview-button">{t(busy && upload.status !== 'importing' ? 'Đang kiểm tra…' : 'Kiểm tra dữ liệu')}</button>
             <button type="button" className="rd-button" onClick={importFile} disabled={!canImport || busy} data-testid="data-desk-import-button">{t(upload.status === 'importing' ? 'Đang lưu…' : 'Lưu vào kho')}</button>
           </div>
-          {upload.file && <p className="rd-import-file-state" data-testid="data-desk-file-state">{upload.file.name} · {formatDatasetSize(upload.file.size,fmt)} · {upload.status === 'stale' ? 'Preview cũ; cần chạy lại' : upload.status === 'imported' ? 'Đã import' : 'Chưa gửi lên server'}</p>}
+          {upload.file && <p className="rd-import-file-state" data-testid="data-desk-file-state">{upload.file.name} · {formatDatasetSize(upload.file.size,fmt)} · {upload.status === 'stale' ? t('Preview cũ; cần chạy lại') : upload.status === 'imported' ? t('Đã import') : t('Chưa gửi lên server')}</p>}
           {upload.preview?.quality?.disposition === 'review' && (
-            <label className="rd-import-review-check"><input type="checkbox" checked={Boolean(upload.acceptReview)} onChange={(event) => setUpload((current) => ({ ...current, acceptReview: event.target.checked }))} /> Tôi hiểu dataset đang cần review và chỉ muốn lưu để kiểm tra.</label>
+            <label className="rd-import-review-check"><input type="checkbox" checked={Boolean(upload.acceptReview)} onChange={(event) => setUpload((current) => ({ ...current, acceptReview: event.target.checked }))} /> {t('Tôi hiểu dataset đang cần review và chỉ muốn lưu để kiểm tra.')}</label>
           )}
-          {upload.imported && <p className="rd-import-success" role="status" data-testid="data-desk-import-success">Đã thêm dataset <code>{upload.imported.dataset_id}</code> vào catalog workspace.</p>}
+          {upload.imported && <p className="rd-import-success" role="status" data-testid="data-desk-import-success">{t('Đã thêm dataset {id} vào catalog workspace.', { id: upload.imported.dataset_id })}</p>}
         </fieldset>
         <div className="rd-import-report-column">
-          {!upload.preview && upload.status === 'idle' && <div className="rd-import-empty" data-testid="data-desk-preview-empty"><strong>Chưa có preview</strong><span>Chọn file CSV, kiểm tra quality, rồi mới quyết định import.</span></div>}
-          {!upload.preview && upload.status === 'selected' && <div className="rd-import-empty"><strong>Sẵn sàng kiểm tra</strong><span>File chỉ nằm trong trình duyệt cho tới khi bạn bấm Preview.</span></div>}
-          {!upload.preview && upload.status === 'stale' && <div className="rd-import-empty is-warn"><strong>Preview đã cũ</strong><span>Thông tin file hoặc instrument đã đổi; chạy Preview lại trước khi import.</span></div>}
-          {upload.status === 'reading' && <div className="rd-import-empty" role="status">Đang đọc file local…</div>}
-          {upload.status === 'previewing' && <div className="rd-import-empty" role="status">Đang tạo quality report…</div>}
-          {upload.error && <div className="rd-message is-error" role="alert" data-testid="data-desk-import-error">Không xử lý được CSV: {upload.error}</div>}
+          {!upload.preview && upload.status === 'idle' && <div className="rd-import-empty" data-testid="data-desk-preview-empty"><strong>{t('Chưa có preview')}</strong><span>{t('Chọn file CSV, kiểm tra quality, rồi mới quyết định import.')}</span></div>}
+          {!upload.preview && upload.status === 'selected' && <div className="rd-import-empty"><strong>{t('Sẵn sàng kiểm tra')}</strong><span>{t('File chỉ nằm trong trình duyệt cho tới khi bạn bấm Preview.')}</span></div>}
+          {!upload.preview && upload.status === 'stale' && <div className="rd-import-empty is-warn"><strong>{t('Preview đã cũ')}</strong><span>{t('Thông tin file hoặc instrument đã đổi; chạy Preview lại trước khi import.')}</span></div>}
+          {upload.status === 'reading' && <div className="rd-import-empty" role="status">{t('Đang đọc file local…')}</div>}
+          {upload.status === 'previewing' && <div className="rd-import-empty" role="status">{t('Đang tạo quality report…')}</div>}
+          {upload.error && <div className="rd-message is-error" role="alert" data-testid="data-desk-import-error">{t('Không xử lý được CSV:')} {upload.error}</div>}
           {upload.preview && <LocalCsvQualityReport preview={upload.preview} />}
         </div>
       </div>
@@ -441,7 +442,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         if (!streamReady) timer = setTimeout(poll,payload.items.some(job => ['queued','running','pausing'].includes(job.status)) ? 2000 : 15000)
       } catch (error) {
         if (!disposed && !scopeSignal.aborted && error.name !== 'AbortError') {
-          setPollError('Không đọc được tiến độ tải. Hệ thống sẽ tự kết nối lại.')
+          setPollError(t('Không đọc được tiến độ tải. Hệ thống sẽ tự kết nối lại.'))
           if (!streamReady) timer = setTimeout(poll,Math.min(30000,5000 * 2 ** failures++))
         }
       } finally { polling = false }
@@ -489,7 +490,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
 
   useEffect(() => {
     if (preview) {
-      setState({ workspace, status:preview.state === 'error' ? 'error' : 'ready', datasets:preview.datasets, instruments:preview.instruments || [], catalog:preview.state === 'unavailable' ? { configured:false, error:'source_unavailable', refresh_available:false } : undefined, error:preview.state === 'error' ? 'Không tải được danh sách dữ liệu đã lưu.' : null })
+      setState({ workspace, status:preview.state === 'error' ? 'error' : 'ready', datasets:preview.datasets, instruments:preview.instruments || [], catalog:preview.state === 'unavailable' ? { configured:false, error:'source_unavailable', refresh_available:false } : undefined, error:preview.state === 'error' ? t('Không tải được danh sách dữ liệu đã lưu.') : null })
       setSelectedId(current => current || preview.datasets[0]?.dataset_id || '')
       return
     }
@@ -597,13 +598,13 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
     try {
       const result = await repairLocalDataset(workspace, asset.dataset_id, signal)
       if (!signal.aborted) {
-        notify(result.status === 'restored' ? 'Đã khôi phục dữ liệu gốc.' : 'Đã kiểm tra dữ liệu.')
+        notify(t(result.status === 'restored' ? 'Đã khôi phục dữ liệu gốc.' : 'Đã kiểm tra dữ liệu.'))
         setCatalogRevision(value => value + 1)
       }
     } catch (error) {
       if (!signal.aborted) notify(['dataset_source_unavailable','dataset_source_corrupt','dataset_transform_unavailable','dataset_recovery_mismatch'].includes(error.payload?.detail)
-        ? 'Chưa thể khôi phục đúng phiên bản từ bản nguồn. Cần dùng bản sao lưu; các phiên vẫn được giữ nguyên.'
-        : 'Không kiểm tra được dữ liệu. Hãy thử lại.', 'error')
+        ? t('Chưa thể khôi phục đúng phiên bản từ bản nguồn. Cần dùng bản sao lưu; các phiên vẫn được giữ nguyên.')
+        : t('Không kiểm tra được dữ liệu. Hãy thử lại.'), 'error')
     } finally { if (!signal.aborted) setRepairBusy('') }
   }
   const removeDataset = async () => {
@@ -616,7 +617,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         setState(current => ({...current,datasets:current.datasets.filter(item => item.dataset_id !== deleteAsset.dataset_id)}))
         setSelectedId(current => current === deleteAsset.dataset_id ? '' : current)
         setDeleteAsset(null)
-        notify('Đã xoá phiên bản dữ liệu.')
+        notify(t('Đã xoá phiên bản dữ liệu.'))
         setCatalogRevision(current => current + 1)
       }
     } catch (error) {
@@ -730,7 +731,7 @@ export default function DataDeskWorkspace({ workspace = 'tenant-a', query = new 
         asset={importAsset}
         onBusyChange={setCsvBusy}
         onImported={(dataset) => {
-          notify('Đã nhập dữ liệu CSV.')
+          notify(t('Đã nhập dữ liệu CSV.'))
           setCsvOpen(false)
           setSelectedId(dataset?.dataset_id || '')
           setSearch('')

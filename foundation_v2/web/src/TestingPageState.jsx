@@ -67,11 +67,13 @@ export function TestingPageSkeleton({ view = 'overview', label = 'Đang tải d�
 }
 
 export function TestingResourceNotice({ state, resource, onRetry, recovery }) {
+  const { t } = useTestingLocale()
+  const label = t(resource)
   const messages = {
-    error: `Không tải được ${resource}.`,
-    refreshing: `Đang cập nhật ${resource}…`,
-    stale: `Chưa cập nhật được ${resource}. Đang giữ bản đã đọc trước đó.`,
-    partial: `${resource}: chỉ tính trên phần dữ liệu đã đọc được.`,
+    error: t('Không tải được {resource}.', { resource: label }),
+    refreshing: t('Đang cập nhật {resource}…', { resource: label }),
+    stale: t('Chưa cập nhật được {resource}. Đang giữ bản đã đọc trước đó.', { resource: label }),
+    partial: t('{resource}: chỉ tính trên phần dữ liệu đã đọc được.', { resource: label }),
   }
   return messages[state] ? <div data-resource-state={state} aria-busy={state === 'refreshing'}><TestingReadState error={state === 'error'} message={messages[state]} onRetry={onRetry} recovery={recovery} /></div> : null
 }
