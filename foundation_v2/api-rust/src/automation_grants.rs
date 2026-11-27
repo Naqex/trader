@@ -667,18 +667,33 @@ mod tests {
             ["rust_runtime_fixture", "demo_recovery_restored"]
                 .contains(&identity.get::<_, String>(1).as_str())
         );
+        // The seed races distinct credentials; either grant may commit first.
+        let raced_hashes = vec![
+            sha256(b"fixture credential intentionally not an actual bearer"),
+            sha256(b"independent racing fixture credential"),
+        ];
+        let winners = guard
+            .query(
+                "SELECT credential_sha256 FROM automation_grants WHERE workspace_id=$1 AND credential_sha256=ANY($2)",
+                &[&"automation-fixture", &raced_hashes],
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            winners.len(),
+            1,
+            "exactly one racing credential must survive"
+        );
+        let revoked_hash = winners[0].get::<_, String>(0);
         drop(guard);
-        for (credential, reason) in [
+        for (credential_hash, reason) in [
+            (revoked_hash, "automation_grant_revoked"),
             (
-                b"fixture credential intentionally not an actual bearer".as_slice(),
-                "automation_grant_revoked",
-            ),
-            (
-                b"separate expiring fixture credential".as_slice(),
+                sha256(b"separate expiring fixture credential"),
                 "automation_grant_expired",
             ),
         ] {
-            let identity = resolve_credential(&pool, "automation-fixture", &sha256(credential))
+            let identity = resolve_credential(&pool, "automation-fixture", &credential_hash)
                 .await
                 .unwrap();
             let mut client = pool.get().await.unwrap();
