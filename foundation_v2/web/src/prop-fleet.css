@@ -1,0 +1,735 @@
+/* Prop Fleet Lifecycle Cockpit — flat-first, token-only, zero hardcoded hex colors.
+ * Imported lazily inside PropFleetWorkspace.jsx (0 B delta to startup critical graph). */
+
+.fx-app .pf-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wm-space-section, 24px);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-header {
+  margin-bottom: 0;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.fx-app .pf-page .pf-header-copy {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2, 8px);
+}
+
+.fx-app .pf-page .pf-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Safety & Provenance Strip */
+.fx-app .pf-page .pf-safety-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2, 8px) var(--ds-space-3, 12px);
+  padding: 10px 0;
+  border-top: 1px solid var(--wm-border);
+  border-bottom: 1px solid var(--wm-border);
+  font-size: var(--ds-font-meta, 12px);
+  line-height: 1.5;
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-safety-meta {
+  margin-left: auto;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-2, 8px);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 4-Color Semantic Pills (dot/icon + text, never color alone) */
+.fx-app .pf-page .pf-pill,
+.wm-ui-portal .pf-modal .pf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--project-border);
+  border-radius: var(--ds-radius-pill, 999px);
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  background: var(--project-control);
+  color: var(--project-muted);
+}
+
+.fx-app .pf-page .pf-pill .pf-dot,
+.wm-ui-portal .pf-modal .pf-pill .pf-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: 0 0 6px;
+  background: var(--project-subtle);
+}
+
+.fx-app .pf-page .pf-pill.is-info,
+.wm-ui-portal .pf-modal .pf-pill.is-info {
+  color: var(--wm-info);
+  background: var(--wm-info-soft);
+  border-color: color-mix(in srgb, var(--project-primary) 40%, transparent);
+}
+.fx-app .pf-page .pf-pill.is-info .pf-dot,
+.wm-ui-portal .pf-modal .pf-pill.is-info .pf-dot {
+  background: var(--project-primary);
+}
+
+.fx-app .pf-page .pf-pill.is-success,
+.wm-ui-portal .pf-modal .pf-pill.is-success {
+  color: var(--wm-success);
+  background: var(--wm-success-soft);
+  border-color: color-mix(in srgb, var(--project-positive) 40%, transparent);
+}
+.fx-app .pf-page .pf-pill.is-success .pf-dot,
+.wm-ui-portal .pf-modal .pf-pill.is-success .pf-dot {
+  background: var(--project-positive);
+}
+
+.fx-app .pf-page .pf-pill.is-warning,
+.wm-ui-portal .pf-modal .pf-pill.is-warning {
+  color: var(--project-warning);
+  background: var(--wm-warning-soft);
+  border-color: color-mix(in srgb, var(--project-warning) 45%, transparent);
+}
+.fx-app .pf-page .pf-pill.is-warning .pf-dot,
+.wm-ui-portal .pf-modal .pf-pill.is-warning .pf-dot {
+  background: var(--project-warning);
+}
+
+.fx-app .pf-page .pf-pill.is-danger,
+.wm-ui-portal .pf-modal .pf-pill.is-danger {
+  color: var(--wm-danger);
+  background: var(--wm-danger-soft);
+  border-color: color-mix(in srgb, var(--project-negative) 45%, transparent);
+}
+.fx-app .pf-page .pf-pill.is-danger .pf-dot,
+.wm-ui-portal .pf-modal .pf-pill.is-danger .pf-dot {
+  background: var(--project-negative);
+}
+
+/* Inline Alerts */
+.fx-app .pf-page .pf-alert,
+.wm-ui-portal .pf-modal .pf-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--wm-border);
+  border-radius: var(--ds-radius-field, 8px);
+  font-size: var(--ds-font-control, 13px);
+  line-height: 1.5;
+  background: var(--wm-surface);
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-alert.is-danger,
+.wm-ui-portal .pf-modal .pf-alert.is-danger {
+  background: var(--wm-danger-soft);
+  border-color: color-mix(in srgb, var(--project-negative) 45%, transparent);
+  color: var(--wm-danger);
+}
+
+.fx-app .pf-page .pf-alert.is-warning,
+.wm-ui-portal .pf-modal .pf-alert.is-warning {
+  background: var(--wm-warning-soft);
+  border-color: color-mix(in srgb, var(--project-warning) 45%, transparent);
+  color: var(--project-warning);
+}
+
+.fx-app .pf-page .pf-alert.is-success,
+.wm-ui-portal .pf-modal .pf-alert.is-success {
+  background: var(--wm-success-soft);
+  border-color: color-mix(in srgb, var(--project-positive) 40%, transparent);
+  color: var(--wm-success);
+}
+
+.fx-app .pf-page .pf-alert-body,
+.wm-ui-portal .pf-modal .pf-alert-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fx-app .pf-page .pf-alert-code,
+.wm-ui-portal .pf-modal .pf-alert-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+/* Flat KPI Summary Strip (single 1px hairline seams, zero nested cards) */
+.fx-app .pf-page .pf-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--wm-border);
+  border: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-kpi-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: var(--wm-surface);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-kpi-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--wm-content-muted);
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 500;
+}
+
+.fx-app .pf-page .pf-kpi-value {
+  font-size: var(--ds-font-value, 28px);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--wm-content);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.fx-app .pf-page .pf-kpi-sub {
+  font-size: var(--ds-font-meta, 12px);
+  line-height: 1.5;
+  color: var(--wm-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-app .pf-page .pf-kpi-buckets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-app .pf-page .pf-progress-track {
+  width: 100%;
+  height: var(--ds-progress, 4px);
+  background: var(--project-control);
+  overflow: hidden;
+  border-radius: var(--ds-radius-pill, 999px);
+}
+
+.fx-app .pf-page .pf-progress-fill {
+  height: 100%;
+  background: var(--project-primary);
+  transition: width var(--ds-motion-progress, 200ms) var(--ds-ease-standard, ease);
+}
+
+.fx-app .pf-page .pf-progress-fill.is-warning {
+  background: var(--project-warning);
+}
+
+.fx-app .pf-page .pf-progress-fill.is-danger {
+  background: var(--project-negative);
+}
+
+/* Section Composition */
+.fx-app .pf-page .pf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: var(--wm-space-group, 20px);
+  border-top: 1px solid var(--wm-border);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.fx-app .pf-page .pf-section-title-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-section-head h2 {
+  margin: 0;
+  font-size: var(--ds-font-section, 16px);
+  font-weight: 600;
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-section-sub {
+  margin: 0;
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content-muted);
+}
+
+/* E1..E6 Guards Strip (1px hairline grid, zero nested cards) */
+.fx-app .pf-page .pf-guards-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--wm-border);
+  border: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-guard-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: var(--wm-surface);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-guard-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.fx-app .pf-page .pf-guard-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ds-font-control, 13px);
+  font-weight: 600;
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-guard-name {
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content);
+  line-height: 1.4;
+}
+
+.fx-app .pf-page .pf-guard-metric {
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filter Toolbar */
+.fx-app .pf-page .pf-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fx-app .pf-page .pf-search {
+  flex: 1 1 200px;
+  max-width: 300px;
+}
+
+.fx-app .pf-page .pf-toolbar-count {
+  margin-left: auto;
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Account Table & Mini Stepper */
+.fx-app .pf-page .pf-table-wrap {
+  border-top: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .wm-data-table :is(th, td) {
+  padding-inline: 10px;
+}
+
+.fx-app .pf-page .pf-acct-id {
+  font-weight: 600;
+  color: var(--wm-content);
+  white-space: nowrap;
+}
+
+.fx-app .pf-page .pf-acct-meta {
+  display: block;
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content-muted);
+  white-space: nowrap;
+}
+
+.fx-app .pf-page .pf-mini-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-app .pf-page .pf-mini-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 19px;
+  border-radius: 4px;
+  border: 1px solid var(--wm-border);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--wm-content-muted);
+  background: transparent;
+}
+
+.fx-app .pf-page .pf-mini-step.is-done {
+  border-color: color-mix(in srgb, var(--project-positive) 45%, transparent);
+  background: var(--wm-success-soft);
+  color: var(--wm-success);
+}
+
+.fx-app .pf-page .pf-mini-step.is-current {
+  border-color: var(--project-primary);
+  background: var(--wm-info-soft);
+  color: var(--wm-info);
+}
+
+.fx-app .pf-page .pf-mini-step.is-lock {
+  border-color: var(--project-warning);
+  background: var(--wm-warning-soft);
+  color: var(--project-warning);
+}
+
+.fx-app .pf-page .pf-mini-step.is-incident {
+  border-color: var(--project-negative);
+  background: var(--wm-danger-soft);
+  color: var(--wm-danger);
+}
+
+/* Selected Account Drill-Down (Flat Hairline Band) */
+.fx-app .pf-page .pf-detail-band {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fx-app .pf-page .pf-detail-title h3 {
+  margin: 0;
+  font-size: var(--ds-font-section, 16px);
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-detail-title p {
+  margin: 4px 0 0;
+  font-size: var(--ds-font-control, 13px);
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-stepper-full {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--wm-border);
+  border: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-step-node {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--wm-surface);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-step-node.is-done {
+  background: var(--wm-success-soft);
+}
+
+.fx-app .pf-page .pf-step-node.is-current {
+  background: var(--project-row-selected);
+}
+
+.fx-app .pf-page .pf-step-node strong {
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content);
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-app .pf-page .pf-step-node span {
+  font-size: 11px;
+  color: var(--wm-content-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fx-app .pf-page .pf-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.fx-app .pf-page .pf-detail-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-detail-facts dt {
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-detail-facts dd {
+  margin: 0;
+  font-size: var(--ds-font-control, 13px);
+  color: var(--wm-content);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.fx-app .pf-page .pf-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--ds-font-meta, 12px);
+}
+
+/* Capital Tier Pareto Explorer */
+.fx-app .pf-page .pf-tier-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fx-app .pf-page .pf-tier-btn {
+  min-height: var(--wm-control-height, 32px);
+  padding: 4px 12px;
+  border: 1px solid var(--wm-border);
+  border-radius: var(--ds-radius-pill, 999px);
+  background: transparent;
+  color: var(--wm-content-muted);
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.fx-app .pf-page .pf-tier-btn:hover {
+  background: var(--project-hover);
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-tier-btn[aria-pressed='true'] {
+  background: var(--project-row-selected);
+  border-color: var(--project-highlight);
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-pareto-spotlight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding: 12px 14px;
+  border: 1px solid var(--wm-border);
+  background: var(--wm-surface);
+  font-size: var(--ds-font-control, 13px);
+}
+
+.fx-app .pf-page .pf-pareto-spotlight p {
+  margin: 0;
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-pareto-spotlight small {
+  color: var(--wm-content-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Phase Transition Modal inside LegacyModal portal */
+.wm-ui-portal .pf-modal {
+  width: min(560px, calc(100vw - 24px));
+}
+
+.wm-ui-portal .pf-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px 24px;
+}
+
+.wm-ui-portal .pf-modal-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--project-border);
+  font-size: var(--ds-font-control, 13px);
+}
+
+.wm-ui-portal .pf-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wm-ui-portal .pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wm-ui-portal .pf-field.is-full {
+  grid-column: 1 / -1;
+}
+
+.wm-ui-portal .pf-field > span {
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 500;
+  color: var(--project-muted);
+}
+
+.wm-ui-portal .pf-field :is(input:not([type='checkbox']), select) {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--wm-control-height, 32px);
+  padding: 6px 10px;
+  border: 1px solid var(--project-border);
+  border-radius: var(--ds-radius-field, 8px);
+  background: var(--project-canvas);
+  color: var(--project-text);
+  font: inherit;
+  font-size: var(--ds-font-control, 13px);
+}
+
+.wm-ui-portal .pf-sha-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.wm-ui-portal .pf-sha-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.wm-ui-portal .pf-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--project-border);
+  border-radius: var(--ds-radius-field, 8px);
+  background: var(--project-raised);
+}
+
+.wm-ui-portal .pf-check-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--ds-font-control, 13px);
+  line-height: 1.45;
+  color: var(--project-text);
+  cursor: pointer;
+}
+
+.wm-ui-portal .pf-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--project-border);
+}
+
+/* Responsive Breakpoints (1440 / 768 / 360 — zero horizontal document overflow) */
+@media (max-width: 1180px) {
+  .fx-app .pf-page .pf-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fx-app .pf-page .pf-guards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .fx-app .pf-page .pf-stepper-full {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .fx-app .pf-page .pf-detail-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .fx-app .pf-page .pf-safety-meta {
+    margin-left: 0;
+  }
+  .fx-app .pf-page .pf-guards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fx-app .pf-page .pf-toolbar-count {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .fx-app .pf-page .pf-kpi-strip,
+  .fx-app .pf-page .pf-guards-grid,
+  .fx-app .pf-page .pf-detail-facts,
+  .wm-ui-portal .pf-field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fx-app .pf-page .pf-stepper-full {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fx-app .pf-page .pf-search {
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .wm-ui-portal .pf-modal-body {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-app .pf-page .pf-progress-fill,
+  .fx-app .pf-page .pf-tier-btn {
+    transition: none;
+  }
+}

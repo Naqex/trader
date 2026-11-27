@@ -5,9 +5,19 @@ import { initializeOwnerSession } from './ownerSession.js'
 const removeChunkRecovery = installChunkRecovery(import.meta.url)
 // Reads can render immediately; mutations await discovery and fail closed if
 // owner authentication cannot be established. Nothing retries a submitted action.
-void initializeOwnerSession().catch(() => {})
+const initialViewParam = (() => {
+  try { return new URLSearchParams(window.location.search).get('view') } catch { return null }
+})()
+let ownerSessionStarted = false
+function ensureOwnerSession() {
+  if (ownerSessionStarted) return
+  ownerSessionStarted = true
+  void initializeOwnerSession().catch(() => {})
+}
+if (initialViewParam !== 'prop-fleet') ensureOwnerSession()
 const LearnWorkspace = lazy(() => import('./LearnWorkspace.jsx'))
 const PropAnalytics = lazy(() => import('./PropAnalytics.jsx'))
+const PropFleetWorkspace = lazy(() => import('./PropFleetWorkspace.jsx'))
 const ReplayWorkspace = lazy(() => import('./ReplayWorkspace.jsx'))
 import FxReplayShell from './FxReplayShell.jsx'
 const AnalyticsWorkspace = lazy(() => import('./AnalyticsWorkspace.jsx'))
@@ -92,6 +102,13 @@ function App() {
     query.set('area', 'testing')
     query.set('section', 'market-data')
   }
+  if (activeView === 'prop-fleet') {
+    query.set('area', 'live')
+    query.set('section', 'prop-fleet')
+  }
+  useEffect(() => {
+    if (activeView !== 'prop-fleet') ensureOwnerSession()
+  }, [activeView])
   const scope = navigationScope(query, activeView)
   useEffect(() => {
     for (const content of document.querySelectorAll('.fx-main, .fx-content')) {
@@ -141,6 +158,9 @@ function App() {
   } else if (activeView === 'live') {
     content = <LiveWorkspace workspace={workspace} query={query} />
     mode = 'Read only'
+  } else if (activeView === 'prop-fleet') {
+    content = <PropFleetWorkspace workspace={workspace} query={query} />
+    mode = 'Read only'
   } else if (activeView === 'settings') {
     content = <SettingsWorkspace workspace={workspace} query={query} />
     mode = 'Workspace'
@@ -168,8 +188,8 @@ function App() {
   if (visualMode !== 'real') content = <ViewStatePreview key={`${activeView}:${query.get('analytics_source')}:${query.get('section')}:${visualMode}`} state={visualMode} view={activeView} workspace={workspace} query={query} onChange={changePreview} />
   if (query.get('ui_reference') === '1') content = <TestingComponentReference />
   const researchPreview = activeView === 'ai' && query.get('section') === 'research'
-  const topbarAction = query.get('ui_reference') !== '1' && !paperclipPage && (researchPreview ? <span className="air-shell-preview">{query.get('lang') === 'en' ? 'UI preview' : 'Bản mẫu UI'}</span> : <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} disabled={!demoAvailable} onChange={changePreview} /></>)
-  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction} gatewayPage={gatewayPage} paperclipPage={paperclipPage}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && !researchPreview && !paperclipPage && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
+  const topbarAction = query.get('ui_reference') !== '1' && !paperclipPage && (researchPreview ? <span className="air-shell-preview">{query.get('lang') === 'en' ? 'UI preview' : 'Bản mẫu UI'}</span> : <><WorkspaceConnectionNote key={workspace} workspace={workspace} enabled={visualMode === 'real' && activeView !== 'prop-fleet'} previewState={visualMode} /><ViewStateSelect value={visualMode} view={activeView} disabled={!demoAvailable} onChange={changePreview} /></>)
+  return <FxReplayShell workspace={workspace} query={query} activeView={activeView} mode={mode} topbarAction={topbarAction} gatewayPage={gatewayPage} paperclipPage={paperclipPage}><WorkspaceQueryProvider key={workspace} workspace={workspace} eventsEnabled={visualMode === 'real' && !researchPreview && !paperclipPage && activeView !== 'prop-fleet' && query.get('ui_reference') !== '1'}><TestingRouteBoundary key={scope} fallback={<TestingEmptyState kind="page-error" viewport />}><Suspense fallback={loadingFallback}>{content}</Suspense></TestingRouteBoundary></WorkspaceQueryProvider></FxReplayShell>
 }
 
 const rootElement = document.getElementById('root')
