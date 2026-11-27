@@ -94,6 +94,7 @@ const SHELL_COPY = {
       notes: ['Notes', 'Ghi chú thị trường'],
       tagAnalytics: ['Tag analytics', 'Phân tích theo tag'],
       tradingAccounts: ['Trading accounts', 'Tài khoản giao dịch'],
+      propFleet: ['Prop Fleet', 'Vòng đời tài khoản Prop (S0–S7) · Chỉ đọc'],
       strategies: ['Strategies', 'Quản lý chiến lược'],
       ai: ['Studio', 'Đội AI, đánh giá, model và kết nối'],
       aiPaperclip: ['Đội AI', 'Giao việc và theo dõi các agent'],
@@ -153,6 +154,7 @@ const SHELL_COPY = {
       notes: ['Notes', 'Market notes'],
       tagAnalytics: ['Tag analytics', 'Tag-based analytics'],
       tradingAccounts: ['Trading accounts', 'Trading accounts'],
+      propFleet: ['Prop Fleet', 'Prop account fleet lifecycle (S0–S7) · Read-only'],
       strategies: ['Strategies', 'Strategy workspace'],
       ai: ['Studio', 'AI team, reviews, models and connections'],
       aiPaperclip: ['AI team', 'Assign and track agent work'],
@@ -205,6 +207,7 @@ const SIDEBAR_SECTIONS = [
       { id: 'live-tag-analytics', copyKey: 'tagAnalytics', icon: 'tags', route: 'live', activeViews: ['live'], section: 'tag-analytics' },
       { id: 'live-analytics', copyKey: 'analytics', icon: 'analytics', route: 'live', activeViews: ['live'], section: 'analytics' },
       { id: 'live-accounts', copyKey: 'tradingAccounts', icon: 'accounts', route: 'live', activeViews: ['live'], section: 'trading-accounts' },
+      { id: 'live-prop-fleet', copyKey: 'propFleet', icon: 'shield', route: 'prop-fleet', activeViews: ['prop-fleet'], section: 'prop-fleet' },
     ],
   },
   {
@@ -242,7 +245,7 @@ function activeSectionId(activeView, query) {
   const area = query?.get('area')
   if (area && SIDEBAR_SECTIONS.some((section) => section.id === area)) return area
   if (['overview', 'replay', 'trade', 'analytics', 'market-data'].includes(activeView)) return 'testing'
-  if (activeView === 'live') return 'live'
+  if (activeView === 'live' || activeView === 'prop-fleet') return 'live'
   if (activeView === 'playbook') return 'strategies'
   if (activeView === 'ai') return 'ai'
   if (activeView === 'learn') return 'education'
@@ -252,7 +255,7 @@ function activeSectionId(activeView, query) {
 
 function isNavItemActive(item, activeView, query, sectionId) {
   if (!item.activeViews?.includes(activeView)) return false
-  const current = query?.get('section') || (sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'paperclip' : '')
+  const current = query?.get('section') || (activeView === 'prop-fleet' ? 'prop-fleet' : sectionId === 'live' ? 'calendar' : sectionId === 'ai' ? 'paperclip' : '')
   if (item.alsoSections?.includes(current)) return true
   if (sectionId !== 'testing' && current !== item.section) return false
   if (sectionId === 'testing' && query?.get('area') === 'live') return false
@@ -277,7 +280,7 @@ function hrefFor(id, workspace, query, overrides = {}) {
   return buildWorkspaceHref(id, workspace, query, overrides)
 }
 
-const railIcons = { dashboard:'dashboard', sessions:'list', trades:'trades', analytics:'analytics', testing:'analytics', live:'activity', calendar:'calendar', notes:'document', tags:'tags', accounts:'account', strategies:'compass', 'my-strategies':'list-checks', education:'learn', learn:'learn', trade:'candles', playbook:'compass', settings:'settings', ai:'sparkles', connections:'link', automation:'bot', research:'layers' }
+const railIcons = { dashboard:'dashboard', sessions:'list', trades:'trades', analytics:'analytics', testing:'analytics', live:'activity', calendar:'calendar', notes:'document', tags:'tags', accounts:'account', shield:'shield', strategies:'compass', 'my-strategies':'list-checks', education:'learn', learn:'learn', trade:'candles', playbook:'compass', settings:'settings', ai:'sparkles', connections:'link', automation:'bot', research:'layers' }
 function RailIcon({ id }) {
   return <AppIcon name={railIcons[id] || 'chart'} size={20} className="fx-nav-icon-svg" />
 }
