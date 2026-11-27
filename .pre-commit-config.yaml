@@ -1,0 +1,23 @@
+# Standalone-first local pre-commit hooks for Naqex Trader.
+# Mirrors offline hygiene and Python contract gates from .github/workflows/api-platform.yml.
+repos:
+  - repo: local
+    hooks:
+      - id: check-paths
+        name: check maintained links and paths
+        entry: python scripts/check_paths.py
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: export-api-command-contracts
+        name: verify frozen API command contracts
+        entry: uv run --no-sync --project foundation_v2 python -B foundation_v2/scripts/export_api_command_contracts.py --check
+        language: system
+        pass_filenames: false
+        files: ^foundation_v2/(scripts/export_api_command_contracts\.py|trading_workspace_v2/|api-rust/)
+      - id: ruff-check
+        name: ruff check
+        entry: uvx ruff check --isolated --select E4,E7,E9,F
+        language: system
+        types: [python]
+        files: ^(scripts/|foundation_v2/(scripts|tests|trading_workspace_v2)/)

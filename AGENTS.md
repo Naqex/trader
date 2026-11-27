@@ -1,5 +1,14 @@
 # Naqex Trader
 
+## Quick Commands
+
+| Gate | Command (from repo root) |
+|---|---|
+| Path & release hygiene | `python scripts/check_paths.py` · `python scripts/release.py check` |
+| Frozen API contracts | `uv run --no-sync --project foundation_v2 python -B foundation_v2/scripts/export_api_command_contracts.py --check` |
+| Foundation v2 offline tests | `uv run --no-sync --project foundation_v2 python -B -m pytest foundation_v2/tests/test_typesafe_provider.py foundation_v2/tests/test_api_command_worker.py foundation_v2/tests/test_api_platform_launcher.py foundation_v2/tests/test_artifact_storage_architecture.py -q` |
+| Release, Web & Rust checks | `python -m unittest discover -s tests -p test_release_workflow.py` · `npm run build --prefix foundation_v2/web` · `cargo test --locked --manifest-path foundation_v2/api-rust/Cargo.toml` |
+
 When this repo is checked out inside the workspace, `../../AGENTS.md` also applies.
 A standalone checkout uses this file and the repository README; workspace planning is optional.
 
