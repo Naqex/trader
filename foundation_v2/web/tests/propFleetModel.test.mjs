@@ -25,6 +25,33 @@ import {
   validateFleetLedger,
   validateParetoImport,
 } from '../src/propFleetModel.js'
+import {
+  WAVE5_ALPHA_BENCH_SNAPSHOT,
+  WAVE5_SPECTRUM_SNAPSHOT,
+  createWave5AlphaBenchSnapshot,
+  createWave5SpectrumSnapshot,
+} from '../src/propFleetWave5Fixture.js'
+import {
+  LEGACY_W4_P1_P2_LABEL_VI,
+  WAVE5_AUTO_DEPLOY_PERMITTED,
+  WAVE5_EXECUTION_CAPABILITY,
+  WAVE5_HOLDOUT_ROWS_ANALYSED,
+  WAVE5_ORDER_SEND_CAPABLE,
+  WAVE5_ORDER_SEND_COUNT,
+  buildScorecardFromSpectrumRow,
+  formatWave5CompactVnd,
+  formatWave5Number,
+  formatWave5Pct,
+  formatWave5Usd,
+  formatWave5Vnd,
+  gradePinPercent,
+  inspectT5Warning,
+  validateAlphaBenchSnapshot,
+  validateEvaluationScorecard,
+  validateHorizonPartition,
+  validatePresentationState,
+  validateSpectrumRow,
+} from '../src/propFleetWave5Model.js'
 
 const VALID_SHA_A = 'a'.repeat(64)
 const VALID_SHA_B = 'b'.repeat(64)
@@ -543,8 +570,8 @@ test('P1-01: E2 fails closed on poisoned DD or invalid OPS-4 traffic light in S7
   }
 
   const badLight = createBundledFleetLedger()
-  badLight.accounts[0].state = 'S7_AFTER_PAYOUT_ALLOCATOR'
   badLight.accounts[0].ops4_traffic_light = 'PURPLE'
+  badLight.accounts[0].state = 'S7_AFTER_PAYOUT_ALLOCATOR'
   const evalRes = evaluateFleetGuards(badLight)
   assert.equal(evalRes.allowed, false)
   const g2 = evalRes.guards.find(g => g.code === 'E2')
@@ -552,4 +579,236 @@ test('P1-01: E2 fails closed on poisoned DD or invalid OPS-4 traffic light in S7
   assert.equal(g2.regime, 'RED')
   assert.equal(evalRes.fleetScaleFactor, 0.0)
   assert.ok(g2.reasons.includes('E2_POISONED_OPS4_TRAFFIC_LIGHT'))
+})
+
+test('Wave 5 SSOT fixtures validate fail-closed across all 36 Tier A spectrum rows and Alpha Factory snapshot', () => {
+  assert.equal(WAVE5_EXECUTION_CAPABILITY, false)
+  assert.equal(WAVE5_ORDER_SEND_CAPABLE, false)
+  assert.equal(WAVE5_ORDER_SEND_COUNT, 0)
+  assert.equal(WAVE5_HOLDOUT_ROWS_ANALYSED, 0)
+  assert.equal(WAVE5_AUTO_DEPLOY_PERMITTED, false)
+
+  const spec = createWave5SpectrumSnapshot()
+  assert.equal(spec.hard_invariants.execution_capability, false)
+  assert.equal(spec.hard_invariants.order_send_capable, false)
+  assert.equal(spec.hard_invariants.order_send_count, 0)
+  assert.equal(spec.hard_invariants.holdout_rows_analysed, 0)
+  assert.equal(spec.tier_a_rows.length, 36)
+
+  for (const row of spec.tier_a_rows) {
+    const check = validateSpectrumRow(row)
+    assert.equal(check.ok, true, `${row.contract_id}/${row.schedule_id}/${row.friction_mult}: ${check.message}`)
+    const built = buildScorecardFromSpectrumRow(row, { taxonomy_sha256: spec.taxonomy_sha256 })
+    assert.equal(built.ok, true, `${row.contract_id}/${row.schedule_id}: ${built.message}`)
+    assert.equal(validateEvaluationScorecard(built.scorecard).ok, true)
+  }
+
+  // T5 rows must carry mandatory gambling + research boundary warning tags
+  const t5Rows = spec.tier_a_rows.filter(r => r.schedule_id === 'T5_MAX_THROTTLE_YOLO')
+  assert.equal(t5Rows.length, 4)
+  for (const t5 of t5Rows) {
+    const warn = inspectT5Warning(t5)
+    assert.equal(warn.isT5Boundary, true)
+    assert.equal(warn.hasGamblingTag, true)
+    assert.equal(warn.hasResearchBoundaryTag, true)
+    assert.equal(warn.valid, true)
+  }
+
+  // Alpha Bench snapshot invariants
+  const alpha = createWave5AlphaBenchSnapshot()
+  assert.equal(validateAlphaBenchSnapshot(alpha).ok, true)
+  assert.equal(alpha.port_v5_status.port_v5_equals_port_7e, true)
+  assert.equal(alpha.port_v5_status.n_core7_engines, 7)
+  assert.equal(alpha.port_v5_status.n_added_engines, 0)
+  assert.equal(alpha.drills_passed, 5)
+  assert.equal(alpha.drills_total, 5)
+  assert.equal(alpha.alpha_bench_reserve.candidate_id, 'F5D_US30_TO_UK100_CNV_L2_LB30_A')
+  assert.equal(alpha.alpha_bench_reserve.tier_classification, 'ALPHA_BENCH_RESERVE')
+})
+
+test('Wave 5 evaluation-scorecard@1.0.0 validator fails closed on NaN, Infinity, bool, bad partition, missing label, and tampered locks', () => {
+  const baseRow = WAVE5_SPECTRUM_SNAPSHOT.tier_a_rows.find(
+    r => r.contract_id === 'ftmo_standard_10k' && r.schedule_id === 'T3_BALANCED_EV' && r.friction_mult === 1.0,
+  )
+  const { scorecard } = buildScorecardFromSpectrumRow(baseRow, {
+    taxonomy_sha256: WAVE5_SPECTRUM_SNAPSHOT.taxonomy_sha256,
+  })
+  assert.equal(validateEvaluationScorecard(scorecard).ok, true)
+
+  // Poisoned partition values (NaN, Infinity, bool, wrong sum)
+  for (const badVal of [NaN, Infinity, -Infinity, true, false, -1, 101, '50']) {
+    const badPart = validateHorizonPartition({ pass_pct: badVal, fail_pct: 50, pending_pct: 0 })
+    assert.equal(badPart.ok, false)
+    assert.equal(badPart.code, 'POISONED_PARTITION_VALUE')
+  }
+  const badSum = validateHorizonPartition({ pass_pct: 60, fail_pct: 30, pending_pct: 5 })
+  assert.equal(badSum.ok, false)
+  assert.equal(badSum.code, 'INVALID_PARTITION_SUM')
+
+  // Missing presentation_state.label on UNKNOWN_LEGACY_UNINSTRUMENTED fails closed
+  const missingLabelCard = structuredClone(scorecard)
+  missingLabelCard.phase_grades.p1 = {
+    phase: 'p1',
+    grade: 'UNKNOWN_LEGACY_UNINSTRUMENTED',
+    grade_vi: 'Chưa tách số liệu (Đợt cũ)',
+    presentation_state: { availability: 'ready', freshness: 'partial', certainty: 'unknown', label: '' },
+    metric_grades: {},
+    pass_rate_pct: null,
+    fail_rate_pct: null,
+    pending_rate_pct: null,
+    bottlenecks: [],
+  }
+  assert.equal(validateEvaluationScorecard(missingLabelCard).code, 'MISSING_PRESENTATION_LABEL')
+
+  // Providing the canonical Wave 4 label passes cleanly and never maps to a numeric pin
+  missingLabelCard.phase_grades.p1.presentation_state.label = LEGACY_W4_P1_P2_LABEL_VI
+  assert.equal(validateEvaluationScorecard(missingLabelCard).ok, true)
+  assert.equal(gradePinPercent('UNKNOWN_LEGACY_UNINSTRUMENTED'), null)
+  assert.equal(gradePinPercent('GOOD'), 62.5)
+
+  // Execution / OrderSend / Holdout tampers fail closed
+  assert.equal(validateEvaluationScorecard({ ...structuredClone(scorecard), execution_capability: true }).code, 'EXECUTION_CAPABILITY_TAMPER')
+  assert.equal(validateEvaluationScorecard({ ...structuredClone(scorecard), order_send_count: 1 }).code, 'ORDER_SEND_COUNT_TAMPER')
+  assert.equal(validateEvaluationScorecard({ ...structuredClone(scorecard), holdout_rows_analysed: 1 }).code, 'HOLDOUT_LEAK_DETECTED')
+
+  // Bottleneck with bool or NaN current_value fails closed
+  const poisonBn = structuredClone(scorecard)
+  poisonBn.exact_bottlenecks[0].current_value = true
+  assert.equal(validateEvaluationScorecard(poisonBn).code, 'POISONED_BOTTLENECK_VALUE')
+  poisonBn.exact_bottlenecks[0].current_value = NaN
+  assert.equal(validateEvaluationScorecard(poisonBn).code, 'POISONED_BOTTLENECK_VALUE')
+
+  // T5 with stripped warning tags fails closed
+  const t5Row = structuredClone(WAVE5_SPECTRUM_SNAPSHOT.tier_a_rows.find(r => r.schedule_id === 'T5_MAX_THROTTLE_YOLO'))
+  t5Row.mandatory_tags = ['CONSUMED_DEV_CLB_TEMPORAL_OOS']
+  assert.equal(validateSpectrumRow(t5Row).code, 'T5_MANDATORY_WARNING_MISSING')
+
+  // Alpha Bench governance lock tampering fails closed
+  const badAutoDeploy = createWave5AlphaBenchSnapshot()
+  badAutoDeploy.hard_invariants.auto_deploy_permitted = true
+  assert.equal(validateAlphaBenchSnapshot(badAutoDeploy).code, 'AUTO_DEPLOY_LOCK_VIOLATION')
+
+  const badProposal = createWave5AlphaBenchSnapshot()
+  badProposal.proposals[0].auto_deployed = true
+  assert.equal(validateAlphaBenchSnapshot(badProposal).code, 'PROPOSAL_AUTO_DEPLOY_TAMPER')
+
+  const badDryRun = createWave5AlphaBenchSnapshot()
+  badDryRun.proposals[0].draft_set_diff.dry_run_locked_true = false
+  assert.equal(validateAlphaBenchSnapshot(badDryRun).code, 'DRY_RUN_LOCK_VIOLATION')
+
+  const badCusum = createWave5AlphaBenchSnapshot()
+  badCusum.core_7e_engines[0].drill3_cusum_cur_neg = NaN
+  assert.equal(validateAlphaBenchSnapshot(badCusum).code, 'POISONED_ENGINE_TELEMETRY')
+  assert.equal(WAVE5_ALPHA_BENCH_SNAPSHOT.hard_invariants.auto_deploy_permitted, false)
+
+  // Formatters reject bool/NaN/Infinity and never emit bare '$'
+  for (const bad of [NaN, Infinity, true, false, null, undefined, '10']) {
+    assert.equal(formatWave5Pct(bad), '—')
+    assert.equal(formatWave5Number(bad), '—')
+    assert.equal(formatWave5Usd(bad), '—')
+    assert.equal(formatWave5Vnd(bad), '—')
+    assert.equal(formatWave5CompactVnd(bad), '—')
+  }
+  const usdStr = formatWave5Usd(10000, 'en-US', 0)
+  assert.equal(usdStr, '10,000 USD')
+  assert.equal(usdStr.includes('$'), false)
+})
+
+test('W5-RT4-P1-02: validatePresentationState strictly enforces presentation-state@1.0.0 rules and lowercase reasonCode', () => {
+  // Rejects uppercase reasonCode 'LEGACY_UNINSTRUMENTED' and malformed reasonCodes
+  for (const badCode of ['LEGACY_UNINSTRUMENTED', 'Error_Code', '', '   ', '1starts_with_digit', 'bad code', 42, true]) {
+    const res = validatePresentationState({
+      availability: 'ready',
+      freshness: 'partial',
+      certainty: 'unknown',
+      reasonCode: badCode,
+      label: LEGACY_W4_P1_P2_LABEL_VI,
+    })
+    assert.equal(res.ok, false, `Expected reject for reasonCode=${JSON.stringify(badCode)}`)
+    assert.equal(res.code, 'INVALID_PRESENTATION_REASON_CODE')
+  }
+
+  // Accepts lowercase canonical reasonCode 'legacy_uninstrumented'
+  const validLegacy = validatePresentationState({
+    availability: 'ready',
+    freshness: 'partial',
+    certainty: 'unknown',
+    reasonCode: 'legacy_uninstrumented',
+    label: LEGACY_W4_P1_P2_LABEL_VI,
+    ariaLabel: LEGACY_W4_P1_P2_LABEL_VI,
+  })
+  assert.equal(validLegacy.ok, true)
+
+  // Rejects freshness in ['stale', 'partial', 'unknown'] with missing or whitespace-only label
+  for (const freshness of ['stale', 'partial', 'unknown']) {
+    for (const badLabel of [undefined, null, '', '   ']) {
+      const res = validatePresentationState({
+        availability: 'ready',
+        freshness,
+        certainty: 'known',
+        label: badLabel,
+      })
+      assert.equal(res.ok, false, `Expected reject for freshness=${freshness} label=${JSON.stringify(badLabel)}`)
+      assert.equal(res.code, 'MISSING_PRESENTATION_LABEL')
+    }
+    const okDegraded = validatePresentationState({
+      availability: 'ready',
+      freshness,
+      certainty: 'known',
+      label: 'Dữ liệu cần cập nhật thêm',
+    })
+    assert.equal(okDegraded.ok, true)
+  }
+
+  // Rejects availability in ['error', 'denied'] missing reasonCode or using uppercase reasonCode
+  for (const avail of ['error', 'denied']) {
+    assert.equal(
+      validatePresentationState({ availability: avail, label: 'Không thể tải dữ liệu' }).code,
+      'MISSING_PRESENTATION_REASON_CODE',
+    )
+    assert.equal(
+      validatePresentationState({ availability: avail, reasonCode: null, label: 'Không thể tải dữ liệu' }).code,
+      'MISSING_PRESENTATION_REASON_CODE',
+    )
+    assert.equal(
+      validatePresentationState({ availability: avail, reasonCode: 'UPPER_ERROR', label: 'Không thể tải dữ liệu' }).code,
+      'INVALID_PRESENTATION_REASON_CODE',
+    )
+    assert.equal(
+      validatePresentationState({ availability: avail, reasonCode: 'snapshot_corrupted', label: 'Không thể tải dữ liệu' }).ok,
+      true,
+    )
+  }
+
+  // Rejects availability === 'ready' missing freshness or certainty
+  assert.equal(
+    validatePresentationState({ availability: 'ready', certainty: 'known' }).code,
+    'MISSING_PRESENTATION_READY_METADATA',
+  )
+  assert.equal(
+    validatePresentationState({ availability: 'ready', freshness: 'current' }).code,
+    'MISSING_PRESENTATION_READY_METADATA',
+  )
+  assert.equal(
+    validatePresentationState({ availability: 'ready', freshness: null, certainty: null }).code,
+    'MISSING_PRESENTATION_READY_METADATA',
+  )
+  assert.equal(
+    validatePresentationState({ availability: 'ready', freshness: 'current', certainty: 'known', label: null, ariaLabel: null, reasonCode: null }).ok,
+    true,
+  )
+
+  // buildScorecardFromSpectrumRow emits lowercase 'legacy_uninstrumented' for UNKNOWN_LEGACY_UNINSTRUMENTED phases
+  const legacyRow = structuredClone(
+    WAVE5_SPECTRUM_SNAPSHOT.tier_a_rows.find(
+      r => r.contract_id === 'ftmo_standard_10k' && r.schedule_id === 'T3_BALANCED_EV' && r.friction_mult === 1.0,
+    ),
+  )
+  legacyRow.phase_grades.p1 = 'UNKNOWN_LEGACY_UNINSTRUMENTED'
+  const built = buildScorecardFromSpectrumRow(legacyRow, {
+    taxonomy_sha256: WAVE5_SPECTRUM_SNAPSHOT.taxonomy_sha256,
+  })
+  assert.equal(built.ok, true, built.message)
+  assert.equal(built.scorecard.phase_grades.p1.presentation_state.reasonCode, 'legacy_uninstrumented')
+  assert.equal(validateEvaluationScorecard(built.scorecard).ok, true)
 })
