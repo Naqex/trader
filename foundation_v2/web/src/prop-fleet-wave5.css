@@ -1,0 +1,417 @@
+/* Wave 5 Prop Fleet Upgrade — Spectrum & Closed-Loop Alpha Factory Styles.
+ * Strictly lazy-imported ONLY by PropFleetSpectrumPanel.jsx and PropFleetAlphaBenchPanel.jsx
+ * (0 B delta to base PropFleetWorkspace chunk and 0 B delta to startup critical graph).
+ * HARD INVARIANT: 100% semantic CSS tokens — ZERO hardcoded hex color literals. */
+
+.fx-app .pf-page .pf-w5-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wm-space-section, 24px);
+  min-width: 0;
+}
+
+/* Segmented Control Bar (Profile / Friction / Proposal selector) */
+.fx-app .pf-page .pf-w5-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--wm-border);
+  background: var(--wm-surface);
+}
+
+.fx-app .pf-page .pf-w5-control-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fx-app .pf-page .pf-w5-control-label {
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 600;
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-w5-seg-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.fx-app .pf-page .pf-w5-seg-btn {
+  min-height: var(--wm-control-height, 32px);
+  padding: 4px 12px;
+  border: 1px solid var(--wm-border);
+  border-radius: var(--ds-radius-field, 8px);
+  background: var(--project-control);
+  color: var(--wm-content-muted);
+  font: inherit;
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.fx-app .pf-page .pf-w5-seg-btn:hover {
+  background: var(--project-hover);
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-w5-seg-btn[aria-pressed='true'] {
+  background: var(--project-row-selected);
+  border-color: var(--project-highlight);
+  color: var(--wm-content);
+  font-weight: 600;
+}
+
+.fx-app .pf-page .pf-w5-seg-btn.is-danger-tier[aria-pressed='true'] {
+  background: var(--wm-danger-soft);
+  border-color: var(--project-negative);
+  color: var(--wm-danger);
+}
+
+/* Contract Disclosure Pills Strip */
+.fx-app .pf-page .pf-w5-contract-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+
+/* 4-Color evaluation-scorecard@1.0.0 Gauge Block */
+.fx-app .pf-page .pf-w5-scorecard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 1px;
+  background: var(--wm-border);
+  border: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-w5-scorecard-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--wm-surface);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-w5-gauge-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fx-app .pf-page .pf-w5-gauge-head h3 {
+  margin: 0;
+  font-size: var(--ds-font-section, 16px);
+  font-weight: 600;
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-w5-gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fx-app .pf-page .pf-w5-gauge-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  height: 12px;
+  border-radius: var(--ds-radius-pill, 999px);
+  overflow: visible;
+}
+
+.fx-app .pf-page .pf-w5-gauge-seg {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.fx-app .pf-page .pf-w5-gauge-seg.is-bad {
+  background: var(--project-negative);
+}
+
+.fx-app .pf-page .pf-w5-gauge-seg.is-adequate {
+  background: var(--project-warning);
+}
+
+.fx-app .pf-page .pf-w5-gauge-seg.is-good {
+  background: var(--project-positive);
+}
+
+.fx-app .pf-page .pf-w5-gauge-seg.is-top1 {
+  background: var(--project-primary);
+}
+
+.fx-app .pf-page .pf-w5-gauge-pin {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 20px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--wm-content);
+  outline: 2px solid var(--wm-surface);
+}
+
+.fx-app .pf-page .pf-w5-gauge-labels {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--wm-content-muted);
+  text-align: center;
+}
+
+.fx-app .pf-page .pf-w5-gauge-labels span.is-active {
+  color: var(--wm-content);
+  font-weight: 600;
+}
+
+/* 4-Phase Mini Grade Strip */
+.fx-app .pf-page .pf-w5-phase-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--wm-border);
+  border: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-w5-phase-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--project-raised);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-w5-phase-name {
+  font-size: var(--ds-font-meta, 12px);
+  font-weight: 600;
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-w5-phase-stat {
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Exact 100.0% Pass / Fail / Pending Partition Bars */
+.fx-app .pf-page .pf-w5-partitions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fx-app .pf-page .pf-w5-part-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fx-app .pf-page .pf-w5-part-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: var(--ds-font-meta, 12px);
+  font-variant-numeric: tabular-nums;
+}
+
+.fx-app .pf-page .pf-w5-part-title {
+  font-weight: 600;
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-w5-part-numbers {
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-w5-part-bar {
+  display: flex;
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--ds-radius-pill, 999px);
+  background: var(--project-control);
+}
+
+.fx-app .pf-page .pf-w5-part-pass {
+  background: var(--project-positive);
+}
+
+.fx-app .pf-page .pf-w5-part-fail {
+  background: var(--project-negative);
+}
+
+.fx-app .pf-page .pf-w5-part-pending {
+  background: var(--project-warning);
+}
+
+/* Balanced Metric Key-Value Matrix */
+.fx-app .pf-page .pf-w5-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-w5-metrics-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-w5-metrics-grid dt {
+  font-size: 11px;
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-w5-metrics-grid dd {
+  margin: 0;
+  font-size: var(--ds-font-control, 13px);
+  font-weight: 600;
+  color: var(--wm-content);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.fx-app .pf-page .pf-w5-panel-cell .pf-w5-metrics-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Bottleneck Chips */
+.fx-app .pf-page .pf-w5-bottleneck-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fx-app .pf-page .pf-w5-bottleneck-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--wm-border);
+  border-radius: var(--ds-radius-small, 6px);
+  background: var(--project-raised);
+  font-size: var(--ds-font-meta, 12px);
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-w5-bottleneck-rank {
+  font-weight: 700;
+  color: var(--wm-danger);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Alpha Bench Diagnostic & Read-Only Proposal Diff */
+.fx-app .pf-page .pf-w5-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--wm-border);
+  border: 1px solid var(--wm-border);
+}
+
+.fx-app .pf-page .pf-w5-panel-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--wm-surface);
+  min-width: 0;
+}
+
+.fx-app .pf-page .pf-w5-panel-cell h3 {
+  margin: 0;
+  font-size: var(--ds-font-section, 16px);
+  font-weight: 600;
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-w5-gate-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fx-app .pf-page .pf-w5-diff-box {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--wm-border);
+  border-radius: var(--ds-radius-small, 6px);
+  background: var(--project-canvas);
+  color: var(--wm-content);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.fx-app .pf-page .pf-w5-diff-line.is-add {
+  color: var(--wm-success);
+}
+
+.fx-app .pf-page .pf-w5-diff-line.is-del {
+  color: var(--wm-danger);
+}
+
+.fx-app .pf-page .pf-w5-diff-line.is-hdr {
+  color: var(--wm-info);
+  font-weight: 600;
+}
+
+.fx-app .pf-page .pf-w5-note {
+  margin: 0;
+  font-size: var(--ds-font-meta, 12px);
+  line-height: 1.5;
+  color: var(--wm-content-muted);
+}
+
+.fx-app .pf-page .pf-w5-inline-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 1180px) {
+  .fx-app .pf-page .pf-w5-scorecard-grid,
+  .fx-app .pf-page .pf-w5-two-col {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fx-app .pf-page .pf-w5-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .fx-app .pf-page .pf-w5-phase-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .fx-app .pf-page .pf-w5-phase-grid,
+  .fx-app .pf-page .pf-w5-metrics-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

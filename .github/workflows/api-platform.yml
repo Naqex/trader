@@ -73,12 +73,13 @@ jobs:
           cache: npm
           cache-dependency-path: foundation_v2/web/package-lock.json
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node --test tests/scopedMutation.test.mjs tests/scopedRead.test.mjs tests/clientNavigation.test.mjs tests/workspaceEvents.test.mjs tests/chartAnnotations.test.mjs tests/dataDeskApi.test.mjs tests/sessionPicker.test.mjs tests/dashboardModel.test.mjs tests/shellPreferences.test.mjs tests/testingCopy.test.mjs tests/auditRegressions.test.mjs tests/perfBundleContracts.test.mjs
+      - run: node --test tests/scopedMutation.test.mjs tests/scopedRead.test.mjs tests/clientNavigation.test.mjs tests/workspaceEvents.test.mjs tests/chartAnnotations.test.mjs tests/dataDeskApi.test.mjs tests/sessionPicker.test.mjs tests/dashboardModel.test.mjs tests/shellPreferences.test.mjs tests/testingCopy.test.mjs tests/auditRegressions.test.mjs tests/perfBundleContracts.test.mjs tests/propFleetModel.test.mjs
       - run: npm run build
       - run: npx --no-install playwright install --with-deps chromium
       - run: node tests/brand.browser.mjs
       - run: node tests/live-analytics.browser.mjs
       - run: node tests/overlayLayering.browser.mjs
+      - run: node tests/prop-fleet.browser.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
@@ -87,6 +88,7 @@ jobs:
             foundation_v2/web/.artifacts/brand
             foundation_v2/web/.artifacts/live-analytics-controls
             foundation_v2/web/.artifacts/overlay-layering
+            foundation_v2/web/.artifacts/prop-fleet
           retention-days: 7
           if-no-files-found: ignore
   rust:

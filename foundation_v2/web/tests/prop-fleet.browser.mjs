@@ -9,6 +9,7 @@ import { chromium } from 'playwright'
 
 const web = fileURLToPath(new URL('..', import.meta.url))
 const out = process.env.TW_UI_EVIDENCE_DIR || path.join(web, '.artifacts', 'prop-fleet')
+const w5ScreenshotDir = process.env.TW_W5_SCREENSHOT_DIR || out
 
 function parseRgb(color) {
   const m = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/.exec(String(color || ''))
@@ -317,6 +318,145 @@ try {
   await page.getByTestId('pf-transition-modal').waitFor({ state: 'detached' })
   assert.equal(await modalOpener.evaluate(el => el === document.activeElement), true)
   report.checks.QA06_i18n_theme_and_keyboard = true
+
+  // -------------------------------------------------------------------------
+  // QA-07: Wave 5 Spectrum & Alpha Bench Tabs (Dark VI & Light EN + Screenshots)
+  // -------------------------------------------------------------------------
+  await mkdir(w5ScreenshotDir, { recursive: true })
+
+  // 7a: Switch to Dark VI and inspect Wave 5 Spectrum tab
+  await page.getByTestId('language-toggle').click()
+  await page.locator('html[lang="vi"]').waitFor()
+  await page.getByTestId('theme-toggle').click()
+  await page.locator('.fx-app:not([data-theme="light"])').waitFor()
+
+  await page.getByTestId('pf-tab-spectrum').click()
+  await page.getByTestId('pf-w5-spectrum-panel').waitFor()
+  await page.getByTestId('pf-w5-scorecard-gauge').waitFor()
+  assert.equal(await page.locator('[data-testid="pf-w5-spectrum-table"] tbody tr').count(), 9)
+  assert.equal(await page.getByTestId('pf-w5-t5-row-badge').count(), 1)
+
+  // Verify 100.0% partitions visible on default T3_BALANCED_EV 1.0x
+  for (const partId of ['pf-w5-partition-p1', 'pf-w5-partition-p2', 'pf-w5-partition-eval']) {
+    const partText = await page.getByTestId(partId).innerText()
+    assert.match(partText, /100[.,]0%/, `${partId} must display exact 100.0% sum`)
+  }
+  assert.equal(await page.getByTestId('pf-w5-overall-grade').getAttribute('data-grade'), 'GOOD')
+  assert.match(await page.getByTestId('pf-w5-w4-compare').innerText(), /Chưa tách riêng P1\/P2 ở dữ liệu Đợt 4/)
+
+  // Verify zero bare '$' in Wave 5 Spectrum panel prose & >= 4.5:1 contrast & zero overflow
+  const specPanelText = await page.getByTestId('pf-w5-spectrum-panel').innerText()
+  assert.equal(specPanelText.includes('$'), false, 'Wave 5 Spectrum panel must use USD/VND, zero bare $')
+  assert.doesNotMatch(specPanelText, /\bP\/L\b/)
+  const specOverflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }))
+  assert.ok(specOverflow.scrollWidth <= specOverflow.innerWidth + 1, `Spectrum overflow: ${JSON.stringify(specOverflow)}`)
+  const specColorsDark = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="pf-w5-scorecard-gauge"] .pf-w5-scorecard-cell')
+    const st = getComputedStyle(el)
+    return { fg: st.color, bg: st.backgroundColor }
+  })
+  const specRatioDark = contrastRatio(parseRgb(specColorsDark.fg), parseRgb(specColorsDark.bg))
+  assert.ok(specRatioDark >= 4.5, `Spectrum dark contrast too low: ${specRatioDark.toFixed(2)}`)
+
+  // Dismiss previous import banner and scroll to top for clean Wave 5 Spectrum Dark VI screenshot
+  const closeAlert = page.locator('[data-testid="pf-page-alert"] button')
+  if (await closeAlert.count()) await closeAlert.first().click()
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll('.fx-main, .fx-content')) el.scrollTop = 0
+    window.scrollTo(0, 0)
+  })
+  await page.screenshot({
+    path: path.join(w5ScreenshotDir, 'prop-fleet-w5-spectrum-dark-vi.png'),
+    fullPage: false,
+  })
+
+  // Toggle 1.0x -> 1.5x Stress and verify grade shift (GOOD -> ADEQUATE on T3) + 100K switch
+  await page.getByTestId('pf-w5-friction-15x').click()
+  assert.equal(await page.getByTestId('pf-w5-overall-grade').getAttribute('data-grade'), 'ADEQUATE')
+  await page.getByTestId('pf-w5-profile-100k').click()
+  assert.equal(await page.getByTestId('pf-w5-overall-grade').getAttribute('data-grade'), 'ADEQUATE')
+  await page.getByTestId('pf-w5-friction-1x').click()
+  assert.equal(await page.getByTestId('pf-w5-overall-grade').getAttribute('data-grade'), 'GOOD')
+
+  // Click T5_MAX_THROTTLE_YOLO and verify loud research-boundary & gambling warning banner
+  await page.getByTestId('pf-w5-sched-btn-T5_MAX_THROTTLE_YOLO').click()
+  await page.getByTestId('pf-w5-t5-warning').waitFor()
+  const t5WarnText = await page.getByTestId('pf-w5-t5-warning').innerText()
+  assert.match(t5WarnText, /RESEARCH_BOUNDARY_ONLY/)
+  assert.match(t5WarnText, /FTMO_GAMBLING_ALLIN_RISK/)
+  assert.equal(await page.getByTestId('pf-w5-overall-grade').getAttribute('data-grade'), 'BAD')
+
+  // 7b: Switch to Light EN and inspect Wave 5 Alpha Bench tab
+  await page.getByTestId('pf-tab-alpha-bench').click()
+  await page.getByTestId('pf-w5-alpha-bench-panel').waitFor()
+  await page.getByTestId('language-toggle').click()
+  await page.locator('html[lang="en"]').waitFor()
+  await page.getByTestId('theme-toggle').click()
+  await page.locator('.fx-app[data-theme="light"]').waitFor()
+
+  const benchText = await page.getByTestId('pf-w5-alpha-bench-panel').innerText()
+  assert.equal(benchText.includes('$'), false, 'Wave 5 Alpha Bench panel must use USD/VND, zero bare $')
+  assert.doesNotMatch(benchText, /\bP\/L\b/)
+  assert.match(benchText, /PORT_V5 == PORT_7E/)
+  assert.match(benchText, /F5D_US30_TO_UK100_CNV_L2_LB30_A/)
+  assert.match(benchText, /ALPHA_BENCH_RESERVE/)
+  assert.match(benchText, /5 \/ 5 PASS/)
+  assert.match(await page.getByTestId('pf-w5-autodeploy-lock').innerText(), /auto_deploy_permitted: false/)
+  assert.equal(await page.locator('[data-testid="pf-w5-core7-table"] tbody tr').count(), 7)
+  assert.equal(await page.locator('[data-testid="pf-w5-drills-table"] tbody tr').count(), 5)
+  assert.equal(await page.locator('[data-testid="pf-w5-finalists-table"] tbody tr').count(), 6)
+
+  // Verify switching read-only proposal diff previews (Drill 3 -> Drill 2 -> Drill 4 -> Drill 3)
+  await page.getByTestId('pf-w5-prop-btn-REDUCE_WEIGHT_AMBER').click()
+  assert.match(await page.getByTestId('pf-w5-proposal-diff').innerText(), /REDUCE_WEIGHT_AMBER/)
+  await page.getByTestId('pf-w5-prop-btn-HALT_ONLY_EMPTY_BENCH').click()
+  assert.match(await page.getByTestId('pf-w5-proposal-diff').innerText(), /HALT_ONLY_EMPTY_BENCH/)
+  await page.getByTestId('pf-w5-prop-btn-RETIRE_AND_SWAP').click()
+  assert.match(await page.getByTestId('pf-w5-proposal-diff').innerText(), /RETIRE_AND_SWAP/)
+
+  const benchOverflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }))
+  assert.ok(benchOverflow.scrollWidth <= benchOverflow.innerWidth + 1, `Alpha Bench overflow: ${JSON.stringify(benchOverflow)}`)
+  const benchColorsLight = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="pf-w5-reserve-card"] .pf-w5-panel-cell')
+    const st = getComputedStyle(el)
+    return { fg: st.color, bg: st.backgroundColor }
+  })
+  const benchRatioLight = contrastRatio(parseRgb(benchColorsLight.fg), parseRgb(benchColorsLight.bg))
+  assert.ok(benchRatioLight >= 4.5, `Alpha Bench light contrast too low: ${benchRatioLight.toFixed(2)}`)
+
+  // Scroll to top and capture Wave 5 Alpha Bench Light EN 1440px screenshot
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll('.fx-main, .fx-content')) el.scrollTop = 0
+    window.scrollTo(0, 0)
+  })
+  await page.screenshot({
+    path: path.join(w5ScreenshotDir, 'prop-fleet-w5-bench-light-en.png'),
+    fullPage: false,
+  })
+
+  // Also verify Spectrum tab in Light EN and Alpha Bench in Dark VI (no errors, contrast >= 4.5)
+  await page.getByTestId('pf-tab-spectrum').click()
+  await page.getByTestId('pf-w5-spectrum-panel').waitFor()
+  assert.match(await page.getByTestId('pf-w5-w4-compare').innerText(), /P1\/P2 not instrumented separately in Wave 4 baseline/)
+
+  await page.getByTestId('theme-toggle').click()
+  await page.locator('.fx-app:not([data-theme="light"])').waitFor()
+  await page.getByTestId('language-toggle').click()
+  await page.locator('html[lang="vi"]').waitFor()
+  await page.getByTestId('pf-tab-alpha-bench').click()
+  await page.getByTestId('pf-w5-alpha-bench-panel').waitFor()
+
+  report.checks.QA07_wave5_spectrum_and_alpha_bench = {
+    passed: true,
+    spectrumContrastDark: Number(specRatioDark.toFixed(2)),
+    benchContrastLight: Number(benchRatioLight.toFixed(2)),
+  }
 
   assert.deepEqual(flowErrors, [])
   assert.deepEqual(flowApi, [], `PropFleetWorkspace must initiate ZERO /api/* requests, got: ${flowApi.join(', ')}`)

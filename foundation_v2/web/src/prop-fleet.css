@@ -61,6 +61,51 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Wave 5 Tab Strip (Flat hairline, token-only) */
+.fx-app .pf-page .pf-w5-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid var(--wm-border);
+  padding-bottom: 10px;
+}
+
+.fx-app .pf-page .pf-w5-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--wm-control-height, 32px);
+  padding: 6px 14px;
+  border: 1px solid var(--wm-border);
+  border-radius: var(--ds-radius-field, 8px);
+  background: var(--wm-surface);
+  color: var(--wm-content-muted);
+  font: inherit;
+  font-size: var(--ds-font-control, 13px);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fx-app .pf-page .pf-w5-tab:hover {
+  background: var(--project-hover);
+  color: var(--wm-content);
+}
+
+.fx-app .pf-page .pf-w5-tab[aria-selected='true'] {
+  background: var(--project-row-selected);
+  border-color: var(--project-highlight);
+  color: var(--wm-content);
+  font-weight: 600;
+}
+
+.fx-app .pf-page .pf-tab-loading {
+  padding: 20px 14px;
+  border: 1px solid var(--wm-border);
+  background: var(--wm-surface);
+  color: var(--wm-content-muted);
+  font-size: var(--ds-font-control, 13px);
+}
+
 /* 4-Color Semantic Pills (dot/icon + text, never color alone) */
 .fx-app .pf-page .pf-pill,
 .wm-ui-portal .pf-modal .pf-pill {
